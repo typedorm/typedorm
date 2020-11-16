@@ -8,7 +8,7 @@ on:
 jobs:
   release:
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}  
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,8 +16,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '14.x'
+          node-version: '12.x'
       - name: Install
         run: npm install
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm run test
       - name: Release
         run: npm run semantic-release
