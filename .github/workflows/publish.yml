@@ -16,7 +16,9 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '12.x'
-      - name: install
-        run: npm install
+      - name: Install dependencies
+        run: yarn install
+      - name: Pack all
+        run: yarn pack:all
       - name: Publish To NPM
-        run: npm run publish:all
+        run: yarn publish:all

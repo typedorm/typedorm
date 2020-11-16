@@ -18,12 +18,12 @@ jobs:
         with:
           node-version: '12.x'
       - name: Install
-        run: npm install
+        run: yarn install
       - name: Lint
-        run: npm run lint
+        run: yarn lint
       - name: Build
-        run: npm run build
+        run: yarn build
       - name: Test
-        run: npm run test
+        run: yarn test
       - name: Release
-        run: npm run semantic-release
+        run: yarn semantic-release

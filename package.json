@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "tsc": "tsc",
-    "test": "bazel test //...",
+    "test": "jest",
     "semantic-release": "semantic-release",
     "bazel:format": "find . -type f \\( -name \"*.bzl\" -or -name WORKSPACE -or -name BUILD -or -name BUILD.bazel \\) ! -path \"*/node_modules/*\" | xargs buildifier -v --warnings=attr-cfg,attr-license,attr-non-empty,attr-output-default,attr-single-file,constant-glob,ctx-actions,ctx-args,depset-iteration,depset-union,dict-concatenation,duplicated-name,filetype,git-repository,http-archive,integer-division,load,load-on-top,native-build,native-package,out-of-order-load,output-group,package-name,package-on-top,positional-args,redefined-variable,repository-name,same-origin-load,string-iteration,unsorted-dict-items,unused-variable",
     "bazel:lint": "yarn bazel:format --lint=warn",
@@ -29,8 +29,11 @@
     "@semantic-release/changelog": "^5.0.1",
     "@semantic-release/git": "^9.0.0",
     "@types/node": "^14.11.2",
+    "babel": "^6.23.0",
     "gts": "^3.0.2",
+    "jest": "^26.6.3",
     "semantic-release": "^17.2.2",
+    "ts-jest": "^26.4.4",
     "typescript": "^4.0.3"
   },
   "repository": {
