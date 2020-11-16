@@ -1,3 +1,3 @@
 export const firstFeature = {
-  message: 'Release using semantic release'
+  message: 'Initial 0.1.0 release'
 }
