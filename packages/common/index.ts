@@ -1,3 +1,3 @@
 export const firstFeature = {
-  message: 'Initial release',
+  message: 'Initial bot release',
 };
