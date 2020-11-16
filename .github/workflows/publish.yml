@@ -3,11 +3,10 @@ on:
   push:
     tags:
       - 'v*'
-
+env:
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
   publish:
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

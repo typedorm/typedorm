@@ -5,6 +5,8 @@ on:
       - 'main'
       - 'next'
       - 'develop'
+env:
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
   release:
     env:

@@ -6,7 +6,8 @@ on:
       - 'main'
       - 'next'
       - 'develop'
-
+env:
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
   dependencies:
     name: 'Install dependencies'
