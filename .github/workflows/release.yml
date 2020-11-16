@@ -7,6 +7,8 @@ on:
       - 'develop'
 jobs:
   release:
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}  
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
