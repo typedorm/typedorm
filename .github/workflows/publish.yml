@@ -2,7 +2,7 @@ name: NPM Publish
 on:
   push:
     tags:
-      - 'v*'
+      - '*'
 env:
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
