@@ -1,1 +1,1 @@
-console.log('Hello from TypeDRM')
+console.log('Release using semantic release')
