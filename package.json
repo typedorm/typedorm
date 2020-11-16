@@ -4,6 +4,8 @@
   "description": "TyperDRM - Fully Typed ORM for DynamoDB",
   "main": "index.js",
   "scripts": {
+    "tsc": "tsc",
+    "build": "tsc --noEmit",
     "test": "npm run test",
     "semantic-release": "semantic-release"
   },
@@ -15,15 +17,16 @@
     "typedrm",
     "typeorm",
     "dynamoDB",
-    "aws-dynamDB"
+    "aws-dynamoDB"
   ],
-  "author": "Rushi Patel <rp970.patel@gmail.com>",
+  "author": "Rushi Patel<rp970.patel@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/typedrm/typedrm/issues"
   },
   "homepage": "https://github.com/typedrm/typedrm#readme",
   "devDependencies": {
-    "semantic-release": "^17.2.2"
+    "semantic-release": "^17.2.2",
+    "typescript": "^4.0.5"
   }
 }
