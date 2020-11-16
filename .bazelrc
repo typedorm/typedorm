@@ -86,5 +86,5 @@ try-import %workspace%/.bazelrc.user
 
 # This tells bazel how to interact with git in order to current get tag information
 # Enable this with --config=release
-build:release --workspace_status_command="node ./tools/bazel-stamp-vars.js && node ./tools/stamp-current-tag.js"
+build:release --workspace_status_command="node ./tools/bazel-stamp-vars.js & node ./tools/stamp-current-tag.js"
 build:release --stamp

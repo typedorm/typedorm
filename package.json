@@ -16,8 +16,6 @@
     "clean": "gts clean",
     "build": "bazel build //...",
     "fix": "gts fix",
-    "prepare": "yarn run build",
-    "pretest": "yarn run build",
     "posttest": "yarn run lint"
   },
   "dependencies": {},

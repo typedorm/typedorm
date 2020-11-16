@@ -12,14 +12,16 @@ const releaseConfig = {
   next: 'next',
 };
 
-const currentBranch = exec('git branch --show-current');
+const currentBranch = exec('git rev-parse --abbrev-ref HEAD');
 
 if (!currentBranch) {
   console.error('No git branch can be resolved.');
   console.error(
     'Make sure this command is being run from a git repository, or you have proper access to list current active branch.'
   );
-  console.error('       Error running command: git branch --show-current');
+  console.error(
+    '       Error running command: git rev-parse --abbrev-ref HEAD'
+  );
   return;
 }
 
@@ -32,5 +34,5 @@ if (!releaseConfig[currentBranch]) {
   return;
 }
 
-const BUILD_SCM_TAG = currentBranch;
+const BUILD_SCM_TAG = releaseConfig[currentBranch];
 console.log(`BUILD_SCM_TAG ${BUILD_SCM_TAG}`);

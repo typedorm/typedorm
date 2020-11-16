@@ -2,7 +2,7 @@ branches:
   - main
   - next
   - name: develop
-    prerelease: true
+    prerelease: beta
 plugins:
   - '@semantic-release/commit-analyzer'
   - '@semantic-release/release-notes-generator'
@@ -10,5 +10,5 @@ plugins:
     - changelogFile: 'CHANGELOG.md'
   - '@semantic-release/github'
   - - '@semantic-release/git'
-    - assets: 
+    - assets:
         - 'CHANGELOG.md'

@@ -16,9 +16,9 @@ def typedrm_package(name, readme_md, data = [], deps = [], **kwargs):
         name = name,
         srcs = [readme_md, "package.json"] + data ,
         substitutions = {
-            "TAG-PLACEHOLDER": "{BUILD_SCM_TAG}"
+            "TAG-PLACEHOLDER": "{BUILD_SCM_TAG}",
+            "0.0.0-PLACEHOLDER": "{BUILD_SCM_VERSION}"
         },
-        replace_with_version = "0.0.0-PLACEHOLDER",
         deps = [
             ":license_copied",
         ] + deps,
