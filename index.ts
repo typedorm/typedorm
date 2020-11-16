@@ -1,1 +1,3 @@
-console.log('Release using semantic release')
+export const firstFeature = {
+  message: 'Release using semantic release'
+}
