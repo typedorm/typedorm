@@ -5,9 +5,33 @@
   "main": "index.js",
   "scripts": {
     "tsc": "tsc",
-    "build": "tsc --noEmit",
-    "test": "npm run test",
-    "semantic-release": "semantic-release"
+    "test": "bazel test //...",
+    "semantic-release": "semantic-release",
+    "bazel:format": "find . -type f \\( -name \"*.bzl\" -or -name WORKSPACE -or -name BUILD -or -name BUILD.bazel \\) ! -path \"*/node_modules/*\" | xargs buildifier -v --warnings=attr-cfg,attr-license,attr-non-empty,attr-output-default,attr-single-file,constant-glob,ctx-actions,ctx-args,depset-iteration,depset-union,dict-concatenation,duplicated-name,filetype,git-repository,http-archive,integer-division,load,load-on-top,native-build,native-package,out-of-order-load,output-group,package-name,package-on-top,positional-args,redefined-variable,repository-name,same-origin-load,string-iteration,unsorted-dict-items,unused-variable",
+    "bazel:lint": "yarn bazel:format --lint=warn",
+    "bazel:lint-fix": "yarn bazel:format --lint=fix",
+    "lint": "gts lint",
+    "clean": "gts clean",
+    "build": "bazel build //...",
+    "fix": "gts fix",
+    "prepare": "yarn run build",
+    "pretest": "yarn run build",
+    "posttest": "yarn run lint"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@bazel/bazel": "^2.1.0",
+    "@bazel/bazelisk": "^1.7.3",
+    "@bazel/buildifier": "^3.5.0",
+    "@bazel/ibazel": "^0.14.0",
+    "@bazel/typescript": "^2.3.0",
+    "@commitlint/config-conventional": "^11.0.0",
+    "@semantic-release/changelog": "^5.0.1",
+    "@semantic-release/git": "^9.0.0",
+    "@types/node": "^14.11.2",
+    "gts": "^3.0.2",
+    "semantic-release": "^17.2.2",
+    "typescript": "^4.0.3"
   },
   "repository": {
     "type": "git",
@@ -17,7 +41,9 @@
     "typedrm",
     "typeorm",
     "dynamoDB",
-    "aws-dynamoDB"
+    "aws-dynamoDB",
+    "orm",
+    "dynamo db"
   ],
   "author": "Rushi Patel<rp970.patel@gmail.com>",
   "license": "MIT",
@@ -25,10 +51,10 @@
     "url": "https://github.com/typedrm/typedrm/issues"
   },
   "homepage": "https://github.com/typedrm/typedrm#readme",
-  "devDependencies": {
-    "@semantic-release/changelog": "^5.0.1",
-    "@semantic-release/git": "^9.0.0",
-    "semantic-release": "^17.2.2",
-    "typescript": "^4.0.5"
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
   }
 }
