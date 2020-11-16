@@ -5,10 +5,12 @@ on:
       - 'main'
       - 'next'
       - 'develop'
+env:
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
   release:
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}  
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,8 +18,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '14.x'
+          node-version: '12.x'
       - name: Install
-        run: npm install
+        run: yarn install
+      - name: Lint
+        run: yarn lint
+      - name: Build
+        run: yarn build
+      - name: Test
+        run: yarn test
       - name: Release
-        run: npm run semantic-release
+        run: yarn semantic-release

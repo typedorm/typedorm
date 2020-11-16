@@ -1,5 +1,11 @@
 {
   "cSpell.words": [
+    "bazel",
+    "commitlint",
+    "posttest",
+    "prettierrc",
+    "typedrm",
     "typeorm"
-  ]
+  ],
+  "editor.formatOnSave": true
 }

@@ -1,11 +1,9 @@
-
 {
   "compilerOptions": {
     "lib": ["es2015.promise", "es5", "es6", "es2017.object", "ES2018.Regexp"],
     "target": "ES2015",
     "module": "commonjs",
     "moduleResolution": "node",
-    "outDir": "publish-dist",
     "esModuleInterop": true,
     "declaration": true,
     "strict": true,
@@ -22,7 +20,7 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
-    "baseUrl": ".",    
+    "baseUrl": "."
   },
   "exclude": ["dist", "node_modules"]
 }
