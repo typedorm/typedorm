@@ -1,0 +1,29 @@
+{
+  "name": "typedrm-mono",
+  "version": "0.0.0-development",
+  "description": "TyperDRM - Fully Typed ORM for DynamoDB",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test",
+    "semantic-release": "semantic-release"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/typedrm/typedrm.git"
+  },
+  "keywords": [
+    "typedrm",
+    "typeorm",
+    "dynamoDB",
+    "aws-dynamDB"
+  ],
+  "author": "Rushi Patel <rp970.patel@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/typedrm/typedrm/issues"
+  },
+  "homepage": "https://github.com/typedrm/typedrm#readme",
+  "devDependencies": {
+    "semantic-release": "^17.2.2"
+  }
+}
