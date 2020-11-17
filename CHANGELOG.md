@@ -1,3 +1,10 @@
+# [1.0.0-beta.3](https://github.com/typedrm/typedrm/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2020-11-17)
+
+
+### Features
+
+* initial publish to npm ([dd3739d](https://github.com/typedrm/typedrm/commit/dd3739de57dc1293111ad07e3e9b94bc3a3cd6c0))
+
 # [1.0.0-beta.2](https://github.com/typedrm/typedrm/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2020-11-16)
 
 
