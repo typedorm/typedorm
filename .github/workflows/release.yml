@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '12.x'
       - name: Install
-        run: npm run install
+        run: npm install
       - name: Lint
         run: npm run lint
       - name: Build
