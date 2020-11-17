@@ -7,7 +7,6 @@ process.on('uncaughtException', () => {
 
 const BUILD_SCM_HASH = exec('git rev-parse HEAD');
 console.log(`BUILD_SCM_HASH ${BUILD_SCM_HASH}`);
-console.log('BUILD_SCM_VERSION 0.1.0');
 
 const currentTag = exec('git tag');
 
