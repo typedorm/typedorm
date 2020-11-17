@@ -20,16 +20,14 @@ jobs:
         with:
           node-version: '12.x'
       - name: Install
-        run: yarn install
+        run: npm run install
       - name: Lint
-        run: yarn lint
+        run: npm run lint
       - name: Build
-        run: yarn build
+        run: npm run build
       - name: Test
-        run: yarn test
+        run: npm run test
       - name: Release
-        run: yarn semantic-release
-      - name: Pack all
-        run: yarn pack:all
+        run: npm run semantic-release
       - name: Publish To NPM
-        run: yarn publish:all
+        run: npm run publish:all
