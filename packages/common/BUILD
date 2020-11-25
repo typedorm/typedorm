@@ -3,7 +3,7 @@ load("//:tools/pkg.bzl", "typedrm_package")
 
 setup_ts_build(
     name = "library",
-    module_name = "@typedrm/common",
+    module_name = "@typedorm/common",
     deps = [],
 )
 

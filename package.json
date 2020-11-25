@@ -1,5 +1,5 @@
 {
-  "name": "@typedrm/monorepo",
+  "name": "@typedorm/monorepo",
   "version": "0.0.0-development",
   "description": "TypeDRM - Fully Typed ORM for DynamoDB",
   "main": "index.js",
@@ -38,22 +38,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/typedrm/typedrm.git"
+    "url": "git+https://github.com/typedorm/typedorm.git"
   },
   "keywords": [
-    "typedrm",
+    "typedorm",
     "typeorm",
     "dynamoDB",
     "aws-dynamoDB",
     "orm",
     "dynamo db"
   ],
-  "author": "typedrm",
+  "author": "typedorm",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/typedrm/typedrm/issues"
+    "url": "https://github.com/typedorm/typedorm/issues"
   },
-  "homepage": "https://github.com/typedrm/typedrm#readme",
+  "homepage": "https://github.com/typedorm/typedorm#readme",
   "husky": {
     "hooks": {
       "pre-commit": "pretty-quick --staged",

@@ -4,7 +4,7 @@
     "commitlint",
     "posttest",
     "prettierrc",
-    "typedrm",
+    "typedorm",
     "typeorm"
   ],
   "editor.formatOnSave": true
