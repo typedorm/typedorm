@@ -1,4 +1,5 @@
-name: Semantic Release
+# TODO: refactor this workflow to trigger after ci job has finished
+name: Build and Semantic Release
 on:
   push:
     branches:
@@ -8,9 +9,9 @@ on:
 env:
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
-  release:
+  build&release:
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,5 +30,3 @@ jobs:
         run: npm run test
       - name: Release
         run: npm run semantic-release
-      - name: Publish To NPM
-        run: npm run publish:all
