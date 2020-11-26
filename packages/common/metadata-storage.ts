@@ -1,9 +1,14 @@
 import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, EntityTarget} from '@typedorm/common';
 import {IndexOptions, Table} from './table';
 
-export type PrimaryKey = {
+export type PrimaryKey = SimplePrimaryKey | CompositePrimaryKey;
+export type SimplePrimaryKey = {
   partitionKey: string;
-  sortKey?: string;
+};
+
+export type CompositePrimaryKey = {
+  partitionKey: string;
+  sortKey: string;
 };
 
 export type Indexes = {
@@ -45,36 +50,24 @@ export class MetadataStorage {
     this._attributes = new Map();
   }
 
-  hasOrThrow<Entity>(
-    entityClass: EntityTarget<Entity>,
-    checkAttributesMap?: boolean
-  ) {
-    if (!this._entities.has(entityClass.name)) {
+  getRawAttributesForEntity<Entity>(entityClass: EntityTarget<Entity>) {
+    const attributes = this._attributes.get(entityClass.name)?.values();
+
+    if (!attributes) {
       throw new Error(`No entity with name "${entityClass.name}" could be resolved, 
       make sure they have been declared at the connection creation time.`);
     }
-    if (checkAttributesMap) {
-      if (this._attributes.has(entityClass.name)) {
-        throw new Error(`No entity with name "${entityClass.name}" could be resolved, 
-      make sure they have been declared at the connection creation time.`);
-      }
-    }
-  }
-
-  getRawAttributesForEntity<Entity>(entityClass: EntityTarget<Entity>) {
-    this.hasOrThrow(entityClass, true);
-
-    return Array.from(
-      (this._attributes.get(entityClass.name) as Map<
-        string,
-        AttributeRawMetadataOptions | AutoGenerateAttributeRawMetadataOptions
-      >)?.values()
-    );
+    return Array.from(attributes);
   }
 
   getRawEntityByTarget<Entity>(entityClass: EntityTarget<Entity>) {
-    this.hasOrThrow(entityClass);
-    return this._entities.get(entityClass.name);
+    const entity = this._entities.get(entityClass.name);
+
+    if (!entity) {
+      throw new Error(`No entity with name "${entityClass.name}" could be resolved, 
+      make sure they have been declared at the connection creation time.`);
+    }
+    return entity;
   }
 
   addRawAttribute<Entity>(

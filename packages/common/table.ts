@@ -1,4 +1,14 @@
 import {INDEX_TYPE} from './enums';
+import {CompositePrimaryKey} from './metadata-storage';
+
+export const IsCompositePrimaryKey = (
+  key: unknown
+): key is CompositePrimaryKey =>
+  !!(
+    (key as CompositePrimaryKey).partitionKey &&
+    (key as CompositePrimaryKey).sortKey
+  );
+
 export interface TableOptions {
   name: string;
   partitionKey: string; // identifier of partition key
@@ -8,11 +18,18 @@ export interface TableOptions {
   };
 }
 
-export interface IndexOptions {
-  type: INDEX_TYPE;
-  partitionKey?: string;
+export interface GSIIndexOptions {
+  type: INDEX_TYPE.GSI;
+  partitionKey: string;
   sortKey: string;
 }
+
+export interface LSIIndexOptions {
+  type: INDEX_TYPE.LSI;
+  sortKey: string;
+}
+
+export type IndexOptions = GSIIndexOptions | LSIIndexOptions;
 
 export class Table {
   constructor(private options: TableOptions) {}
@@ -30,11 +47,14 @@ export class Table {
   }
 
   get sortKey() {
+    if (!IsCompositePrimaryKey(this.options)) {
+      throw new Error('Only Tables using composite keys can have sort keys');
+    }
     return this.options.sortKey;
   }
 
   usesCompositeKey() {
-    return this.options.partitionKey && this.options.sortKey;
+    return !!(this.options.partitionKey && this.options.sortKey);
   }
 
   getIndexByKey(key: string) {
