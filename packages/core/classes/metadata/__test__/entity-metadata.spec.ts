@@ -4,7 +4,6 @@ import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {Connection} from '../../connection/connection';
 import {AttributeMetadata} from '../attribute-metadata';
 import {EntityMetadata} from '../entity-metadata';
-import {MetadataManager} from '@typedorm/common/metadata-manager';
 import {Table} from '@typedorm/common/table';
 import {INDEX_TYPE} from '@typedorm/common';
 

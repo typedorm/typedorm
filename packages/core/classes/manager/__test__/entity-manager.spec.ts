@@ -14,12 +14,13 @@ jest.mock('aws-sdk', () => ({
   },
 }));
 
-import {UserUniqueEmail} from '../../../__mocks__/user-unique-email';
-import {User} from '@typedorm/core/__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityManager} from '../entity-manager';
-import {UserPrimaryKey} from '../../../__mocks__/user';
-import {UserUniqueEmailPrimaryKey} from '@typedorm/core/__mocks__/user-unique-email';
+import {User, UserPrimaryKey} from '../../../__mocks__/user';
+import {
+  UserUniqueEmail,
+  UserUniqueEmailPrimaryKey,
+} from '@typedorm/core/__mocks__/user-unique-email';
 import {
   UserAutoGenerateAttributesPrimaryKey,
   UserAutoGenerateAttributes,
@@ -169,7 +170,7 @@ test('checks if item with given unique attribute exists', async () => {
   expect(userEntity).toEqual(true);
 });
 
-test('throws an error if trying to perform exists with non key or non unique attributes', async () => {
+test('throws an error if trying to perform exists check with non key or non unique attributes', async () => {
   expect(dcMock().get).not.toHaveBeenCalled();
   await expect(
     async () =>

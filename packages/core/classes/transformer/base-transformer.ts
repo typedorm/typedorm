@@ -1,9 +1,4 @@
-import {
-  EntityInstance,
-  EntityTarget,
-  INDEX_TYPE,
-  IsEntityInstance,
-} from '@typedorm/common';
+import {EntityTarget, INDEX_TYPE} from '@typedorm/common';
 import {Table} from '@typedorm/common';
 import {getConstructorForInstance} from '@typedorm/core/helpers/get-constructor-for-instance';
 import {isEmptyObject} from '@typedorm/core/helpers/is-empty-object';
@@ -145,7 +140,7 @@ export abstract class BaseTransformer {
           const interpolationsForCurrIndex = currIndex._interpolations ?? {};
 
           // if current index does not have any interpolations to resolve, move onto next one
-          if (!isEmptyObject(interpolationsForCurrIndex)) {
+          if (isEmptyObject(interpolationsForCurrIndex)) {
             return acc;
           }
 

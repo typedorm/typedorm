@@ -167,9 +167,6 @@ export class EntityMetadata extends BaseMetadata {
     indexes: Indexes;
     attributes: {[key: string]: string};
   }) {
-    if (!indexes.length) {
-      return;
-    }
     return Object.keys(indexes).reduce((acc, key) => {
       const tableIndexSignature = table.getIndexByKey(key);
       if (!tableIndexSignature) {
