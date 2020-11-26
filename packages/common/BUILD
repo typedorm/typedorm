@@ -1,5 +1,5 @@
 load("//:tools/defaults.bzl", "setup_ts_build")
-load("//:tools/pkg.bzl", "typedrm_package")
+load("//:tools/pkg.bzl", "typedorm_package")
 
 setup_ts_build(
     name = "library",
@@ -7,7 +7,7 @@ setup_ts_build(
     deps = [],
 )
 
-typedrm_package(
+typedorm_package(
     name = "common",
     readme_md = "README.md",
     deps = [

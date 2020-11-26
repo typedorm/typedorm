@@ -1,7 +1,7 @@
 
 load("@build_bazel_rules_nodejs//:index.bzl", "pkg_npm")
 
-def typedrm_package(name, readme_md, data = [], deps = [], **kwargs):
+def typedorm_package(name, readme_md, data = [], deps = [], **kwargs):
     """ Creates Publishable npm package with additional artifacts bundled together        
     """
 
