@@ -163,7 +163,7 @@ export abstract class BaseCondition {
   between(key: string, value: [ScalarType, ScalarType]): this {
     if (value.length !== 2) {
       throw new Error(
-        `Incorrect query value for BETWEEN operator, it requires array containing two values.`
+        'Incorrect query value for BETWEEN operator, it requires array containing two values.'
       );
     }
     const [startIncluding, endIncluding] = value;

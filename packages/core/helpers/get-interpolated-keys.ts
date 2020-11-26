@@ -1,8 +1,8 @@
-import { regexInterpolatedWord } from './constants';
+import {regexInterpolatedWord} from './constants';
 
 export function getInterpolatedKeys(
   key: string,
-  dict: { [key: string]: string }
+  dict: {[key: string]: string}
 ) {
   const matchIterator = key.matchAll(regexInterpolatedWord);
   const interpolatedKeys = [] as string[];
@@ -15,7 +15,7 @@ export function getInterpolatedKeys(
 function recursiveFindInterpolatedKeys(
   key: string,
   iterator: IterableIterator<RegExpMatchArray>,
-  dict: { [key: string]: string },
+  dict: {[key: string]: string},
   interpolatedKeys: string[]
 ) {
   const next = iterator.next();

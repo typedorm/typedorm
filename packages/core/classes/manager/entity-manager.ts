@@ -66,7 +66,6 @@ export class EntityManager extends BaseManager {
       return {...entity};
     }
 
-    console.log('Item to put: ', JSON.stringify(dynamoPutItemInput));
     // when put item is set to array, one or more attributes are marked as unique
     // to maintain all records consistency, all items must be put into db as a single transaction
     const transaction = new WriteTransaction(
@@ -103,7 +102,7 @@ export class EntityManager extends BaseManager {
 
     const entity = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
-      response.Item
+      response.Item ?? {}
     );
     return entity;
   }
@@ -118,7 +117,7 @@ export class EntityManager extends BaseManager {
     attributes: KeyAttributes
   ) {
     if (isEmptyObject(attributes)) {
-      throw new Error(`Attributes are required to check it's existence.`);
+      throw new Error("Attributes are required to check it's existence.");
     }
 
     const metadata = this.connection.getEntityByTarget(entityClass);
@@ -159,7 +158,7 @@ export class EntityManager extends BaseManager {
       !isEmptyObject(uniqueAttributes)
     ) {
       throw new Error(
-        `Can not search both primary key and unique attributes at the same time.`
+        'Can not search both primary key and unique attributes at the same time.'
       );
     }
 
@@ -171,7 +170,7 @@ export class EntityManager extends BaseManager {
     // try finding entity by unique attribute
     if (!isEmptyObject(uniqueAttributes)) {
       if (Object.keys(uniqueAttributes).length > 1) {
-        throw new Error(`Can only query one unique attribute at a time.`);
+        throw new Error('Can only query one unique attribute at a time.');
       }
       const [attrName, attrValue] = Object.entries(uniqueAttributes)[0];
       const uniqueAttributePrimaryKey = getUniqueAttributePrimaryKey(
@@ -211,13 +210,11 @@ export class EntityManager extends BaseManager {
       Entity
     >(entityClass, primaryKey, body, options);
 
-    console.log(`Item to update: `, JSON.stringify(dynamoUpdateItem));
-
     const response = await this._dc.update(dynamoUpdateItem).promise();
 
     return this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
-      response.Attributes
+      response.Attributes ?? {}
     );
   }
 
@@ -290,11 +287,11 @@ export class EntityManager extends BaseManager {
     itemsFetched = [],
   }: {
     queryInput: DocumentClient.QueryInput;
-    limit?: number;
+    limit: number;
     cursor?: DocumentClient.Key;
     itemsFetched?: DocumentClient.ItemList;
   }): Promise<{items: DocumentClient.ItemList; cursor?: DocumentClient.Key}> {
-    const {LastEvaluatedKey, Items} = await this._dc
+    const {LastEvaluatedKey, Items = []} = await this._dc
       .query({...queryInput, ExclusiveStartKey: cursor})
       .promise();
     itemsFetched = [...itemsFetched, ...Items];

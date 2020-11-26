@@ -11,7 +11,7 @@
   "peerDependencies": {
     "@typedorm/common": "0.0.0-PLACEHOLDER",
     "reflect-metadata": "^0.1.13",
-    "aws-sdk": "^2.799.0",
+    "aws-sdk": "^2.799.0"
   },
   "dependencies": {
     "uuid": "^8.3.1",

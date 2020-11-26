@@ -1,4 +1,4 @@
-import { parseKey } from '../parse-key';
+import {parseKey} from '../parse-key';
 
 describe('parseKey()', () => {
   it('should parse key and replace interpolation values with actual value', () => {

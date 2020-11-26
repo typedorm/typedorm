@@ -1,5 +1,5 @@
-import { DynamoDB } from 'aws-sdk';
-import { Connection } from '../connection/connection';
+import {DynamoDB} from 'aws-sdk';
+import {Connection} from '../connection/connection';
 import {
   isCreateTransaction,
   isUpdateTransaction,
@@ -27,7 +27,7 @@ export class WriteTransaction extends Transaction {
   ): WriteTransaction {
     if (isCreateTransaction(chainedItem)) {
       const {
-        create: { item },
+        create: {item},
       } = chainedItem;
 
       const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem<Entity>(
@@ -42,11 +42,11 @@ export class WriteTransaction extends Transaction {
         });
       } else {
         this._items.push(
-          ...dynamoPutItemInput.map(puttItem => ({ Put: puttItem }))
+          ...dynamoPutItemInput.map(puttItem => ({Put: puttItem}))
         );
       }
     } else if (isUpdateTransaction(chainedItem)) {
-      const { item, body, primaryKey, options } = chainedItem.update;
+      const {item, body, primaryKey, options} = chainedItem.update;
       this._items.push({
         Update: this._dcReqTransformer.toDynamoUpdateItem<PrimaryKey, Entity>(
           item,

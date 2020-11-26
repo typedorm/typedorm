@@ -1,6 +1,6 @@
 import {Condition} from '../condition/condition';
 import {ExpressionBuilder} from '../expression-builder';
-import {MetadataManager} from '../../../common/metadata-manager';
+import {MetadataManager} from '@typedorm/common/metadata-manager';
 
 const expressionBuilder = new ExpressionBuilder();
 

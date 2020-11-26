@@ -1,4 +1,4 @@
-import { BaseCondition } from './base-condition';
+import {BaseCondition} from './base-condition';
 
 export class Condition extends BaseCondition {
   constructor(prefix?: string) {

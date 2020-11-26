@@ -1,5 +1,5 @@
-import {INDEX_TYPE} from '../../common/enums';
-import {Table} from '../../common/table';
+import {INDEX_TYPE} from '@typedorm/common/enums';
+import {Table} from '@typedorm/common/table';
 
 export const table = new Table({
   name: 'test-table',
@@ -17,7 +17,7 @@ export const table = new Table({
       sortKey: 'GSI2SK',
     },
     LSI1: {
-      type: INDEX_TYPE.GSI,
+      type: INDEX_TYPE.LSI,
       sortKey: 'LSI1SK',
     },
   },

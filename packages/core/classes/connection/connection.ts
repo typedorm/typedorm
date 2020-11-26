@@ -11,7 +11,7 @@ import {
   DynamoEntitySchemaPrimaryKey,
   EntityMetadata,
 } from '../metadata/entity-metadata';
-import {Table} from '../../../common/table';
+import {Table} from '@typedorm/common/table';
 import {ConnectionMetadataBuilder} from './connection-metadata-builder';
 
 export class Connection {
@@ -26,7 +26,9 @@ export class Connection {
 
   constructor(private options: ConnectionOptions) {
     const {table, name = 'default'} = options;
-    this.table = table;
+    if (table) {
+      this.table = table;
+    }
     this.name = name;
     this.entityManager = new EntityManager(this);
     this.transactionManger = new TransactionManager();
@@ -44,7 +46,7 @@ export class Connection {
   connect() {
     if (this.isConnected) {
       throw new Error(
-        `There is already an active connection, Connect should only be called once per application.`
+        'There is already an active connection, Connect should only be called once per application.'
       );
     }
 
@@ -68,7 +70,13 @@ export class Connection {
   }
 
   getAttributesForEntity<Entity>(entityClass: EntityTarget<Entity>) {
-    return this._entityMetadatas.get(entityClass.name).attributes;
+    const attributesMap = this._entityMetadatas.get(entityClass.name);
+    if (!attributesMap) {
+      throw new Error(
+        `Cannot find attributes for entity "${entityClass.name}".`
+      );
+    }
+    return attributesMap.attributes;
   }
 
   get globalTable() {
@@ -85,7 +93,7 @@ export class Connection {
 
     if (!entityMetadata) {
       throw new Error(
-        `Could not get unique attributes for entity, every class to be used as entity must have @Entity decorator on it.`
+        'Could not get unique attributes for entity, every class to be used as entity must have @Entity decorator on it.'
       );
     }
 
@@ -105,7 +113,7 @@ export class Connection {
         `No such entity named "${entityClass.name}" is known to TypeDrm, make sure it is declared at the connection creation time.`
       );
     }
-    return this._entityMetadatas.get(entityClass.name);
+    return metadata;
   }
 
   getAutoUpdateAttributes<Entity>(entityClass: EntityTarget<Entity>) {
@@ -118,8 +126,9 @@ export class Connection {
     primaryKey: DynamoEntitySchemaPrimaryKey,
     attributeName: string
   ) {
-    return Object.keys(primaryKey._interpolations).some(key => {
-      const currInterpolation = primaryKey._interpolations[key];
+    const primaryKeyInterpolations = primaryKey._interpolations ?? {};
+    return Object.keys(primaryKeyInterpolations).some(key => {
+      const currInterpolation = primaryKeyInterpolations[key];
       return currInterpolation.includes(attributeName);
     });
   }

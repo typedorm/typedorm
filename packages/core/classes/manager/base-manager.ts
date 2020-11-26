@@ -1,4 +1,4 @@
-import { DynamoDB } from 'aws-sdk';
+import {DynamoDB} from 'aws-sdk';
 
 export abstract class BaseManager {
   protected _dc: DynamoDB.DocumentClient;

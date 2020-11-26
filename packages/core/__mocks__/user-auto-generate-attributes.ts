@@ -1,7 +1,7 @@
 import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, INDEX_TYPE} from '@typedorm/common';
-import {Attribute} from '../../common/decorators/attribute.decorator';
-import {AutoGenerateAttribute} from '../../common/decorators/auto-generate-attribute.decorator';
-import {Entity} from '../../common/decorators/entity.decorator';
+import {Attribute} from '@typedorm/common/decorators/attribute.decorator';
+import {AutoGenerateAttribute} from '@typedorm/common/decorators/auto-generate-attribute.decorator';
+import {Entity} from '@typedorm/common/decorators/entity.decorator';
 import {table} from './table';
 
 export interface UserAutoGenerateAttributesPrimaryKey {

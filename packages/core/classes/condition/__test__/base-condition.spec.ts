@@ -1,4 +1,4 @@
-import { BaseCondition, MERGE_STRATEGY } from '../base-condition';
+import {BaseCondition, MERGE_STRATEGY} from '../base-condition';
 
 class TestCondition extends BaseCondition {
   protected getExpNameKey(key: string): string {

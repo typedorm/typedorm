@@ -1,5 +1,5 @@
-import {MetadataStorage} from '../../../common/metadata-storage';
-import {Table} from '../../../common/table';
+import {MetadataStorage} from '@typedorm/common/metadata-storage';
+import {Table} from '@typedorm/common/table';
 
 let storage: MetadataStorage;
 class User {}

@@ -20,10 +20,12 @@ export class EntityTransformer extends BaseTransformer {
     const entityMetadata = this.connection.getEntityByTarget(entityClass);
 
     const entityPrimaryKeys = Object.keys(entityMetadata.schema.primaryKey);
-    const entityIndexes = Object.keys(entityMetadata.schema.indexes)
+
+    const entityMetadataSchemaIndexes = entityMetadata.schema.indexes ?? {};
+    const entityIndexes = Object.keys(entityMetadataSchemaIndexes)
       .map(key => {
-        const currentIndex = entityMetadata.schema.indexes[key];
-        return Object.keys(currentIndex._interpolations);
+        const currentIndex = entityMetadataSchemaIndexes[key];
+        return Object.keys(currentIndex._interpolations ?? {});
       })
       .flat();
 

@@ -1,4 +1,4 @@
-import { BaseCondition } from './base-condition';
+import {BaseCondition} from './base-condition';
 
 export class KeyCondition extends BaseCondition {
   constructor() {

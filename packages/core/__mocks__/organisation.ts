@@ -1,7 +1,7 @@
-import { INDEX_TYPE } from '../../common/enums';
-import { Attribute } from '../../common/decorators/attribute.decorator';
-import { Entity } from '../../common/decorators/entity.decorator';
-import { table } from './table';
+import {INDEX_TYPE} from '@typedorm/common/enums';
+import {Attribute} from '@typedorm/common/decorators/attribute.decorator';
+import {Entity} from '@typedorm/common/decorators/entity.decorator';
+import {table} from './table';
 
 export interface OrganisationPrimaryKey {
   id: string;

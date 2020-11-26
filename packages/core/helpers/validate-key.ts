@@ -1,11 +1,11 @@
-import { regexInterpolatedWord } from './constants';
+import {regexInterpolatedWord} from './constants';
 
 /**
  *
  * @param key key to validate
  * @param dict dictionary to validate key against, dictionary of attribute { name: type }
  */
-export function validateKey(key: string, dict: { [key: string]: string }) {
+export function validateKey(key: string, dict: {[key: string]: string}) {
   const matchIterator = key.matchAll(regexInterpolatedWord);
   validateMatch(key, matchIterator, dict);
 }
@@ -13,7 +13,7 @@ export function validateKey(key: string, dict: { [key: string]: string }) {
 function validateMatch(
   key: string,
   iterator: IterableIterator<RegExpMatchArray>,
-  dict: { [key: string]: string }
+  dict: {[key: string]: string}
 ) {
   const next = iterator.next();
   if (next.done) {

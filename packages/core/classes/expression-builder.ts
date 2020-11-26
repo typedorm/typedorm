@@ -1,12 +1,12 @@
-import { isEmptyObject } from '../helpers/is-empty-object';
-import { isObject } from '../helpers/is-object';
-import { Condition } from './condition/condition';
-import { KeyCondition } from './condition/key-condition';
+import {isEmptyObject} from '../helpers/is-empty-object';
+import {isObject} from '../helpers/is-object';
+import {Condition} from './condition/condition';
+import {KeyCondition} from './condition/key-condition';
 
 export class ExpressionBuilder {
   buildConditionExpression(condition: Condition) {
     if (!condition.expression) {
-      return { ConditionExpression: '' };
+      return {ConditionExpression: ''};
     }
     const expression = {
       ConditionExpression: condition.expression.trim(),
@@ -17,7 +17,7 @@ export class ExpressionBuilder {
   }
 
   buildUpdateExpression(
-    item: { [key: string]: any },
+    item: {[key: string]: any},
     options?: {
       nestedKeySeparator: string;
     }
@@ -64,8 +64,8 @@ export class ExpressionBuilder {
       },
       {
         UpdateExpression: 'SET',
-        ExpressionAttributeNames: {} as { [key: string]: string },
-        ExpressionAttributeValues: {} as { [key: string]: any },
+        ExpressionAttributeNames: {} as {[key: string]: string},
+        ExpressionAttributeValues: {} as {[key: string]: any},
       }
     );
     return this.removeEmptyFieldsAndReturn(expression);

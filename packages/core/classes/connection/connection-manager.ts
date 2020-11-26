@@ -1,5 +1,5 @@
-import { ConnectionOptions } from './connection-options';
-import { Connection } from './connection';
+import {ConnectionOptions} from './connection-options';
+import {Connection} from './connection';
 
 export class ConnectionManager {
   private connections: Map<string, Connection>;
@@ -8,15 +8,16 @@ export class ConnectionManager {
     this.connections = new Map<string, Connection>();
   }
 
-  get(name: string = 'default') {
-    if (!this.connections.has(name)) {
+  get(name = 'default') {
+    const connection = this.connections.get(name);
+    if (!connection) {
       throw new Error(`No such connection with name "${name}" exists`);
     }
-    return this.connections.get(name);
+    return connection;
   }
 
   create(options: ConnectionOptions) {
-    const { name = 'default' } = options;
+    const {name = 'default'} = options;
     if (this.connections.has(name)) {
       throw new Error(
         `There is already an existing connection with name "${name}".`
@@ -24,7 +25,13 @@ export class ConnectionManager {
     }
     this.connections.set(name, new Connection(options));
 
-    return this.connections.get(name);
+    const createdConnection = this.connections.get(name);
+    if (!createdConnection) {
+      throw new Error(
+        `New connection with name "${name}" was created but could not be found.`
+      );
+    }
+    return createdConnection;
   }
 
   clear() {

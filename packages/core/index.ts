@@ -5,7 +5,6 @@ import {ConnectionManager} from './classes/connection/connection-manager';
 // classes
 export * from './classes/condition/condition';
 export * from './classes/condition/key-condition';
-export * from '../common/table';
 export * from './classes/connection/connection-options';
 export * from './classes/transaction/write-transaction';
 export * from './classes/manager/entity-manager';
