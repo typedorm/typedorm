@@ -3,6 +3,7 @@
     "KSUID",
     "bazel",
     "commitlint",
+    "dynamodb",
     "posttest",
     "prettierrc",
     "subpackages",

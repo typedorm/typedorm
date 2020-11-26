@@ -1,5 +1,5 @@
 import {INDEX_TYPE} from '@typedorm/common/enums';
-import {Table} from '@typedorm/common/table';
+import {Table} from '@typedorm/common';
 
 export const table = new Table({
   name: 'test-table',
