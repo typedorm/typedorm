@@ -1,16 +1,22 @@
 {
-  "name": "@typedorm/common",
+  "name": "@typedorm/core",
   "version": "0.0.0-PLACEHOLDER",
-  "description": "TypeDORM - Common Decorators and enums",
+  "description": "TypeDORM - Core classes",
   "keywords": [
-    "decorators",
+    "core",
     "typedorm",
     "dynamoDb orm",
     "orm"
   ],
   "peerDependencies": {
-    "@typedorm/core": "0.0.0-PLACEHOLDER",
-    "reflect-metadata": "^0.1.13"
+    "@typedorm/common": "0.0.0-PLACEHOLDER",
+    "reflect-metadata": "^0.1.13",
+    "aws-sdk": "^2.799.0",
+  },
+  "dependencies": {
+    "uuid": "^8.3.1",
+    "ksuid": "^2.0.0",
+    "fast-glob": "^3.2.4"
   },
   "publishConfig": {
     "tag": "TAG-PLACEHOLDER",
@@ -19,7 +25,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/typedorm/typedorm.git",
-    "directory": "packages/common"
+    "directory": "packages/core"
   },
   "author": "typedorm",
   "license": "MIT"

@@ -4,6 +4,7 @@
     "commitlint",
     "posttest",
     "prettierrc",
+    "subpackages",
     "typedorm",
     "typeorm"
   ],

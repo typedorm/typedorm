@@ -20,7 +20,11 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
-    "baseUrl": "."
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@typedorm/*": ["packages/*"]
+    }
   },
   "exclude": ["dist", "node_modules"]
 }
