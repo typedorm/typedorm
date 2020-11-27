@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        # fetch all pervious history to be able to properly generate changelog
+        with:
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
