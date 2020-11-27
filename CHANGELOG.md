@@ -1,3 +1,16 @@
+# [1.0.0-beta.2](https://github.com/typedorm/typedorm/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2020-11-27)
+
+
+### Bug Fixes
+
+* **common:** fix circular imports issue ([fd0f053](https://github.com/typedorm/typedorm/commit/fd0f053707f806d96c864029350bec028a93e977))
+* **core:** incorrect imports and conflicting styling ([f29aa82](https://github.com/typedorm/typedorm/commit/f29aa82ed660380ec44cb78a7265a513e18d8895))
+
+
+### Features
+
+* int import from private ([dbc957a](https://github.com/typedorm/typedorm/commit/dbc957a14474b9961d10b7f8152af771634126be))
+
 # 1.0.0-beta.1 (2020-11-17)
 
 
