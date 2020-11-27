@@ -1,9 +1,8 @@
-import path from 'path';
+import {Attribute, Entity, Table} from '@typedorm/common';
 import {getConnection} from '@typedorm/core';
-import {Attribute} from '@typedorm/common/decorators/attribute.decorator';
 import {User} from '@typedorm/core/__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
-import {Entity, Table} from '@typedorm/common';
+import path from 'path';
 jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
 
 beforeEach(() => {

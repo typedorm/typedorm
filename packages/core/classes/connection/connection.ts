@@ -1,7 +1,7 @@
-import {ConnectionOptions} from './connection-options';
 import {
   DYNAMO_QUERY_ITEMS_IMPLICIT_LIMIT,
   EntityTarget,
+  Table,
 } from '@typedorm/common';
 import {EntityManager} from '../manager/entity-manager';
 import {TransactionManager} from '../manager/transaction-manager';
@@ -11,8 +11,8 @@ import {
   DynamoEntitySchemaPrimaryKey,
   EntityMetadata,
 } from '../metadata/entity-metadata';
-import {Table} from '@typedorm/common/table';
 import {ConnectionMetadataBuilder} from './connection-metadata-builder';
+import {ConnectionOptions} from './connection-options';
 
 export class Connection {
   readonly name: string;

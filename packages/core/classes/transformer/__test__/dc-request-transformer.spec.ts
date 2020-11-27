@@ -1,11 +1,9 @@
-import {QUERY_ORDER} from '@typedorm/common';
-import {Attribute} from '@typedorm/common/decorators/attribute.decorator';
-import {Entity} from '@typedorm/common/decorators/entity.decorator';
+import {Attribute, Entity, QUERY_ORDER} from '@typedorm/common';
 import {table} from '@typedorm/core/__mocks__/table';
 import {User, UserGSI1} from '@typedorm/core/__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
-import {DocumentClientRequestTransformer} from '../document-client-request-transformer';
 import {UserPrimaryKey} from '../../../__mocks__/user';
+import {DocumentClientRequestTransformer} from '../document-client-request-transformer';
 
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {

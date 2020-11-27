@@ -1,10 +1,7 @@
-import {INDEX_TYPE} from '@typedorm/common';
-import {Attribute} from '@typedorm/common/decorators/attribute.decorator';
-import {Entity} from '@typedorm/common/decorators/entity.decorator';
+import {Attribute, Entity, INDEX_TYPE, Table} from '@typedorm/common';
 import {Organisation} from '@typedorm/core/__mocks__/organisation';
 import {User} from '@typedorm/core/__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
-import {Table} from '@typedorm/common/table';
 import {EntityTransformer} from '../entity-transformer';
 
 let transformer: EntityTransformer;

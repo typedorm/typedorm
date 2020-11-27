@@ -1,11 +1,8 @@
-import {Attribute} from '@typedorm/common/decorators/attribute.decorator';
-import {Entity} from '@typedorm/common/decorators/entity.decorator';
+import {Attribute, Entity, INDEX_TYPE, Table} from '@typedorm/common';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {Connection} from '../../connection/connection';
 import {AttributeMetadata} from '../attribute-metadata';
 import {EntityMetadata} from '../entity-metadata';
-import {Table} from '@typedorm/common/table';
-import {INDEX_TYPE} from '@typedorm/common';
 
 let connection: Connection;
 const table = new Table({

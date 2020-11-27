@@ -1,5 +1,4 @@
-import {Table} from '@typedorm/common/table';
-import {EntityTarget} from '@typedorm/common';
+import {EntityTarget, Table} from '@typedorm/common';
 
 export interface ConnectionOptions {
   table?: Table;

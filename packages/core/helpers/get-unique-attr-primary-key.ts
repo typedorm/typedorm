@@ -1,5 +1,4 @@
-import {DYNAMO_ATTRIBUTE_PREFIX} from '@typedorm/common';
-import {Table} from '@typedorm/common/table';
+import {DYNAMO_ATTRIBUTE_PREFIX, Table} from '@typedorm/common';
 export function getUniqueAttributePrimaryKey(
   table: Table,
   entityName: string,
