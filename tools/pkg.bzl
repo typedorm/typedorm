@@ -20,6 +20,6 @@ def typedorm_package(name, readme_md, data = [], deps = [], **kwargs):
             "0.0.0-PLACEHOLDER": "{BUILD_SCM_VERSION}"
         },
         deps = [
-            ":license_copied",
+            ":license_copied"
         ] + deps,
     )

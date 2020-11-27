@@ -9,7 +9,8 @@
     "orm"
   ],
   "peerDependencies": {
-    "@typedorm/core": "0.0.0-PLACEHOLDER"
+    "@typedorm/core": "0.0.0-PLACEHOLDER",
+    "reflect-metadata": "^0.1.13"
   },
   "publishConfig": {
     "tag": "TAG-PLACEHOLDER",

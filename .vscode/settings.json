@@ -1,9 +1,12 @@
 {
   "cSpell.words": [
+    "KSUID",
     "bazel",
     "commitlint",
+    "dynamodb",
     "posttest",
     "prettierrc",
+    "subpackages",
     "typedorm",
     "typeorm"
   ],

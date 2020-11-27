@@ -1,6 +1,14 @@
 {
   "compilerOptions": {
-    "lib": ["es2015.promise", "es5", "es6", "es2017.object", "ES2018.Regexp"],
+    "lib": [
+      "es2015.promise",
+      "es5",
+      "es6",
+      "es2017.object",
+      "ES2018.Regexp",
+      "es2019",
+      "ES2020.String"
+    ],
     "target": "ES2015",
     "module": "commonjs",
     "moduleResolution": "node",
@@ -20,7 +28,11 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
-    "baseUrl": "."
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@typedorm/*": ["packages/*"]
+    }
   },
   "exclude": ["dist", "node_modules"]
 }

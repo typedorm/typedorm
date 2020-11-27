@@ -1,0 +1,27 @@
+{
+  "name": "@typedorm/testing",
+  "version": "0.0.0-PLACEHOLDER",
+  "description": "TypeDORM - testing utilities",
+  "keywords": [
+    "core",
+    "typedorm",
+    "dynamoDb orm",
+    "orm"
+  ],
+  "peerDependencies": {
+    "@typedorm/common": "0.0.0-PLACEHOLDER",
+    "@typedorm/core": "0.0.0-PLACEHOLDER",
+    "reflect-metadata": "^0.1.13"
+  },
+  "publishConfig": {
+    "tag": "TAG-PLACEHOLDER",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/typedorm/typedorm.git",
+    "directory": "packages/testing"
+  },
+  "author": "typedorm",
+  "license": "MIT"
+}
