@@ -11,7 +11,7 @@ env:
 jobs:
   build_release:
     env:
-      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,4 +32,4 @@ jobs:
       - name: Test
         run: npm run test
       - name: Release
-        run: npm run semantic-release
+        run: npm run semantic-release -- --dry-run
