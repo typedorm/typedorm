@@ -1,17 +1,11 @@
 name: NPM Publish
-on:
-  workflow_dispatch:
-    publish:
-      description: 'Publish packages to npm'
-      required: true
-      default: true
+on: workflow_dispatch
 
 jobs:
   publish:
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     runs-on: ubuntu-latest
-    if: github.events.input.name == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
