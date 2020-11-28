@@ -11,9 +11,9 @@ jobs:
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     runs-on: ubuntu-latest
+    if: github.events.input.name == 'true'
     steps:
       - name: Checkout
-        if: github.events.input.name == 'true'
         uses: actions/checkout@v2
       - name: Setup Node
         uses: actions/setup-node@v1
