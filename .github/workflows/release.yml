@@ -11,7 +11,7 @@ env:
 jobs:
   build_release:
     env:
-      GH_TOKEN: ${{ secrets.TYPEDORM_BOT_PAT }}
+      GITHUB_TOKEN: ${{ secrets.TYPEDORM_BOT_PAT }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,5 +31,16 @@ jobs:
         run: npm run build
       - name: Test
         run: npm run test
-      - name: Release
-        run: npm run semantic-release
+      - name: Semantic Release
+        id: semantic_release
+        uses: cycjimmy/semantic-release-action@v2
+        with:
+          semantic_version: 17.2.2
+          dry_run: true
+      - name: Trigger publish
+        if: steps.semantic_release.outputs.new_release_published == 'true'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          token: ${{secrets.TYPEDORM_BOT_PAT}}
+          workflow: NPM Publish
+          inputs: '{ "publish": "true"}'

@@ -1,8 +1,10 @@
 name: NPM Publish
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
+    publish:
+      description: 'Publish packages to npm'
+      required: true
+      default: false
 
 jobs:
   publish:
@@ -11,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
+        if: github.events.input.name == 'true'
         uses: actions/checkout@v2
       - name: Setup Node
         uses: actions/setup-node@v1
