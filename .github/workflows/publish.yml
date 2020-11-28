@@ -4,7 +4,7 @@ on:
     publish:
       description: 'Publish packages to npm'
       required: true
-      default: false
+      default: true
 
 jobs:
   publish:
