@@ -271,7 +271,7 @@ export class EntityManager extends BaseManager {
     return {
       ...response,
       items: response.items.map(item =>
-        this._entityTransformer.fromDynamoEntity(entityClass, item)
+        this._entityTransformer.fromDynamoEntity<Entity>(entityClass, item)
       ),
     };
   }
