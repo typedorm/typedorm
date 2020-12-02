@@ -18,7 +18,7 @@ Working with relational data in dynamoDB can be painful, but it doesn't have to 
 - [Create a record](#create-a-record)
 - [Find a record](#find-a-record)
 - [Update a record](#update-a-record)
-- [Query 1:m relations](#query-1:m-relations)
+- [Query 1-m relations](#query-1-m-relations)
 - [Delete a record](#delete-a-record)
 
 ## Creating a table
@@ -337,7 +337,7 @@ const user = await getEntityManager().update(User, {id: 'some-auto-generated-uui
 
 To get more insight on how how update works with TypeDORM, have a look at [this](./how-it-works.md#updating-a-record)
 
-## Query 1:m relations
+## Query 1-m relations
 
 Going ahead with earlier example of `User` entity, let's each of our user can have many orders, and our order entity looks like this
 

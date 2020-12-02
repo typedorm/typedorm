@@ -1,6 +1,6 @@
 # How it works under the hood 🕵️
 
-## On these page
+## On this page
 
 - [Creating a record](#creating-a-record)
 - [Updating a record](#updating-a-record)
