@@ -4,4 +4,4 @@
 
 Contains TypeDORM testing utilities and helper functions. Also used by TypeDORM itself.
 
-[Read more here](../../README.md)
+[Read more here](https://github.com/typedorm/typedorm)

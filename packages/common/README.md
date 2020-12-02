@@ -4,4 +4,4 @@
 
 Decorators and basic types used by typeDORM
 
-[Read more here](../../README.md)
+[Read more here](https://github.com/typedorm/typedorm)
