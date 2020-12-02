@@ -13,6 +13,7 @@ jest.mock('aws-sdk', () => ({
     DocumentClient: dcMock,
   },
 }));
+jest.useFakeTimers('modern').setSystemTime(new Date(1606896235000));
 
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityManager} from '../entity-manager';
@@ -73,6 +74,40 @@ test('creates entity', async () => {
     id: '1',
     name: 'Test User',
     status: 'active',
+  });
+});
+
+/**
+ * Issue: #11
+ */
+test('creates entity and returns all attributes, including auto generated ones', async () => {
+  dcMock().put.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const user = new UserAutoGenerateAttributes();
+  user.id = '1';
+
+  const userEntity = await manager.create(user);
+  expect(dcMock().put).toHaveBeenCalledTimes(1);
+  expect(dcMock().put).toHaveBeenCalledWith({
+    Item: {
+      GSI1PK: 'USER#UPDATED_AT#1606896235',
+      GSI1SK: 'USER#1',
+      PK: 'USER#1',
+      SK: 'USER#1',
+      id: '1',
+      updatedAt: 1606896235,
+    },
+    TableName: 'test-table',
+    ConditionExpression: 'attribute_not_exists(#CE_PK)',
+    ExpressionAttributeNames: {
+      '#CE_PK': 'PK',
+    },
+  });
+  expect(userEntity).toEqual({
+    id: '1',
+    updatedAt: 1606896235,
   });
 });
 
