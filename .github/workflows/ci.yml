@@ -5,7 +5,7 @@ on:
     branches-ignore:
       - 'main'
       - 'next'
-      - 'develop'
+      - 'beta'
 env:
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
