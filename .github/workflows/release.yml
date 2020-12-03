@@ -1,21 +1,44 @@
-name: Semantic Release
+# TODO: refactor this workflow to trigger after ci job has finished
+name: Build and Semantic Release
 on:
   push:
     branches:
       - 'main'
       - 'next'
-      - 'develop'
+      - 'beta'
+env:
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
-  release:
+  build_release:
+    env:
+      GITHUB_TOKEN: ${{ secrets.TYPEDORM_BOT_PAT }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        # fetch all pervious history to be able to properly generate changelog
+        with:
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '14.x'
+          node-version: '12.x'
       - name: Install
         run: npm install
-      - name: Release
-        run: npm run semantic-release
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm run test
+      - name: Semantic Release
+        id: semantic_release
+        uses: cycjimmy/semantic-release-action@v2
+        with:
+          semantic_version: 17.2.2
+      - name: Trigger publish
+        if: steps.semantic_release.outputs.new_release_published == 'true'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          token: ${{secrets.TYPEDORM_BOT_PAT}}
+          workflow: NPM Publish

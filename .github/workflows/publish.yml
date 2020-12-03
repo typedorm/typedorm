@@ -1,0 +1,21 @@
+name: NPM Publish
+on: workflow_dispatch
+
+jobs:
+  publish:
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: install
+        run: npm install
+      - name: Publish To NPM
+        run: npm run publish:all

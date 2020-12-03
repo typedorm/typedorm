@@ -1,1 +1,0 @@
-console.log('Release using semantic release')

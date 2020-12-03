@@ -1,9 +1,6 @@
 branches:
   - main
-  - next
+  - name: next
+    prerelease: rc
   - name: develop
-    prerelease: true
-plugins:
-  - '@semantic-release/commit-analyzer'
-  - '@semantic-release/release-notes-generator'
-  - '@semantic-release/github'
+    prerelease: beta

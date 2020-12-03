@@ -1,0 +1,26 @@
+{
+  "name": "@typedorm/common",
+  "version": "0.0.0-PLACEHOLDER",
+  "description": "TypeDORM - Common Decorators and enums",
+  "keywords": [
+    "decorators",
+    "typedorm",
+    "dynamoDb orm",
+    "orm"
+  ],
+  "peerDependencies": {
+    "@typedorm/core": "0.0.0-PLACEHOLDER",
+    "reflect-metadata": "^0.1.13"
+  },
+  "publishConfig": {
+    "tag": "TAG-PLACEHOLDER",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/typedorm/typedorm.git",
+    "directory": "packages/common"
+  },
+  "author": "typedorm",
+  "license": "MIT"
+}
