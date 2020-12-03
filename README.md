@@ -17,7 +17,7 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 
 ## Stability
 
-![Stability](https://img.shields.io/badge/Stability-Beta-orange?style=for-the-badge)
+![Stability](https://img.shields.io/badge/Stability-Unstable-orange?style=for-the-badge)
 
 TypeDORM is currency in it's very early stage of development so breaking changes are likely. Consider this before using it in production.
 
