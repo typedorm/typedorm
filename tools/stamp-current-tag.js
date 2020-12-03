@@ -8,7 +8,7 @@ process.on('uncaughtException', () => {
 // this defines what branches deploys to which channel
 const releaseConfig = {
   main: 'latest',
-  develop: 'beta',
+  beta: 'beta',
   next: 'next',
 };
 
