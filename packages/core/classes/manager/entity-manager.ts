@@ -17,6 +17,7 @@ import {
 } from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
 import {BaseManager} from './base-manager';
+import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 
 export interface EntityManagerUpdateOptions {
   /**
@@ -49,21 +50,18 @@ export class EntityManager extends BaseManager {
    * Creates new record in table with given entity
    * @param entity Entity to add to table as a new record
    */
-  async create<Entity>(
-    entity: Entity,
-    options?: {returnIdentifier: string}
-  ): Promise<Entity> {
-    const identifier = options?.returnIdentifier ?? 'id';
+  async create<Entity>(entity: Entity): Promise<Entity> {
     const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(entity);
-    let itemToReturn = {...entity};
+    const entityClass = getConstructorForInstance(entity);
 
     if (!Array.isArray(dynamoPutItemInput)) {
       await this._dc.put(dynamoPutItemInput).promise();
+      const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
+        entityClass,
+        dynamoPutItemInput.Item
+      );
 
-      if (dynamoPutItemInput.Item[identifier]) {
-        itemToReturn = {...itemToReturn, id: dynamoPutItemInput.Item.id};
-      }
-      return {...entity};
+      return itemToReturn;
     }
 
     // when put item is set to array, one or more attributes are marked as unique
@@ -74,11 +72,11 @@ export class EntityManager extends BaseManager {
     );
     await this.connection.transactionManger.write(transaction);
 
-    // if there are any unique attributes they will be appended after first item,
-    // in that case we get id from
-    if (dynamoPutItemInput[0].Item[identifier]) {
-      itemToReturn = {...itemToReturn, id: dynamoPutItemInput[0].Item.id};
-    }
+    const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
+      entityClass,
+      // if create operation contains multiple items, first one will the original requested item
+      dynamoPutItemInput[0].Item
+    );
 
     return itemToReturn;
   }
