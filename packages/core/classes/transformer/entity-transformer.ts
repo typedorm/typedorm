@@ -20,6 +20,9 @@ export class EntityTransformer extends BaseTransformer {
     const entityMetadata = this.connection.getEntityByTarget(entityClass);
 
     const entityPrimaryKeys = Object.keys(entityMetadata.schema.primaryKey);
+    const entityInternalAttributeKeys = entityMetadata.internalAttributes.map(
+      attr => attr.name
+    );
 
     const entityMetadataSchemaIndexes = entityMetadata.schema.indexes ?? {};
     const entityIndexes = Object.keys(entityMetadataSchemaIndexes)
@@ -30,7 +33,11 @@ export class EntityTransformer extends BaseTransformer {
       .flat();
 
     return Object.keys(dynamoEntity).reduce((acc, key) => {
-      if (entityPrimaryKeys.includes(key) || entityIndexes.includes(key)) {
+      if (
+        entityPrimaryKeys.includes(key) ||
+        entityIndexes.includes(key) ||
+        entityInternalAttributeKeys.includes(key)
+      ) {
         return acc;
       }
       (acc as any)[key] = (dynamoEntity as any)[key];
