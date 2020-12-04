@@ -5,7 +5,10 @@ setup_ts_build(
     name = "library",
     module_name = "@typedorm/testing",
     deps = [
-        "//packages/core:library"
+        "//packages/core:library",
+        "//packages/common:library",
+        "@npm//aws-sdk",
+        "@npm//@types/jest"
     ],
     visibility = ["//packages:__subpackages__"]
 
