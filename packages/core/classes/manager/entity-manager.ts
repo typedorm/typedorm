@@ -16,7 +16,6 @@ import {
   ManagerToDynamoQueryItemsOptions,
 } from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
-import {BaseManager} from './base-manager';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 
 export interface EntityManagerUpdateOptions {
@@ -36,12 +35,11 @@ export interface EntityManagerQueryOptions
   cursor?: DocumentClient.Key;
 }
 
-export class EntityManager extends BaseManager {
+export class EntityManager {
   private _dcReqTransformer: DocumentClientRequestTransformer;
   private _entityTransformer: EntityTransformer;
 
   constructor(protected connection: Connection) {
-    super();
     this._dcReqTransformer = new DocumentClientRequestTransformer(connection);
     this._entityTransformer = new EntityTransformer(connection);
   }
@@ -55,7 +53,7 @@ export class EntityManager extends BaseManager {
     const entityClass = getConstructorForInstance(entity);
 
     if (!Array.isArray(dynamoPutItemInput)) {
-      await this._dc.put(dynamoPutItemInput).promise();
+      await this.connection.documentClient.put(dynamoPutItemInput).promise();
       const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
         dynamoPutItemInput.Item
@@ -96,7 +94,9 @@ export class EntityManager extends BaseManager {
       primaryKeyAttributes
     );
 
-    const response = await this._dc.get(dynamoGetItem).promise();
+    const response = await this.connection.documentClient
+      .get(dynamoGetItem)
+      .promise();
 
     const entity = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
@@ -178,7 +178,7 @@ export class EntityManager extends BaseManager {
         attrValue
       );
       return !!(
-        await this._dc
+        await this.connection.documentClient
           .get({
             Key: {...uniqueAttributePrimaryKey},
             TableName: metadata.table.name,
@@ -208,7 +208,9 @@ export class EntityManager extends BaseManager {
       Entity
     >(entityClass, primaryKey, body, options);
 
-    const response = await this._dc.update(dynamoUpdateItem).promise();
+    const response = await this.connection.documentClient
+      .update(dynamoUpdateItem)
+      .promise();
 
     return this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
@@ -230,7 +232,7 @@ export class EntityManager extends BaseManager {
       Entity
     >(entityClass, primaryKey);
 
-    await this._dc.delete(dynamoDeleteItem).promise();
+    await this.connection.documentClient.delete(dynamoDeleteItem).promise();
 
     return {
       success: true,
@@ -289,7 +291,10 @@ export class EntityManager extends BaseManager {
     cursor?: DocumentClient.Key;
     itemsFetched?: DocumentClient.ItemList;
   }): Promise<{items: DocumentClient.ItemList; cursor?: DocumentClient.Key}> {
-    const {LastEvaluatedKey, Items = []} = await this._dc
+    const {
+      LastEvaluatedKey,
+      Items = [],
+    } = await this.connection.documentClient
       .query({...queryInput, ExclusiveStartKey: cursor})
       .promise();
     itemsFetched = [...itemsFetched, ...Items];
