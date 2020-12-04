@@ -16,6 +16,7 @@ export * from './require-at-least-one-type';
 export * from './require-only-one-type';
 export * from './scalar-type';
 export * from './update-attributes-type';
+export * from './replace-type';
 
 // classes
 export * from './table';
