@@ -37,6 +37,28 @@ test('transforms dynamo entity to entity model', () => {
   });
 });
 
+test('transforms inherited dynamo entity to entity model', () => {
+  const dynamoEntity = {
+    PK: 'CUS#1',
+    SK: 'CUS#user@example.com',
+    id: '1',
+    name: 'Me',
+    username: 'i-am-user',
+    password: 'password',
+    email: 'user@example.com',
+    loyaltyPoints: 97,
+  };
+  const transformed = transformer.fromDynamoEntity(User, dynamoEntity);
+  expect(transformed).toEqual({
+    id: '1',
+    name: 'Me',
+    email: 'user@example.com',
+    loyaltyPoints: 97,
+    password: 'password',
+    username: 'i-am-user',
+  });
+});
+
 /**
  * @group toDynamoEntity
  */

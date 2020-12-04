@@ -1,4 +1,5 @@
 import {Attribute, Entity, QUERY_ORDER} from '@typedorm/common';
+import {Customer} from '@typedorm/core/__mocks__/inherited-customer';
 import {table} from '@typedorm/core/__mocks__/table';
 import {User, UserGSI1} from '@typedorm/core/__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
@@ -8,7 +9,7 @@ import {DocumentClientRequestTransformer} from '../document-client-request-trans
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {
   const connection = createTestConnection({
-    entities: [User],
+    entities: [User, Customer],
   });
   transformer = new DocumentClientRequestTransformer(connection);
 });
@@ -28,6 +29,20 @@ test('transforms get item requests', () => {
     Key: {
       PK: 'USER#1',
       SK: 'USER#1',
+    },
+    TableName: 'test-table',
+  });
+});
+
+test('transforms get item requests for inherited class', () => {
+  const getItem = transformer.toDynamoGetItem(Customer, {
+    id: '1',
+    email: 'user@example.com',
+  });
+  expect(getItem).toEqual({
+    Key: {
+      PK: 'CUS#1',
+      SK: 'CUS#user@example.com',
     },
     TableName: 'test-table',
   });

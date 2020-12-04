@@ -42,7 +42,6 @@ test('create entity metadata for per entity table', () => {
     target: UserEntity,
     attributes: [
       new AttributeMetadata({
-        connection,
         name: 'id',
         type: 'String',
       }),
@@ -91,7 +90,6 @@ test('creates entity metadata with global table config', () => {
     target: GlobalUserEntity,
     attributes: [
       new AttributeMetadata({
-        connection,
         name: 'id',
         type: 'String',
       }),
@@ -151,17 +149,14 @@ test('creates entity metadata with complex composite and indexes key', () => {
     target: ComplexUserEntity,
     attributes: [
       new AttributeMetadata({
-        connection,
         name: 'id',
         type: 'String',
       }),
       new AttributeMetadata({
-        connection,
         name: 'name',
         type: 'String',
       }),
       new AttributeMetadata({
-        connection,
         name: 'age',
         type: 'String',
       }),
