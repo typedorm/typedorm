@@ -1,15 +1,3 @@
-// This needs to be at the top of the file before
-// any other modules are imported that might
-// bring in original instance of mock
-const dcMock = jest.fn().mockReturnValue({
-  transactWrite: jest.fn(),
-});
-jest.mock('aws-sdk', () => ({
-  DynamoDB: {
-    DocumentClient: dcMock,
-  },
-}));
-
 import {UserPrimaryKey} from '../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {Connection} from '../../connection/connection';
@@ -18,12 +6,17 @@ import {TransactionManager} from '../transaction-manager';
 import {User} from '../../../__mocks__/user';
 
 let manager: TransactionManager;
+const dcMock = {
+  transactWrite: jest.fn(),
+};
+
 let connection: Connection;
 beforeEach(() => {
   connection = createTestConnection({
     entities: [User],
+    documentClient: dcMock,
   });
-  manager = new TransactionManager();
+  manager = new TransactionManager(connection);
 });
 
 afterEach(() => {
@@ -34,7 +27,7 @@ afterEach(() => {
  * @group write
  */
 test('performs write transactions', async () => {
-  dcMock().transactWrite.mockReturnValue({
+  dcMock.transactWrite.mockReturnValue({
     promise: jest.fn().mockReturnValue({
       ConsumedCapacity: [{}],
       ItemCollectionMetrics: [{}],
@@ -83,8 +76,8 @@ test('performs write transactions', async () => {
 
   const response = await manager.write(transaction);
 
-  expect(dcMock().transactWrite).toHaveBeenCalledTimes(1);
-  expect(dcMock().transactWrite).toHaveBeenCalledWith({
+  expect(dcMock.transactWrite).toHaveBeenCalledTimes(1);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
     TransactItems: [
       {
         Put: {
