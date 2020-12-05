@@ -3,6 +3,7 @@ import {
   EntityTarget,
   Table,
 } from '@typedorm/common';
+import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {EntityManager} from '../manager/entity-manager';
 import {TransactionManager} from '../manager/transaction-manager';
 import {AttributeMetadata} from '../metadata/attribute-metadata';
@@ -20,6 +21,7 @@ export class Connection {
   readonly entityManager: EntityManager;
   readonly transactionManger: TransactionManager;
   readonly defaultConfig: {queryItemsImplicitLimit: number};
+  readonly documentClient: DocumentClient;
 
   private _entityMetadatas: Map<string, EntityMetadata>;
   private isConnected: boolean;
@@ -31,12 +33,18 @@ export class Connection {
     }
     this.name = name;
     this.entityManager = new EntityManager(this);
-    this.transactionManger = new TransactionManager();
+    this.transactionManger = new TransactionManager(this);
     this.defaultConfig = {
       queryItemsImplicitLimit:
         options.dynamoQueryItemsImplicitLimit ??
         DYNAMO_QUERY_ITEMS_IMPLICIT_LIMIT,
     };
+
+    if (options.documentClient) {
+      this.documentClient = options.documentClient;
+    } else {
+      this.documentClient = new DocumentClient();
+    }
     /**
      * This makes sure that we only ever build entity metadatas once per connection
      */

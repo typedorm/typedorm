@@ -1,15 +1,13 @@
 import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {TRANSACTION_WRITE_ITEMS_LIMIT} from '@typedorm/common';
 import {WriteTransaction} from '../transaction/write-transaction';
-import {BaseManager} from './base-manager';
+import {Connection} from '../connection/connection';
 
 /**
  * Performs transactions using document client's writeTransaction
  */
-export class TransactionManager extends BaseManager {
-  constructor() {
-    super();
-  }
+export class TransactionManager {
+  constructor(private connection: Connection) {}
 
   async write(transaction: WriteTransaction) {
     if (transaction.items.length > TRANSACTION_WRITE_ITEMS_LIMIT) {
@@ -25,7 +23,9 @@ export class TransactionManager extends BaseManager {
     // FIXME: current promise implementation of document client transact write does not provide a way
     // the transaction was failed, as a work around we do following.
     // refer to this issue for more details https://github.com/aws/aws-sdk-js/issues/2464
-    const transactionRequest = this._dc.transactWrite(transactionInput);
+    const transactionRequest = this.connection.documentClient.transactWrite(
+      transactionInput
+    );
 
     let cancellationReasons: any[];
     transactionRequest.on('extractError', response => {
