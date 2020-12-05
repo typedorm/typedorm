@@ -99,13 +99,21 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     options?: ManagerToDynamoPutItemOptions
   ): DocumentClient.PutItemInput | DocumentClient.PutItemInput[] {
     const entityClass = getConstructorForInstance(entity);
-    const {table, name} = this.connection.getEntityByTarget(entityClass);
+    const {table, name, internalAttributes} = this.connection.getEntityByTarget(
+      entityClass
+    );
 
     const uniqueAttributes = this.connection.getUniqueAttributesForEntity(
       entityClass
     ) as AttributeMetadata[];
 
     const dynamoEntity = this.toDynamoEntity(entity);
+
+    const entityInternalAttributes = internalAttributes.reduce((acc, attr) => {
+      acc[attr.name] = attr.value;
+      return acc;
+    }, {} as DocumentClient.PutItemInputAttributeMap);
+
     let uniqueAttributePutItems = [] as DocumentClient.PutItemInput[];
     // apply attribute not exist condition when creating unique
     const uniqueRecordConditionExpression = this._expressionBuilder.buildConditionExpression(
@@ -141,6 +149,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     let dynamoPutItem = {
       Item: {
+        ...entityInternalAttributes,
         ...dynamoEntity,
       },
       TableName: table.name,
