@@ -217,6 +217,8 @@ To find out more about how the data looks like when it is stored in dynamo have 
 
 ### [Step by step guide](./docs/guide.md)
 
+### [Index](./docs/index.md)
+
 ## Current Limitations
 
 - TypDORM currently is not able to connect with dynamodb table using aws credentials and only works within environment like lambda/ec2 that already has access to dynamo table, but this will be resolved very soon.

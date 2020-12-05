@@ -59,6 +59,21 @@ test('transforms inherited dynamo entity to entity model', () => {
   });
 });
 
+test('excludes internal attributes from transformed object', () => {
+  const dynamoEntity = {
+    PK: 'CUS#1',
+    SK: 'CUS#user@example.com',
+    id: '1',
+    name: 'Me',
+    __en: 'user',
+  };
+  const transformed = transformer.fromDynamoEntity(User, dynamoEntity);
+  expect(transformed).toEqual({
+    id: '1',
+    name: 'Me',
+  });
+});
+
 /**
  * @group toDynamoEntity
  */
