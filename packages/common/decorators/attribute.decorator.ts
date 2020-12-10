@@ -4,19 +4,30 @@ import {AttributeRawMetadataOptions} from '../metadata-storage';
 
 export interface AttributeOptions {
   /**
-   * item will be managed using transaction to ensure it's consistency
+   * Item will be managed using transaction to ensure it's consistency
    * @default false
    */
-  unique: boolean;
+  unique?: boolean;
+  /**
+   * Mark property as enum
+   * @required when property of type enum is referenced in key
+   * @default false
+   */
+  isEnum?: boolean;
 }
 
 export function Attribute(options?: AttributeOptions): PropertyDecorator {
   return (target, propertyKey): void => {
-    const type = Reflect.getMetadata('design:type', target, propertyKey);
+    let type = Reflect.getMetadata('design:type', target, propertyKey).name;
+
+    if (options?.isEnum) {
+      // default to "String" when attribute is marked as enum
+      type = 'String';
+    }
 
     const attributeProps = {
       name: propertyKey.toString(),
-      type: type.name,
+      type,
       unique: options?.unique,
     } as AttributeRawMetadataOptions;
 
