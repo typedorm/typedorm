@@ -3,17 +3,23 @@ import path from 'path';
 import {EntityTarget} from '@typedorm/common';
 import {Connection} from './connection';
 import {EntityMetadataBuilder} from './entity-metadata-builder';
+import {MetadataManager} from '@typedorm/common';
 
 export class ConnectionMetadataBuilder {
   constructor(private connection: Connection) {}
 
   buildEntityMetadatas(entities: EntityTarget<any>[] | string) {
-    let entitiesToBuild = [] as Function[];
+    let possibleEntitiesToBuild = [] as Function[];
     if (typeof entities === 'string') {
-      entitiesToBuild = [...this.loadEntitiesFromDirs(entities)];
+      possibleEntitiesToBuild = [...this.loadEntitiesFromDirs(entities)];
     } else {
-      entitiesToBuild = [...entities];
+      possibleEntitiesToBuild = [...entities];
     }
+
+    // filter all entities that are not marked with `@Entity` decorator
+    const entitiesToBuild = possibleEntitiesToBuild.filter(entity =>
+      MetadataManager.metadataStorage.hasKnownEntityByName(entity.name)
+    );
 
     return new EntityMetadataBuilder(this.connection).build(entitiesToBuild);
   }

@@ -50,6 +50,10 @@ export class MetadataStorage {
     this._attributes = new Map();
   }
 
+  hasKnownEntityByName(name: string) {
+    return this._entities.has(name);
+  }
+
   getRawAttributesForEntity<Entity>(entityClass: EntityTarget<Entity>) {
     const attributes = this._attributes.get(entityClass.name)?.values();
 
