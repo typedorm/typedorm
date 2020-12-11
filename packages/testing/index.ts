@@ -1,7 +1,11 @@
 import {Replace} from '@typedorm/common';
-import {createConnection, ConnectionOptions} from '@typedorm/core';
-import {ConnectionManager} from '@typedorm/core/classes/connection/connection-manager';
-import {Container} from '@typedorm/core/classes/container';
+import {
+  createConnection,
+  ConnectionOptions,
+  Container,
+  ConnectionManager,
+} from '@typedorm/core';
+
 import {DynamoDB} from 'aws-sdk';
 
 export function createTestConnection(
