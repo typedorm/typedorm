@@ -1,5 +1,5 @@
-import {MetadataManager} from '../metadata-manager';
-import {AutoGenerateAttributeRawMetadataOptions} from '../metadata-storage';
+import {MetadataManager} from '../metadata/metadata-manager';
+import {AutoGenerateAttributeRawMetadataOptions} from '../metadata/metadata-storage';
 
 export function AutoGenerateAttribute(
   options: Pick<

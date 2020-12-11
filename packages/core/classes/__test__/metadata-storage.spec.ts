@@ -1,4 +1,4 @@
-import {MetadataStorage} from '@typedorm/common/metadata-storage';
+import {MetadataStorage} from '@typedorm/common';
 import {Table} from '@typedorm/common';
 
 let storage: MetadataStorage;

@@ -1,4 +1,4 @@
-import {MetadataManager} from '@typedorm/common/metadata-manager';
+import {MetadataManager} from '@typedorm/common';
 import {
   AttributeMetadataType,
   EntityMetadata,

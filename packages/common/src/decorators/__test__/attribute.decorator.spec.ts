@@ -1,4 +1,4 @@
-import {MetadataManager} from '../../metadata-manager';
+import {MetadataManager} from '../../metadata/metadata-manager';
 import {Attribute} from '../attribute.decorator';
 import {Entity} from '../entity.decorator';
 

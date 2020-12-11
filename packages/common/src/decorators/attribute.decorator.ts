@@ -1,6 +1,6 @@
 import 'reflect-metadata';
-import {MetadataManager} from '../metadata-manager';
-import {AttributeRawMetadataOptions} from '../metadata-storage';
+import {MetadataManager} from '../metadata/metadata-manager';
+import {AttributeRawMetadataOptions} from '../metadata/metadata-storage';
 
 export interface AttributeOptions {
   /**

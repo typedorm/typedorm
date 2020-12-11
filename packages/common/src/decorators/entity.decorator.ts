@@ -1,5 +1,5 @@
-import {MetadataManager} from '../metadata-manager';
-import {EntityRawMetadataOptions} from '../metadata-storage';
+import {MetadataManager} from '../metadata/metadata-manager';
+import {EntityRawMetadataOptions} from '../metadata/metadata-storage';
 
 export function Entity({
   table,

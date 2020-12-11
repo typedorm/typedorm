@@ -1,5 +1,5 @@
 import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, EntityTarget} from '@typedorm/common';
-import {IndexOptions, Table} from './table';
+import {IndexOptions, Table} from '../table';
 
 export type PrimaryKey = SimplePrimaryKey | CompositePrimaryKey;
 export type SimplePrimaryKey = {

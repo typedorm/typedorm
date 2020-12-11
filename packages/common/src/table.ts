@@ -1,5 +1,5 @@
 import {INDEX_TYPE} from './enums';
-import {CompositePrimaryKey} from './metadata-storage';
+import {CompositePrimaryKey} from './metadata/metadata-storage';
 
 export const IsCompositePrimaryKey = (
   key: unknown
