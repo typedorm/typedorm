@@ -1,4 +1,4 @@
-import {DocumentClient} from 'aws-sdk/clients/dynamodb';
+import {DynamoDB} from 'aws-sdk';
 import {TRANSACTION_WRITE_ITEMS_LIMIT} from '@typedorm/common';
 import {WriteTransaction} from '../transaction/write-transaction';
 import {Connection} from '../connection/connection';
@@ -16,7 +16,7 @@ export class TransactionManager {
       );
     }
 
-    const transactionInput: DocumentClient.TransactWriteItemsInput = {
+    const transactionInput: DynamoDB.DocumentClient.TransactWriteItemsInput = {
       TransactItems: transaction.items,
     };
 

@@ -1,5 +1,5 @@
 import {EntityTarget, Table} from '@typedorm/common';
-import {DocumentClient} from 'aws-sdk/clients/dynamodb';
+import {DynamoDB} from 'aws-sdk';
 
 /**
  * @param table - Global table to use for all entities, entity scoped table takes precedence over this
@@ -25,5 +25,5 @@ export interface ConnectionOptions {
   /**
    * @default - new document client instance with default config will be instantiated
    */
-  documentClient?: DocumentClient;
+  documentClient?: DynamoDB.DocumentClient;
 }

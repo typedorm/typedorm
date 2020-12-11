@@ -13,7 +13,7 @@ import {
   UpdateAttributes,
 } from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
-import {DocumentClient} from 'aws-sdk/clients/dynamodb';
+import {DynamoDB} from 'aws-sdk';
 import {getUniqueAttributePrimaryKey} from '../../helpers/get-unique-attr-primary-key';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {parseKey} from '../../helpers/parse-key';
@@ -71,7 +71,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   toDynamoGetItem<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
     primaryKey: PrimaryKey
-  ): DocumentClient.GetItemInput {
+  ): DynamoDB.DocumentClient.GetItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
     const tableName = this.getTableNameForEntity(entityClass);
@@ -97,7 +97,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   toDynamoPutItem<Entity>(
     entity: Entity,
     options?: ManagerToDynamoPutItemOptions
-  ): DocumentClient.PutItemInput | DocumentClient.PutItemInput[] {
+  ):
+    | DynamoDB.DocumentClient.PutItemInput
+    | DynamoDB.DocumentClient.PutItemInput[] {
     const entityClass = getConstructorForInstance(entity);
     const {table, name, internalAttributes} = this.connection.getEntityByTarget(
       entityClass
@@ -112,9 +114,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const entityInternalAttributes = internalAttributes.reduce((acc, attr) => {
       acc[attr.name] = attr.value;
       return acc;
-    }, {} as DocumentClient.PutItemInputAttributeMap);
+    }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
 
-    let uniqueAttributePutItems = [] as DocumentClient.PutItemInput[];
+    let uniqueAttributePutItems = [] as DynamoDB.DocumentClient.PutItemInput[];
     // apply attribute not exist condition when creating unique
     const uniqueRecordConditionExpression = this._expressionBuilder.buildConditionExpression(
       new Condition().attributeNotExist(table.partitionKey)
@@ -143,7 +145,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           Item: uniqueItemPrimaryKey,
           TableName: table.name,
           ...uniqueRecordConditionExpression,
-        } as DocumentClient.PutItemInput;
+        } as DynamoDB.DocumentClient.PutItemInput;
       });
     }
 
@@ -153,7 +155,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ...dynamoEntity,
       },
       TableName: table.name,
-    } as DocumentClient.PutItemInput;
+    } as DynamoDB.DocumentClient.PutItemInput;
 
     // always prevent overwriting data until explicitly told to do otherwise
     if (!options?.overwriteIfExists) {
@@ -171,7 +173,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     primaryKey: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
     options?: EntityManagerUpdateOptions
-  ): DocumentClient.UpdateItemInput {
+  ): DynamoDB.DocumentClient.UpdateItemInput {
     // default values
     const {nestedKeySeparator = '.', returnValues = RETURN_VALUES.ALL_NEW} =
       options ?? {};
@@ -255,7 +257,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   toDynamoDeleteItem<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
     primaryKey: PrimaryKey
-  ): DocumentClient.DeleteItemInput {
+  ): DynamoDB.DocumentClient.DeleteItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
     const tableName = metadata.table.name;
@@ -284,7 +286,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       queryIndex?: string;
     },
     queryOptions?: ManagerToDynamoQueryItemsOptions
-  ): DocumentClient.QueryInput {
+  ): DynamoDB.DocumentClient.QueryInput {
     const {table, schema} = this.connection.getEntityByTarget(entityClass);
 
     const queryIndexName = partitionKeyAttributes.queryIndex ?? '';
@@ -371,7 +373,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       IndexName: partitionKeyAttributes.queryIndex,
       Limit: limit,
       ScanIndexForward: !order || order === QUERY_ORDER.ASC,
-    } as DocumentClient.QueryInput;
+    } as DynamoDB.DocumentClient.QueryInput;
 
     if (keyCondition && !isEmptyObject(keyCondition)) {
       // build sort key condition

@@ -1,4 +1,4 @@
-import {DocumentClient} from 'aws-sdk/clients/dynamodb';
+import {DynamoDB} from 'aws-sdk';
 import {
   EntityAttributes,
   EntityTarget,
@@ -32,7 +32,7 @@ export interface EntityManagerUpdateOptions {
 
 export interface EntityManagerQueryOptions
   extends ManagerToDynamoQueryItemsOptions {
-  cursor?: DocumentClient.Key;
+  cursor?: DynamoDB.DocumentClient.Key;
 }
 
 export class EntityManager {
@@ -286,11 +286,14 @@ export class EntityManager {
     cursor,
     itemsFetched = [],
   }: {
-    queryInput: DocumentClient.QueryInput;
+    queryInput: DynamoDB.DocumentClient.QueryInput;
     limit: number;
-    cursor?: DocumentClient.Key;
-    itemsFetched?: DocumentClient.ItemList;
-  }): Promise<{items: DocumentClient.ItemList; cursor?: DocumentClient.Key}> {
+    cursor?: DynamoDB.DocumentClient.Key;
+    itemsFetched?: DynamoDB.DocumentClient.ItemList;
+  }): Promise<{
+    items: DynamoDB.DocumentClient.ItemList;
+    cursor?: DynamoDB.DocumentClient.Key;
+  }> {
     const {
       LastEvaluatedKey,
       Items = [],
