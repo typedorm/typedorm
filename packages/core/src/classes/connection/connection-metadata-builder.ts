@@ -3,7 +3,7 @@ import path from 'path';
 import {EntityTarget} from '@typedorm/common';
 import {Connection} from './connection';
 import {EntityMetadataBuilder} from './entity-metadata-builder';
-import {MetadataManager} from '@typedorm/common/metadata-manager';
+import {MetadataManager} from '@typedorm/common';
 
 export class ConnectionMetadataBuilder {
   constructor(private connection: Connection) {}
