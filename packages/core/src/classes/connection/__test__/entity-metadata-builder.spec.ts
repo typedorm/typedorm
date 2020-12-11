@@ -1,4 +1,4 @@
-import {User} from '../../../__mocks__/user';
+import {User} from '../../../../__mocks__/user';
 import {EntityMetadataBuilder} from '../entity-metadata-builder';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {
@@ -7,7 +7,7 @@ import {
   AUTO_GENERATE_ATTRIBUTE_STRATEGY,
   Entity,
 } from '@typedorm/common';
-import {table} from '@typedorm/core/__mocks__/table';
+import {table} from '../../../../__mocks__/table';
 jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('12-3-1-23-12'),
 }));

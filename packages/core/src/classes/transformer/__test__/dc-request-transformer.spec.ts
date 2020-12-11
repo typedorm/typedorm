@@ -1,9 +1,9 @@
 import {Attribute, Entity, QUERY_ORDER} from '@typedorm/common';
-import {Customer} from '@typedorm/core/__mocks__/inherited-customer';
-import {table} from '@typedorm/core/__mocks__/table';
-import {User, UserGSI1} from '@typedorm/core/__mocks__/user';
+import {Customer} from '../../../../__mocks__/inherited-customer';
+import {table} from '../../../../__mocks__/table';
+import {User, UserGSI1} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
-import {UserPrimaryKey} from '../../../__mocks__/user';
+import {UserPrimaryKey} from '../../../../__mocks__/user';
 import {DocumentClientRequestTransformer} from '../document-client-request-transformer';
 
 let transformer: DocumentClientRequestTransformer;

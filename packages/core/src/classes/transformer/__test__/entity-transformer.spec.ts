@@ -1,6 +1,6 @@
 import {Attribute, Entity, INDEX_TYPE, Table} from '@typedorm/common';
-import {Organisation} from '@typedorm/core/__mocks__/organisation';
-import {User} from '@typedorm/core/__mocks__/user';
+import {Organisation} from '../../../../__mocks__/organisation';
+import {User} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityTransformer} from '../entity-transformer';
 

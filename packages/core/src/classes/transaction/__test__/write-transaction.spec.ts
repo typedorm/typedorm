@@ -1,6 +1,6 @@
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
-import {User, UserPrimaryKey} from '../../../__mocks__/user';
-import {UserUniqueEmail} from '../../../__mocks__/user-unique-email';
+import {User, UserPrimaryKey} from '../../../../__mocks__/user';
+import {UserUniqueEmail} from '../../../../__mocks__/user-unique-email';
 import {WriteTransaction} from '../write-transaction';
 import {Connection} from '../../connection/connection';
 

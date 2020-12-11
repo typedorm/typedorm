@@ -1,6 +1,6 @@
 import {Attribute, Entity, Table} from '@typedorm/common';
 import {getConnection} from '@typedorm/core';
-import {User} from '@typedorm/core/__mocks__/user';
+import {User} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import path from 'path';
 jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
@@ -43,7 +43,7 @@ test('Connection Manager should register metadata correctly', () => {
 test('Connection Manager should register metadata for entity loaded from path', () => {
   resetTestConnection();
   createTestConnection({
-    entities: path.resolve(__dirname, ' ../../../../../__mocks__/**.ts'),
+    entities: path.resolve(__dirname, ' ../../../../../../__mocks__/**.ts'),
   });
 
   const userMetadata = getConnection().getEntityByTarget(User);

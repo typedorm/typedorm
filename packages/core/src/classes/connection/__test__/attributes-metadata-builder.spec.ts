@@ -1,5 +1,5 @@
-import {UserAutoGenerateAttributes} from '@typedorm/core/__mocks__/user-auto-generate-attributes';
-import {User} from '../../../__mocks__/user';
+import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
+import {User} from '../../../../__mocks__/user';
 import {AttributesMetadataBuilder} from '../attribute-metadata-builder';
 
 jest.useFakeTimers('modern').setSystemTime(new Date('2020-10-10'));

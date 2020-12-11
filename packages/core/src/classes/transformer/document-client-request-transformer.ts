@@ -12,7 +12,7 @@ import {
   ScalarType,
   UpdateAttributes,
 } from '@typedorm/common';
-import {getConstructorForInstance} from '@typedorm/core/helpers/get-constructor-for-instance';
+import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {getUniqueAttributePrimaryKey} from '../../helpers/get-unique-attr-primary-key';
 import {isEmptyObject} from '../../helpers/is-empty-object';

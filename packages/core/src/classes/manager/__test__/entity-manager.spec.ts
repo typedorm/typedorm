@@ -2,15 +2,15 @@ jest.useFakeTimers('modern').setSystemTime(new Date(1606896235000));
 
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityManager} from '../entity-manager';
-import {User, UserPrimaryKey} from '../../../__mocks__/user';
+import {User, UserPrimaryKey} from '../../../../__mocks__/user';
 import {
   UserUniqueEmail,
   UserUniqueEmailPrimaryKey,
-} from '@typedorm/core/__mocks__/user-unique-email';
+} from '../../../../__mocks__/user-unique-email';
 import {
   UserAutoGenerateAttributesPrimaryKey,
   UserAutoGenerateAttributes,
-} from '@typedorm/core/__mocks__/user-auto-generate-attributes';
+} from '../../../../__mocks__/user-auto-generate-attributes';
 
 let manager: EntityManager;
 const dcMock = {

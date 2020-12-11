@@ -1,9 +1,9 @@
-import {UserPrimaryKey} from '../../../__mocks__/user';
+import {UserPrimaryKey} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {Connection} from '../../connection/connection';
 import {WriteTransaction} from '../../transaction/write-transaction';
 import {TransactionManager} from '../transaction-manager';
-import {User} from '../../../__mocks__/user';
+import {User} from '../../../../__mocks__/user';
 
 let manager: TransactionManager;
 const dcMock = {
