@@ -55,7 +55,6 @@ test('builds multi type attribute metadata', () => {
       strategy: 'EPOCH_DATE',
       type: 'String',
       unique: false,
-      value: 1602288000,
     },
   ]);
 });

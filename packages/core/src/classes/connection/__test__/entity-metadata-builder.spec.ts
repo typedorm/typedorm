@@ -143,7 +143,6 @@ test('overrides property of base class if it is defined again on derived class w
       autoUpdate: false,
       unique: false,
       strategy: 'UUID4',
-      value: '12-3-1-23-12',
     },
     {
       name: 'name',

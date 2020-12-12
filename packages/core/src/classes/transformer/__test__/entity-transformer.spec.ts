@@ -1,3 +1,4 @@
+import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
 import {Attribute, Entity, INDEX_TYPE, Table} from '@typedorm/common';
 import {Organisation} from '../../../../__mocks__/organisation';
 import {User} from '../../../../__mocks__/user';
@@ -7,7 +8,7 @@ import {EntityTransformer} from '../entity-transformer';
 let transformer: EntityTransformer;
 beforeEach(() => {
   const connection = createTestConnection({
-    entities: [User, Organisation],
+    entities: [User, Organisation, UserAutoGenerateAttributes],
   });
   transformer = new EntityTransformer(connection);
 });
@@ -92,6 +93,26 @@ test('transforms simple model to dynamo entity', () => {
     id: '111',
     name: 'Test User',
     status: 'inactive',
+  });
+});
+
+/**
+ * Issue #37
+ */
+test('transforms simple model with auto generated values to dynamo entity', () => {
+  jest.useFakeTimers('modern').setSystemTime(new Date('2020-10-10'));
+
+  const user = new UserAutoGenerateAttributes();
+  user.id = '111';
+
+  const response = transformer.toDynamoEntity(user);
+  expect(response).toEqual({
+    GSI1PK: 'USER#UPDATED_AT#1602288000',
+    GSI1SK: 'USER#111',
+    PK: 'USER#111',
+    SK: 'USER#111',
+    id: '111',
+    updatedAt: 1602288000,
   });
 });
 
