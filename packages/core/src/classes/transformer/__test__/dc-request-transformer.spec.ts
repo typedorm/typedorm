@@ -133,6 +133,64 @@ test('transforms put item request with unique attributes', () => {
   ]);
 });
 
+test('transforms put item request with unique attributes and custom prefix', () => {
+  resetTestConnection();
+
+  @Entity({
+    table,
+    name: 'user',
+    primaryKey: {
+      partitionKey: 'USER#{{id}}',
+      sortKey: 'USER#{{id}}',
+    },
+  })
+  class UserUniqueEmail {
+    @Attribute()
+    id: string;
+
+    @Attribute({
+      unique: {
+        prefix: 'USER#',
+      },
+    })
+    email: string;
+  }
+
+  const connection = createTestConnection({
+    entities: [UserUniqueEmail],
+  });
+  transformer = new DocumentClientRequestTransformer(connection);
+
+  const user = new UserUniqueEmail();
+  user.id = '1';
+  user.email = 'user@example.com';
+
+  const putItem = transformer.toDynamoPutItem(user);
+  expect(putItem).toEqual([
+    {
+      ConditionExpression: 'attribute_not_exists(#CE_PK)',
+      ExpressionAttributeNames: {'#CE_PK': 'PK'},
+      Item: {
+        PK: 'USER#1',
+        SK: 'USER#1',
+        email: 'user@example.com',
+        id: '1',
+        __en: 'user',
+      },
+      TableName: 'test-table',
+    },
+    {
+      ConditionExpression: 'attribute_not_exists(#CE_PK)',
+      ExpressionAttributeNames: {'#CE_PK': 'PK'},
+      Item: {
+        PK: 'DRM_GEN_USER.EMAIL#user@example.com',
+        SK: 'DRM_GEN_USER.EMAIL#user@example.com',
+      },
+      TableName: 'test-table',
+    },
+  ]);
+});
+
 /**
  * @group toDynamoUpdateItem
  */

@@ -8,3 +8,15 @@ test('creates attribute metadata', () => {
 
   expect(attMetadata).toBeTruthy();
 });
+
+test('creates attribute metadata for with custom prefix', () => {
+  const attrMetadata = new AttributeMetadata({
+    name: 'id',
+    type: 'String',
+    unique: {
+      prefix: 'USER#',
+    },
+  });
+
+  expect(attrMetadata).toBeTruthy();
+});

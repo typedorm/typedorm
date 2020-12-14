@@ -1,5 +1,6 @@
 import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, EntityTarget} from '@typedorm/common';
 import {IndexOptions, Table} from '../table';
+import {AttributeOptionsUniqueType} from '../decorators/attribute.decorator';
 
 export type PrimaryKey = SimplePrimaryKey | CompositePrimaryKey;
 export type SimplePrimaryKey = {
@@ -26,7 +27,7 @@ export interface EntityRawMetadataOptions {
 export interface AttributeRawMetadataOptions {
   name: string;
   type: any;
-  unique?: boolean;
+  unique?: AttributeOptionsUniqueType;
 }
 
 export interface AutoGenerateAttributeRawMetadataOptions

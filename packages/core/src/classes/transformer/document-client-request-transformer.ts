@@ -138,7 +138,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           table,
           name,
           attr.name,
-          attributeValue
+          attributeValue,
+          // use provided prefix
+          typeof attr.unique === 'object' ? attr.unique?.prefix : undefined
         );
 
         return {
