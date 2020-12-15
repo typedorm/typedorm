@@ -17,6 +17,7 @@ export * from './src/helpers/require-only-one-type';
 export * from './src/helpers/scalar-type';
 export * from './src/helpers/update-attributes-type';
 export * from './src/helpers/replace-type';
+export * from './src/helpers/is-primary-key';
 
 // classes
 export * from './src/table';
