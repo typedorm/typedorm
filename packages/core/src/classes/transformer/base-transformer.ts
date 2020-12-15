@@ -1,5 +1,9 @@
-import {EntityTarget, INDEX_TYPE} from '@typedorm/common';
-import {Table} from '@typedorm/common';
+import {
+  EntityTarget,
+  INDEX_TYPE,
+  DYNAMO_ATTRIBUTE_PREFIX,
+} from '@typedorm/common';
+import {Table, PrimaryKey} from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {isObject} from '../../helpers/is-object';
@@ -162,6 +166,31 @@ export abstract class BaseTransformer {
       {} as any
     );
     return affectedIndexes;
+  }
+
+  getUniqueAttributePrimaryKey(
+    table: Table,
+    entityName: string,
+    attrName: string,
+    attrValue: any,
+    primaryKey?: PrimaryKey
+  ) {
+    const item = {} as any;
+
+    if (primaryKey && isObject(primaryKey)) {
+      return this.recursiveParseEntity(primaryKey, {[attrName]: attrValue});
+    }
+
+    const uniqueKeyValue = `${DYNAMO_ATTRIBUTE_PREFIX}_${entityName.toUpperCase()}.${attrName.toUpperCase()}#${attrValue}`;
+
+    if (table.usesCompositeKey()) {
+      item[table.partitionKey] = uniqueKeyValue;
+      item[table.sortKey] = uniqueKeyValue;
+    } else {
+      item[table.partitionKey] = uniqueKeyValue;
+    }
+
+    return item;
   }
 
   /**

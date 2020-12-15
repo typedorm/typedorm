@@ -1,4 +1,4 @@
-import {MetadataManager} from '@typedorm/common';
+import {MetadataManager, Table} from '@typedorm/common';
 import {
   AttributeMetadataType,
   EntityMetadata,
@@ -7,18 +7,34 @@ import {AttributesMetadataBuilder} from './attribute-metadata-builder';
 import {Connection} from './connection';
 
 export class EntityMetadataBuilder {
+  table: Table;
   private attributesMetadataBuilder: AttributesMetadataBuilder;
   constructor(private connection: Connection) {
     this.attributesMetadataBuilder = new AttributesMetadataBuilder();
   }
   build(entityClasses: Function[]): EntityMetadata[] {
     return entityClasses.map(entityClass => {
+      const {
+        target,
+        table,
+        name,
+        primaryKey,
+        indexes,
+      } = MetadataManager.metadataStorage.getRawEntityByTarget(entityClass);
+
+      if (table) {
+        // if no entity level table is defined fallback to global connection table
+        this.table = table;
+      } else {
+        this.table = this.connection.table;
+      }
+
       const inheritedClasses = this.recursiveGetInheritanceTree(entityClass);
 
       // metadata are sorted by [very base class] -> [very derived class]
       const inheritedEntitiesAttributesMetadata = inheritedClasses
         .map(inheritedClass =>
-          this.attributesMetadataBuilder.build(inheritedClass)
+          this.attributesMetadataBuilder.build(this.table, inheritedClass)
         )
         .reverse();
 
@@ -36,20 +52,12 @@ export class EntityMetadataBuilder {
         deNormalizedAttributesMap.values()
       ).reverse();
 
-      const {
-        target,
-        table,
-        name,
-        primaryKey,
-        indexes,
-      } = MetadataManager.metadataStorage.getRawEntityByTarget(entityClass);
-
       // At the moment we do simple store metadata and retrieve for entities,
       // this however needs to support extending Entity
 
       return new EntityMetadata({
         connection: this.connection,
-        table,
+        table: this.table,
         target,
         attributes: allAttributesForEntity,
         name,

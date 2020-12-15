@@ -1,3 +1,4 @@
+import {table} from './../../../../__mocks__/table';
 import {Entity, Table, Attribute} from '@typedorm/common';
 import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
 import {User} from '../../../../__mocks__/user';
@@ -12,7 +13,7 @@ beforeEach(() => {
 
 test('builds simple attribute metadata', () => {
   const metadata = attributesMetadataBuilder
-    .build(User)
+    .build(table, User)
     .map(obj => Object.assign({}, obj));
 
   expect(metadata).toEqual([
@@ -41,7 +42,7 @@ test('builds simple attribute metadata', () => {
 
 test('builds multi type attribute metadata', () => {
   const metadata = attributesMetadataBuilder
-    .build(UserAutoGenerateAttributes)
+    .build(table, UserAutoGenerateAttributes)
     .map(obj => Object.assign({}, obj));
 
   expect(metadata).toEqual([
@@ -75,14 +76,15 @@ test('builds metadata for attribute with explicit entity', () => {
   class Admin {
     @Attribute({
       unique: {
-        prefix: 'ADMIN.EMAIL#',
+        partitionKey: 'USER.EMAIL#{{email}}',
+        sortKey: 'USER.EMAIL#{{email}}',
       },
     })
     email: string;
   }
 
   const metadata = attributesMetadataBuilder
-    .build(Admin)
+    .build(table, Admin)
     .map(obj => Object.assign({}, obj));
 
   expect(metadata).toEqual([
@@ -90,7 +92,8 @@ test('builds metadata for attribute with explicit entity', () => {
       name: 'email',
       type: 'String',
       unique: {
-        prefix: 'ADMIN.EMAIL#',
+        partitionKey: 'USER.EMAIL#{{email}}',
+        sortKey: 'USER.EMAIL#{{email}}',
       },
     },
   ]);
