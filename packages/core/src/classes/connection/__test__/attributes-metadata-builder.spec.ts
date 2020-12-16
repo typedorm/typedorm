@@ -1,3 +1,4 @@
+import {UserUniqueEmail} from './../../../../__mocks__/user-unique-email';
 import {table} from './../../../../__mocks__/table';
 import {Entity, Table, Attribute} from '@typedorm/common';
 import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
@@ -20,22 +21,61 @@ test('builds simple attribute metadata', () => {
     {
       name: 'id',
       type: 'String',
-      unique: false,
+      entityClass: User,
+      table,
     },
     {
       name: 'name',
       type: 'String',
-      unique: false,
+      entityClass: User,
+      table,
     },
     {
       name: 'status',
       type: 'String',
-      unique: false,
+      entityClass: User,
+      table,
     },
     {
       name: 'age',
       type: 'Number',
-      unique: false,
+      entityClass: User,
+      table,
+    },
+  ]);
+});
+
+test('builds attribute metadata for inherited entity', () => {
+  class Admin extends User {}
+
+  const metadata = attributesMetadataBuilder
+    .build(table, User, Admin)
+    .map(obj => Object.assign({}, obj));
+
+  expect(metadata).toEqual([
+    {
+      name: 'id',
+      type: 'String',
+      entityClass: Admin,
+      table,
+    },
+    {
+      name: 'name',
+      type: 'String',
+      entityClass: Admin,
+      table,
+    },
+    {
+      name: 'status',
+      type: 'String',
+      entityClass: Admin,
+      table,
+    },
+    {
+      name: 'age',
+      type: 'Number',
+      entityClass: Admin,
+      table,
     },
   ]);
 });
@@ -49,14 +89,14 @@ test('builds multi type attribute metadata', () => {
     {
       name: 'id',
       type: 'String',
-      unique: false,
+      table,
+      entityClass: UserAutoGenerateAttributes,
     },
     {
       autoUpdate: true,
       name: 'updatedAt',
       strategy: 'EPOCH_DATE',
       type: 'String',
-      unique: false,
     },
   ]);
 });
@@ -91,9 +131,56 @@ test('builds metadata for attribute with explicit entity', () => {
     {
       name: 'email',
       type: 'String',
+      entityClass: Admin,
+      table,
       unique: {
-        partitionKey: 'USER.EMAIL#{{email}}',
-        sortKey: 'USER.EMAIL#{{email}}',
+        PK: 'USER.EMAIL#{{email}}',
+        SK: 'USER.EMAIL#{{email}}',
+        _interpolations: {
+          PK: ['email'],
+          SK: ['email'],
+        },
+      },
+    },
+  ]);
+});
+
+test('builds metadata with implicit primary key for unique attribute', () => {
+  const metadata = attributesMetadataBuilder
+    .build(table, UserUniqueEmail)
+    .map(obj => Object.assign({}, obj));
+
+  expect(metadata).toEqual([
+    {
+      name: 'id',
+      type: 'String',
+      entityClass: UserUniqueEmail,
+      table,
+    },
+    {
+      name: 'name',
+      type: 'String',
+      entityClass: UserUniqueEmail,
+      table,
+    },
+    {
+      name: 'status',
+      type: 'String',
+      entityClass: UserUniqueEmail,
+      table,
+    },
+    {
+      name: 'email',
+      type: 'String',
+      entityClass: UserUniqueEmail,
+      table,
+      unique: {
+        PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#{{email}}',
+        SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#{{email}}',
+        _interpolations: {
+          PK: ['email'],
+          SK: ['email'],
+        },
       },
     },
   ]);

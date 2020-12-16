@@ -150,8 +150,8 @@ test('chains complex transaction requests', () => {
           '#CE_PK': 'PK',
         },
         Item: {
-          PK: 'DRM_GEN_USER.EMAIL#user@example.com',
-          SK: 'DRM_GEN_USER.EMAIL#user@example.com',
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
         },
         TableName: 'test-table',
       },

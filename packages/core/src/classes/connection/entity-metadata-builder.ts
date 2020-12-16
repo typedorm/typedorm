@@ -34,7 +34,11 @@ export class EntityMetadataBuilder {
       // metadata are sorted by [very base class] -> [very derived class]
       const inheritedEntitiesAttributesMetadata = inheritedClasses
         .map(inheritedClass =>
-          this.attributesMetadataBuilder.build(this.table, inheritedClass)
+          this.attributesMetadataBuilder.build(
+            this.table,
+            inheritedClass,
+            entityClass
+          )
         )
         .reverse();
 

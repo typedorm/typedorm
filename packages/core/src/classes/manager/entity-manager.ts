@@ -7,7 +7,6 @@ import {
   UpdateAttributes,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
-import {getUniqueAttributePrimaryKey} from '../../helpers/get-unique-attr-primary-key';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
 import {WriteTransaction} from '../transaction/write-transaction';
@@ -120,9 +119,13 @@ export class EntityManager {
 
     const metadata = this.connection.getEntityByTarget(entityClass);
 
-    const uniqueAttributeNames = this.connection
-      .getUniqueAttributesForEntity(entityClass)
-      .map(attr => attr.name);
+    const uniqueAttributesMetadata = this.connection.getUniqueAttributesForEntity(
+      entityClass
+    );
+
+    const uniqueAttributeNames = uniqueAttributesMetadata.map(
+      attr => attr.name
+    );
 
     const {primaryKeyAttributes, uniqueAttributes} = Object.entries(
       attributes
@@ -171,16 +174,26 @@ export class EntityManager {
         throw new Error('Can only query one unique attribute at a time.');
       }
       const [attrName, attrValue] = Object.entries(uniqueAttributes)[0];
-      const uniqueAttributePrimaryKey = getUniqueAttributePrimaryKey(
+
+      const uniqueAttributePrimaryKey = uniqueAttributesMetadata.find(
+        meta => meta.name === attrName
+      )?.unique;
+
+      if (!uniqueAttributePrimaryKey) {
+        console.log(`Could not find metadata for attribute ${attrName}`);
+        return false;
+      }
+
+      const parsedPrimaryKey = this._entityTransformer.getParsedPrimaryKey(
         metadata.table,
-        entityClass.name,
-        attrName,
-        attrValue
+        uniqueAttributePrimaryKey,
+        {[attrName]: attrValue}
       );
+
       return !!(
         await this.connection.documentClient
           .get({
-            Key: {...uniqueAttributePrimaryKey},
+            Key: {...parsedPrimaryKey},
             TableName: metadata.table.name,
           })
           .promise()

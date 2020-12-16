@@ -21,7 +21,7 @@ export function buildPrimaryKeySchema({
     // validate primary key signature
     if (!table.usesCompositeKey()) {
       throw new Error(
-        `Table "${table.name}" does not use composite key, thus "${primaryKey.sortKey}" should not exist.`
+        `Table "${table.name}" does not use composite key, thus sort key "${primaryKey.sortKey}" should not exist.`
       );
     }
 

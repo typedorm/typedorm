@@ -125,15 +125,15 @@ test('transforms put item request with unique attributes', () => {
       ConditionExpression: 'attribute_not_exists(#CE_PK)',
       ExpressionAttributeNames: {'#CE_PK': 'PK'},
       Item: {
-        PK: 'DRM_GEN_USER.EMAIL#user@example.com',
-        SK: 'DRM_GEN_USER.EMAIL#user@example.com',
+        PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+        SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
       },
       TableName: 'test-table',
     },
   ]);
 });
 
-test('transforms put item request with unique attributes and custom prefix', () => {
+test('transforms put item request consisting unique attributes with provided primary key', () => {
   resetTestConnection();
 
   @Entity({
@@ -150,7 +150,8 @@ test('transforms put item request with unique attributes and custom prefix', () 
 
     @Attribute({
       unique: {
-        prefix: 'USER#',
+        partitionKey: 'CUSTOM#{{email}}',
+        sortKey: 'CUSTOM#{{email}}',
       },
     })
     email: string;
@@ -183,8 +184,8 @@ test('transforms put item request with unique attributes and custom prefix', () 
       ConditionExpression: 'attribute_not_exists(#CE_PK)',
       ExpressionAttributeNames: {'#CE_PK': 'PK'},
       Item: {
-        PK: 'DRM_GEN_USER.EMAIL#user@example.com',
-        SK: 'DRM_GEN_USER.EMAIL#user@example.com',
+        PK: 'CUSTOM#user@example.com',
+        SK: 'CUSTOM#user@example.com',
       },
       TableName: 'test-table',
     },

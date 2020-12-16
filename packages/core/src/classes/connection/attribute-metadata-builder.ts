@@ -8,7 +8,7 @@ import {
 export class AttributesMetadataBuilder {
   constructor() {}
 
-  build(table: Table, entityClass: Function) {
+  build(table: Table, entityClass: Function, decoratedClass?: Function) {
     const getRawAttributesForEntity = MetadataManager.metadataStorage.getRawAttributesForEntity(
       entityClass
     );
@@ -22,7 +22,8 @@ export class AttributesMetadataBuilder {
 
       return new AttributeMetadata({
         table,
-        entityClass,
+        // when working with entity with multiple inheritance, use class with @Entity() if available
+        entityClass: decoratedClass ?? entityClass,
         ...attr,
       });
     });
