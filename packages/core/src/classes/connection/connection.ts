@@ -111,7 +111,7 @@ export class Connection {
         (attr as AttributeMetadata)?.unique &&
         !this.isUsedForPrimaryKey(entityMetadata.schema.primaryKey, attr.name)
       );
-    });
+    }) as AttributeMetadata[];
   }
 
   getEntityByTarget<Entity>(entityClass: EntityTarget<Entity>) {

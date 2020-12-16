@@ -4,7 +4,7 @@ import {AutoGenerateAttributeRawMetadataOptions} from '../metadata/metadata-stor
 export function AutoGenerateAttribute(
   options: Pick<
     AutoGenerateAttributeRawMetadataOptions,
-    'unique' | 'strategy' | 'autoUpdate'
+    'strategy' | 'autoUpdate'
   >
 ): PropertyDecorator {
   return (target, propertyKey) => {
@@ -16,7 +16,6 @@ export function AutoGenerateAttribute(
       strategy: options.strategy,
       // this does not make a lot of sense atm, as all supported auto generate strategy are likely to be unique
       // but can be useful in cases where we support auto generating value by user input
-      unique: options.unique,
       autoUpdate: options.autoUpdate,
     };
 

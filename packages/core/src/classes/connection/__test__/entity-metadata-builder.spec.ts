@@ -6,6 +6,7 @@ import {
   AutoGenerateAttribute,
   AUTO_GENERATE_ATTRIBUTE_STRATEGY,
   Entity,
+  Table,
 } from '@typedorm/common';
 import {table} from '../../../../__mocks__/table';
 jest.mock('uuid', () => ({
@@ -85,29 +86,70 @@ test('builds metadata of derived entity with multiple levels of inheritance', ()
     {
       name: 'email',
       type: 'String',
-      unique: false,
+      entityClass: Customer,
+      table,
     },
     {
       name: 'password',
       type: 'String',
-      unique: false,
+      entityClass: Customer,
+      table,
     },
     {
       name: 'username',
       type: 'String',
-      unique: false,
+      entityClass: Customer,
+      table,
     },
     {
       name: 'name',
       type: 'String',
-      unique: false,
+      entityClass: Customer,
+      table,
     },
     {
       name: 'id',
       type: 'String',
-      unique: false,
+      entityClass: Customer,
+      table,
     },
   ]);
+});
+
+test('builds entity metadata with global table config', () => {
+  const globalTable = new Table({
+    name: 'GlobalTable',
+    partitionKey: 'PK',
+  });
+  @Entity({
+    name: 'User',
+    primaryKey: {
+      partitionKey: 'USER#{{id}}',
+    },
+  })
+  class GlobalUserEntity {
+    @Attribute()
+    id: string;
+  }
+
+  const newConnection = createTestConnection({
+    name: 'new-connection-0',
+    table: globalTable,
+    entities: [GlobalUserEntity],
+  });
+
+  const globalMetaBuilder = new EntityMetadataBuilder(newConnection);
+  const [entityMetadata] = globalMetaBuilder.build([GlobalUserEntity]);
+
+  expect(entityMetadata.schema).toEqual({
+    indexes: {},
+    primaryKey: {
+      PK: 'USER#{{id}}',
+      _interpolations: {
+        PK: ['id'],
+      },
+    },
+  });
 });
 
 test('overrides property of base class if it is defined again on derived class with diff annotation', () => {
@@ -130,29 +172,32 @@ test('overrides property of base class if it is defined again on derived class w
     {
       name: 'email',
       type: 'String',
-      unique: false,
+      table,
+      entityClass: Customer,
     },
     {
       name: 'password',
       type: 'String',
-      unique: false,
+      table,
+      entityClass: Customer,
     },
     {
       name: 'username',
       type: 'String',
       autoUpdate: false,
-      unique: false,
       strategy: 'UUID4',
     },
     {
       name: 'name',
       type: 'String',
-      unique: false,
+      table,
+      entityClass: Customer,
     },
     {
       name: 'id',
       type: 'String',
-      unique: false,
+      table,
+      entityClass: Customer,
     },
   ]);
 });

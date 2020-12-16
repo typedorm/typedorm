@@ -1,17 +1,17 @@
-import {
-  AttributeMetadata,
-  AttributeMetadataOptions,
-} from './attribute-metadata';
-
-export interface InternalAttributeMetadataOptions
-  extends AttributeMetadataOptions {
+export interface InternalAttributeMetadataOptions {
   value: any;
+  name: string;
+  type: string;
 }
 
-export class InternalAttributeMetadata extends AttributeMetadata {
+export class InternalAttributeMetadata {
   readonly value: any;
-  constructor(options: InternalAttributeMetadataOptions) {
-    super(options);
-    this.value = options.value;
+  readonly name: string;
+  readonly type: string;
+
+  constructor({name, type, value}: InternalAttributeMetadataOptions) {
+    this.name = name;
+    this.type = type;
+    this.value = value;
   }
 }

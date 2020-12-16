@@ -44,54 +44,8 @@ test('create entity metadata for per entity table', () => {
       new AttributeMetadata({
         name: 'id',
         type: 'String',
-      }),
-    ],
-  });
-
-  expect(userEntityMetadata.schema).toEqual({
-    indexes: {},
-    primaryKey: {
-      PK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
-      },
-    },
-  });
-});
-
-test('creates entity metadata with global table config', () => {
-  const globalTable = new Table({
-    name: 'GlobalTable',
-    partitionKey: 'PK',
-  });
-  @Entity({
-    name: 'User',
-    primaryKey: {
-      partitionKey: 'USER#{{id}}',
-    },
-  })
-  class GlobalUserEntity {
-    @Attribute()
-    id: string;
-  }
-
-  connection = createTestConnection({
-    name: 'new-connection-0',
-    table: globalTable,
-    entities: [GlobalUserEntity],
-  });
-
-  const userEntityMetadata = new EntityMetadata({
-    connection,
-    name: 'user',
-    primaryKey: {
-      partitionKey: 'USER#{{id}}',
-    },
-    target: GlobalUserEntity,
-    attributes: [
-      new AttributeMetadata({
-        name: 'id',
-        type: 'String',
+        table,
+        entityClass: UserEntity,
       }),
     ],
   });
@@ -151,14 +105,20 @@ test('creates entity metadata with complex composite and indexes key', () => {
       new AttributeMetadata({
         name: 'id',
         type: 'String',
+        table: complexTable,
+        entityClass: ComplexUserEntity,
       }),
       new AttributeMetadata({
         name: 'name',
         type: 'String',
+        table: complexTable,
+        entityClass: ComplexUserEntity,
       }),
       new AttributeMetadata({
         name: 'age',
         type: 'String',
+        table: complexTable,
+        entityClass: ComplexUserEntity,
       }),
     ],
   });
