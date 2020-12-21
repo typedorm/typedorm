@@ -116,9 +116,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     let uniqueAttributePutItems = [] as DynamoDB.DocumentClient.PutItemInput[];
     // apply attribute not exist condition when creating unique
-    const uniqueRecordConditionExpression = this._expressionBuilder.buildConditionExpression(
-      new Condition().attributeNotExist(table.partitionKey)
-    );
+    const uniqueRecordConditionExpression = table.usesCompositeKey()
+      ? new Condition()
+          .attributeNotExist(table.partitionKey)
+          .and()
+          .attributeNotExist(table.sortKey)
+      : new Condition().attributeNotExist(table.partitionKey);
 
     if (uniqueAttributes.length) {
       uniqueAttributePutItems = uniqueAttributes.map(attr => {
@@ -176,7 +179,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     options?: EntityManagerUpdateOptions
   ):
     | DynamoDB.DocumentClient.UpdateItemInput
-    | DynamoDB.DocumentClient.UpdateItemInput[] {
+    | (
+        | DynamoDB.DocumentClient.UpdateItemInput
+        | DynamoDB.DocumentClient.PutItemInput
+        | DynamoDB.DocumentClient.DeleteItemInput
+      )[] {
     // default values
     const {nestedKeySeparator = '.', returnValues = RETURN_VALUES.ALL_NEW} =
       options ?? {};
@@ -236,21 +243,44 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       .getUniqueAttributesForEntity(entityClass)
       .filter(attr => !!body[attr.name]);
 
+    const itemToUpdate = {
+      TableName: tableName,
+      Key: {
+        ...parsedPrimaryKey,
+      },
+      UpdateExpression,
+      ExpressionAttributeNames,
+      ExpressionAttributeValues,
+      ReturnValues: returnValues,
+    };
+
     if (!uniqueAttributesToUpdate.length) {
-      return {
-        TableName: tableName,
-        Key: {
-          ...parsedPrimaryKey,
-        },
-        UpdateExpression,
-        ExpressionAttributeNames,
-        ExpressionAttributeValues,
-        ReturnValues: returnValues,
-      };
+      return itemToUpdate;
     }
 
-    // TODO: when there are unique attributes to update, return transaction input
-    return [];
+    const uniqueRecordConditionExpression = metadata.table.usesCompositeKey()
+      ? new Condition()
+          .attributeNotExist(metadata.table.partitionKey)
+          .and()
+          .attributeNotExist(metadata.table.sortKey)
+      : new Condition().attributeNotExist(metadata.table.partitionKey);
+
+    // map all unique attributes to [put, delete] item tuple
+    const uniqueAttributeInputs = uniqueAttributesToUpdate.flatMap(attr => {
+      return [
+        // TODO: when there are unique attributes to update, return transaction input
+        // create
+        {
+          TableName: metadata.table.name,
+          Item: {},
+          ...uniqueRecordConditionExpression,
+        },
+        // delete
+      ];
+    });
+
+    // in order for update express to succeed, all listed must succeed in a transaction
+    return [itemToUpdate, ...uniqueAttributeInputs];
   }
 
   toDynamoDeleteItem<PrimaryKey, Entity>(
