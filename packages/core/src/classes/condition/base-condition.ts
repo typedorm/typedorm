@@ -123,12 +123,12 @@ export abstract class BaseCondition {
     return this;
   }
 
-  and(): BaseCondition {
+  and(): this {
     this.appendToExpression('AND');
     return this;
   }
 
-  or(): BaseCondition {
+  or(): this {
     this.appendToExpression('OR');
     return this;
   }
