@@ -25,7 +25,7 @@ describe('validateKey()', () => {
         status: 'Object',
       })
     ).toThrowError(
-      '"status" is used in key USER#{{id}}#STATUS#{{status}}, thus it\'s type must be a "Number" or a "String"'
+      '"status" is used in key USER#{{id}}#STATUS#{{status}}, thus it\'s type must be or scalar type, if attribute type is Enum, please set "isEnum" to true in attribute decorator.'
     );
   });
 });

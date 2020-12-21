@@ -2,6 +2,10 @@ import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, EntityTarget} from '@typedorm/common';
 import {IndexOptions, Table} from '../table';
 import {AttributeOptionsUniqueType} from '../decorators/attribute.decorator';
 
+export const IsAutoGenerateAttributeRawMetadataOptions = (
+  attr: any
+): attr is AutoGenerateAttributeRawMetadataOptions => !!attr.strategy;
+
 export type PrimaryKey = SimplePrimaryKey | CompositePrimaryKey;
 export type SimplePrimaryKey = {
   partitionKey: string;
@@ -24,14 +28,17 @@ export interface EntityRawMetadataOptions {
   table?: Table;
 }
 
-export interface AttributeRawMetadataOptions {
+interface BaseAttributeRawMetadataOptions {
   name: string;
   type: any;
+}
+export interface AttributeRawMetadataOptions
+  extends BaseAttributeRawMetadataOptions {
   unique?: AttributeOptionsUniqueType;
 }
 
 export interface AutoGenerateAttributeRawMetadataOptions
-  extends AttributeRawMetadataOptions {
+  extends BaseAttributeRawMetadataOptions {
   strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY;
   autoUpdate?: boolean;
 }

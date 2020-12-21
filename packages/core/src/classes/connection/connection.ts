@@ -4,6 +4,7 @@ import {
   Table,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
+import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {EntityManager} from '../manager/entity-manager';
 import {TransactionManager} from '../manager/transaction-manager';
 import {AttributeMetadata} from '../metadata/attribute-metadata';
@@ -118,7 +119,7 @@ export class Connection {
       // only attributes that are not part of primary key should be included
       return (
         (attr as AttributeMetadata)?.unique &&
-        !this.isUsedForPrimaryKey(entityMetadata.schema.primaryKey, attr.name)
+        !isUsedForPrimaryKey(entityMetadata.schema.primaryKey, attr.name)
       );
     }) as AttributeMetadata[];
   }

@@ -16,6 +16,7 @@ import {
 } from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
+import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 
 export interface EntityManagerUpdateOptions {
   /**
@@ -131,12 +132,7 @@ export class EntityManager {
       attributes
     ).reduce(
       (acc, [attrKey, value]) => {
-        if (
-          this.connection.isUsedForPrimaryKey(
-            metadata.schema.primaryKey,
-            attrKey
-          )
-        ) {
+        if (isUsedForPrimaryKey(metadata.schema.primaryKey, attrKey)) {
           acc.primaryKeyAttributes[attrKey] = value;
         } else if (uniqueAttributeNames.includes(attrKey)) {
           acc.uniqueAttributes[attrKey] = value;
