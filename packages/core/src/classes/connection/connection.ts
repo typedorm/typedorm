@@ -1,6 +1,7 @@
 import {
   DYNAMO_QUERY_ITEMS_IMPLICIT_LIMIT,
   EntityTarget,
+  Replace,
   Table,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
@@ -121,7 +122,11 @@ export class Connection {
         (attr as AttributeMetadata)?.unique &&
         !isUsedForPrimaryKey(entityMetadata.schema.primaryKey, attr.name)
       );
-    }) as AttributeMetadata[];
+    }) as Replace<
+      AttributeMetadata,
+      'unique',
+      {unique: DynamoEntitySchemaPrimaryKey}
+    >[];
   }
 
   getEntityByTarget<Entity>(entityClass: EntityTarget<Entity>) {
