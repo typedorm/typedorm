@@ -2,5 +2,5 @@ branches:
   - main
   - name: next
     prerelease: rc
-  - name: develop
+  - name: beta
     prerelease: beta
