@@ -171,10 +171,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
   toDynamoUpdateItem<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>,
+    primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
     options?: EntityManagerUpdateOptions
-  ): DynamoDB.DocumentClient.UpdateItemInput {
+  ):
+    | DynamoDB.DocumentClient.UpdateItemInput
+    | DynamoDB.DocumentClient.UpdateItemInput[] {
     // default values
     const {nestedKeySeparator = '.', returnValues = RETURN_VALUES.ALL_NEW} =
       options ?? {};
@@ -190,20 +192,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const parsedPrimaryKey = this.getParsedPrimaryKey(
       metadata.table,
       metadata.schema.primaryKey,
-      primaryKey
+      primaryKeyAttributes
     );
 
     if (isEmptyObject(parsedPrimaryKey)) {
       throw new Error('Primary could not be resolved');
     }
-
-    // TODO: add support for updating unique attributes
-    this.connection.getUniqueAttributesForEntity(entityClass).forEach(attr => {
-      // key that is marked as unique, can not be updated
-      if (body[attr.name]) {
-        throw new Error('');
-      }
-    });
 
     // get all the attributes for entity that are marked as to be auto update
     const autoUpdateAttributes = this.connection.getAutoUpdateAttributes(
@@ -213,11 +207,6 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     // check if auto update attributes are not referenced by primary key
     const formattedAutoUpdateAttributes = autoUpdateAttributes.reduce(
       (acc, attr) => {
-        if ((primaryKey as any)[attr.name]) {
-          throw new Error(
-            `Failed to build update expression, key "${attr.name}" is marked as to up auto updated but is also referenced by primary key`
-          );
-        }
         acc[attr.name] = attr.autoGenerateValue(attr.strategy);
         return acc;
       },
@@ -243,16 +232,25 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ...affectedIndexes,
     });
 
-    return {
-      TableName: tableName,
-      Key: {
-        ...parsedPrimaryKey,
-      },
-      UpdateExpression,
-      ExpressionAttributeNames,
-      ExpressionAttributeValues,
-      ReturnValues: returnValues,
-    };
+    const uniqueAttributesToUpdate = this.connection
+      .getUniqueAttributesForEntity(entityClass)
+      .filter(attr => !!body[attr.name]);
+
+    if (!uniqueAttributesToUpdate.length) {
+      return {
+        TableName: tableName,
+        Key: {
+          ...parsedPrimaryKey,
+        },
+        UpdateExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+        ReturnValues: returnValues,
+      };
+    }
+
+    // TODO: when there are unique attributes to update, return transaction input
+    return [];
   }
 
   toDynamoDeleteItem<PrimaryKey, Entity>(

@@ -29,9 +29,13 @@ function validateMatch(
     );
   }
 
-  if (variableType !== 'String' && variableType !== 'Number') {
+  if (
+    variableType !== 'String' &&
+    variableType !== 'Number' &&
+    variableType !== 'Boolean'
+  ) {
     throw new Error(
-      `"${variable}" is used in key ${key}, thus it's type must be a "Number" or a "String"`
+      `"${variable}" is used in key ${key}, thus it's type must be or scalar type, if attribute type is Enum, please set "isEnum" to true in attribute decorator.`
     );
   }
 
