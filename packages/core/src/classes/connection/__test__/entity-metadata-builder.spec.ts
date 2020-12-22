@@ -170,12 +170,6 @@ test('overrides property of base class if it is defined again on derived class w
   const [entityMetadata] = metadataBuilder.build([Customer]);
   expect(entityMetadata.attributes.map(obj => Object.assign({}, obj))).toEqual([
     {
-      name: 'email',
-      type: 'String',
-      table,
-      entityClass: Customer,
-    },
-    {
       name: 'password',
       type: 'String',
       table,

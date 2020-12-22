@@ -263,15 +263,17 @@ test('transforms update item record with unique attributes', () => {
         ExpressionAttributeNames: {
           '#attr0': 'name',
           '#attr1': 'email',
+          '#attr2': 'GSI1SK',
         },
         ExpressionAttributeValues: {
           ':val0': 'new name',
           ':val1': 'new@email.com',
+          ':val2': 'USER#new name',
         },
         Key: {PK: 'USER#1', SK: 'USER#1'},
         ReturnValues: 'ALL_NEW',
         TableName: 'test-table',
-        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
       },
     },
     {
