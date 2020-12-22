@@ -69,9 +69,11 @@ test('transforms put item requests', () => {
       __en: 'user',
       status: 'active',
     },
-    ConditionExpression: 'attribute_not_exists(#CE_PK)',
+    ConditionExpression:
+      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
     },
     TableName: 'test-table',
   });
@@ -110,25 +112,31 @@ test('transforms put item request with unique attributes', () => {
   const putItem = transformer.toDynamoPutItem(user);
   expect(putItem).toEqual([
     {
-      ConditionExpression: 'attribute_not_exists(#CE_PK)',
-      ExpressionAttributeNames: {'#CE_PK': 'PK'},
-      Item: {
-        PK: 'USER#1',
-        SK: 'USER#1',
-        email: 'user@example.com',
-        id: '1',
-        __en: 'user',
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+          email: 'user@example.com',
+          id: '1',
+          __en: 'user',
+        },
+        TableName: 'test-table',
       },
-      TableName: 'test-table',
     },
     {
-      ConditionExpression: 'attribute_not_exists(#CE_PK)',
-      ExpressionAttributeNames: {'#CE_PK': 'PK'},
-      Item: {
-        PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
-        SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+        },
+        TableName: 'test-table',
       },
-      TableName: 'test-table',
     },
   ]);
 });
@@ -169,25 +177,31 @@ test('transforms put item request consisting unique attributes with provided pri
   const putItem = transformer.toDynamoPutItem(user);
   expect(putItem).toEqual([
     {
-      ConditionExpression: 'attribute_not_exists(#CE_PK)',
-      ExpressionAttributeNames: {'#CE_PK': 'PK'},
-      Item: {
-        PK: 'USER#1',
-        SK: 'USER#1',
-        email: 'user@example.com',
-        id: '1',
-        __en: 'user',
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+          email: 'user@example.com',
+          id: '1',
+          __en: 'user',
+        },
+        TableName: 'test-table',
       },
-      TableName: 'test-table',
     },
     {
-      ConditionExpression: 'attribute_not_exists(#CE_PK)',
-      ExpressionAttributeNames: {'#CE_PK': 'PK'},
-      Item: {
-        PK: 'CUSTOM#user@example.com',
-        SK: 'CUSTOM#user@example.com',
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'CUSTOM#user@example.com',
+          SK: 'CUSTOM#user@example.com',
+        },
+        TableName: 'test-table',
       },
-      TableName: 'test-table',
     },
   ]);
 });

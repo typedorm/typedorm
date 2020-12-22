@@ -97,7 +97,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     options?: ManagerToDynamoPutItemOptions
   ):
     | DynamoDB.DocumentClient.PutItemInput
-    | DynamoDB.DocumentClient.PutItemInput[] {
+    | DynamoDB.DocumentClient.TransactWriteItemList {
     const entityClass = getConstructorForInstance(entity);
     const {table, internalAttributes} = this.connection.getEntityByTarget(
       entityClass
@@ -114,15 +114,33 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return acc;
     }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
 
-    let uniqueAttributePutItems = [] as DynamoDB.DocumentClient.PutItemInput[];
-    // apply attribute not exist condition when creating unique
-    const uniqueRecordConditionExpression = table.usesCompositeKey()
-      ? new Condition()
-          .attributeNotExist(table.partitionKey)
-          .and()
-          .attributeNotExist(table.sortKey)
-      : new Condition().attributeNotExist(table.partitionKey);
+    let dynamoPutItem = {
+      Item: {
+        ...entityInternalAttributes,
+        ...dynamoEntity,
+      },
+      TableName: table.name,
+    } as DynamoDB.DocumentClient.PutItemInput;
 
+    // apply attribute not exist condition when creating unique
+    const uniqueRecordConditionExpression = new ExpressionBuilder().buildUniqueRecordConditionExpression(
+      table
+    );
+
+    // always prevent overwriting data until explicitly told to do otherwise
+    if (!options?.overwriteIfExists) {
+      dynamoPutItem = {
+        ...dynamoPutItem,
+        ...uniqueRecordConditionExpression,
+      };
+    }
+
+    if (!uniqueAttributes.length) {
+      return dynamoPutItem;
+    }
+
+    // if there are unique attributes, return transaction list item
+    let uniqueAttributePutItems: DynamoDB.DocumentClient.TransactWriteItemList = [];
     if (uniqueAttributes.length) {
       uniqueAttributePutItems = uniqueAttributes.map(attr => {
         const attributeValue = (entity as any)[attr.name];
@@ -146,30 +164,16 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         );
 
         return {
-          Item: uniqueItemPrimaryKey,
-          TableName: table.name,
-          ...uniqueRecordConditionExpression,
-        } as DynamoDB.DocumentClient.PutItemInput;
+          Put: {
+            Item: uniqueItemPrimaryKey,
+            TableName: table.name,
+            ...uniqueRecordConditionExpression,
+          },
+        };
       });
     }
 
-    let dynamoPutItem = {
-      Item: {
-        ...entityInternalAttributes,
-        ...dynamoEntity,
-      },
-      TableName: table.name,
-    } as DynamoDB.DocumentClient.PutItemInput;
-
-    // always prevent overwriting data until explicitly told to do otherwise
-    if (!options?.overwriteIfExists) {
-      dynamoPutItem = {...dynamoPutItem, ...uniqueRecordConditionExpression};
-    }
-
-    if (uniqueAttributePutItems.length) {
-      return [dynamoPutItem, ...uniqueAttributePutItems];
-    }
-    return dynamoPutItem;
+    return [{Put: dynamoPutItem}, ...uniqueAttributePutItems];
   }
 
   toDynamoUpdateItem<PrimaryKey, Entity>(
