@@ -1,11 +1,16 @@
 import {DynamoDB} from 'aws-sdk';
+
 import {Connection} from '../connection/connection';
+import {
+  Transaction,
+  WriteTransactionChainItem,
+  WriteTransactionCreate,
+} from './transaction';
 import {
   isCreateTransaction,
   isUpdateTransaction,
-  Transaction,
-  WriteTransactionChainItem,
-} from './transaction';
+  isWriteTransactionItemList,
+} from './type-guards';
 
 export class WriteTransaction extends Transaction {
   protected _items: DynamoDB.DocumentClient.TransactWriteItemList;
@@ -26,26 +31,9 @@ export class WriteTransaction extends Transaction {
     chainedItem: WriteTransactionChainItem<PrimaryKey, Entity>
   ): WriteTransaction {
     if (isCreateTransaction(chainedItem)) {
-      const {
-        create: {item},
-      } = chainedItem;
-
-      const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem<Entity>(
-        item
-      );
-
-      // when put item is set to array, one or more attributes are marked as unique
-      // to maintain all records consistency, all items must be put into db as a single transaction
-      if (!Array.isArray(dynamoPutItemInput)) {
-        this._items.push({
-          Put: dynamoPutItemInput,
-        });
-      } else {
-        this._items.push(
-          ...dynamoPutItemInput.map(puttItem => ({Put: puttItem}))
-        );
-      }
+      this.items = this.chainCreateTransaction(chainedItem);
     } else if (isUpdateTransaction(chainedItem)) {
+      //TODO: add support for update item in list
       const {item, body, primaryKey, options} = chainedItem.update;
       this._items.push({
         Update: this._dcReqTransformer.toDynamoUpdateItem<PrimaryKey, Entity>(
@@ -59,7 +47,33 @@ export class WriteTransaction extends Transaction {
     return this;
   }
 
+  private chainCreateTransaction<Entity>(
+    chainedItem: WriteTransactionCreate<Entity>
+  ) {
+    const {
+      create: {item},
+    } = chainedItem;
+
+    const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem<Entity>(
+      item
+    );
+
+    if (!isWriteTransactionItemList(dynamoPutItemInput)) {
+      return [
+        {
+          Put: dynamoPutItemInput,
+        },
+      ] as DynamoDB.DocumentClient.TransactWriteItemList;
+    }
+
+    return [...dynamoPutItemInput];
+  }
+
   get items() {
     return this._items;
+  }
+
+  set items(items: DynamoDB.DocumentClient.TransactWriteItemList) {
+    this._items = [...this.items, ...items];
   }
 }

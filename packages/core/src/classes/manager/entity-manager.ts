@@ -17,6 +17,7 @@ import {
 import {EntityTransformer} from '../transformer/entity-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
+import {isWriteTransactionItemList} from '../transaction/type-guards';
 
 export interface EntityManagerUpdateOptions {
   /**
@@ -52,8 +53,10 @@ export class EntityManager {
     const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(entity);
     const entityClass = getConstructorForInstance(entity);
 
-    if (!Array.isArray(dynamoPutItemInput)) {
+    if (!isWriteTransactionItemList(dynamoPutItemInput)) {
       await this.connection.documentClient.put(dynamoPutItemInput).promise();
+
+      // by default dynamodb does not return attributes on create operation, so return one
       const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
         dynamoPutItemInput.Item
@@ -62,18 +65,19 @@ export class EntityManager {
       return itemToReturn;
     }
 
-    // when put item is set to array, one or more attributes are marked as unique
-    // to maintain all records consistency, all items must be put into db as a single transaction
+    // dynamoPutItemInput is a transact item list, meaning that it contains one or more unique attributes, which also
+    // needs to be created along with original item
+
     const transaction = new WriteTransaction(
       this.connection,
-      dynamoPutItemInput.map(putItem => ({Put: putItem}))
+      dynamoPutItemInput
     );
     await this.connection.transactionManger.write(transaction);
 
     const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
-      // if create operation contains multiple items, first one will the original requested item
-      dynamoPutItemInput[0].Item
+      // if create operation contains multiple items, first one will the original item
+      dynamoPutItemInput[0]?.Put?.Item ?? {}
     );
 
     return itemToReturn;

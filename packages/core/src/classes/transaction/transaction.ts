@@ -9,10 +9,10 @@ import {EntityManagerUpdateOptions} from '../manager/entity-manager';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
 
 // transaction interfaces
-interface WriteTransactionCreate<Entity> {
+export interface WriteTransactionCreate<Entity> {
   create: {item: Entity};
 }
-interface WriteTransactionUpdate<PrimaryKey, Entity> {
+export interface WriteTransactionUpdate<PrimaryKey, Entity> {
   update: {
     item: EntityTarget<Entity>;
     primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
@@ -23,21 +23,6 @@ interface WriteTransactionUpdate<PrimaryKey, Entity> {
 export type WriteTransactionChainItem<PrimaryKey, Entity> =
   | WriteTransactionCreate<Entity>
   | WriteTransactionUpdate<PrimaryKey, Entity>;
-
-// custom type guards
-export function isCreateTransaction<Entity>(
-  item: any
-): item is WriteTransactionCreate<Entity> {
-  return (item as WriteTransactionCreate<Entity>).create !== undefined;
-}
-
-export function isUpdateTransaction<PrimaryKey, Entity>(
-  item: any
-): item is WriteTransactionUpdate<PrimaryKey, Entity> {
-  return (
-    (item as WriteTransactionUpdate<PrimaryKey, Entity>).update !== undefined
-  );
-}
 
 /**
  * Base Transaction
