@@ -60,9 +60,11 @@ test('creates entity', async () => {
       status: 'active',
     },
     TableName: 'test-table',
-    ConditionExpression: 'attribute_not_exists(#CE_PK)',
+    ConditionExpression:
+      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
     },
   });
   expect(userEntity).toEqual({
@@ -96,9 +98,11 @@ test('creates entity and returns all attributes, including auto generated ones',
       updatedAt: 1606896235,
     },
     TableName: 'test-table',
-    ConditionExpression: 'attribute_not_exists(#CE_PK)',
+    ConditionExpression:
+      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
     },
   });
   expect(userEntity).toEqual({
