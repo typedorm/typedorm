@@ -92,9 +92,11 @@ test('performs write transactions', async () => {
             status: 'inactive',
           },
           TableName: 'test-table',
-          ConditionExpression: 'attribute_not_exists(#CE_PK)',
+          ConditionExpression:
+            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
           ExpressionAttributeNames: {
             '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
           },
         },
       },
@@ -130,9 +132,11 @@ test('performs write transactions', async () => {
             status: 'inactive',
           },
           TableName: 'test-table',
-          ConditionExpression: 'attribute_not_exists(#CE_PK)',
+          ConditionExpression:
+            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
           ExpressionAttributeNames: {
             '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
           },
         },
       },

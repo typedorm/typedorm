@@ -75,9 +75,11 @@ test('chains simple transaction requests', () => {
           status: 'active',
         },
         TableName: 'test-table',
-        ConditionExpression: 'attribute_not_exists(#CE_PK)',
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
         ExpressionAttributeNames: {
           '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
         },
       },
     },
@@ -125,9 +127,11 @@ test('chains complex transaction requests', () => {
   expect(transaction.items).toEqual([
     {
       Put: {
-        ConditionExpression: 'attribute_not_exists(#CE_PK)',
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
         ExpressionAttributeNames: {
           '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
         },
         Item: {
           PK: 'USER#1',
@@ -145,9 +149,11 @@ test('chains complex transaction requests', () => {
     },
     {
       Put: {
-        ConditionExpression: 'attribute_not_exists(#CE_PK)',
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
         ExpressionAttributeNames: {
           '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
         },
         Item: {
           PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
