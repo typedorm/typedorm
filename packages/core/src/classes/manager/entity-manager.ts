@@ -3,7 +3,6 @@ import {
   EntityAttributes,
   EntityTarget,
   PrimaryKeyAttributes,
-  RETURN_VALUES,
   UpdateAttributes,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
@@ -24,11 +23,6 @@ export interface EntityManagerUpdateOptions {
    * @default '.'
    */
   nestedKeySeparator?: string;
-
-  /**
-   * @default ALL_NEW
-   */
-  returnValues?: RETURN_VALUES;
 }
 
 export interface EntityManagerQueryOptions
@@ -221,14 +215,19 @@ export class EntityManager {
       Entity
     >(entityClass, primaryKey, body, options);
 
-    const response = await this.connection.documentClient
-      .update(dynamoUpdateItem)
-      .promise();
+    if (!isWriteTransactionItemList(dynamoUpdateItem)) {
+      const response = await this.connection.documentClient
+        .update(dynamoUpdateItem)
+        .promise();
 
-    return this._entityTransformer.fromDynamoEntity<Entity>(
-      entityClass,
-      response.Attributes ?? {}
-    );
+      return this._entityTransformer.fromDynamoEntity<Entity>(
+        entityClass,
+        response.Attributes ?? {}
+      );
+    }
+
+    // TODO: handle update for transaction
+    return null as any;
   }
 
   /**
