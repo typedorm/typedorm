@@ -5,11 +5,12 @@ import {User, UserGSI1} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {UserPrimaryKey} from '../../../../__mocks__/user';
 import {DocumentClientRequestTransformer} from '../document-client-request-transformer';
+import {UserUniqueEmail} from '../../../../__mocks__/user-unique-email';
 
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {
   const connection = createTestConnection({
-    entities: [User, Customer],
+    entities: [User, Customer, UserUniqueEmail],
   });
   transformer = new DocumentClientRequestTransformer(connection);
 });
@@ -100,16 +101,16 @@ test('transforms put item request with unique attributes', () => {
     email: string;
   }
 
-  const connection = createTestConnection({
+  const newConnection = createTestConnection({
     entities: [UserUniqueEmail],
   });
-  transformer = new DocumentClientRequestTransformer(connection);
+  const newTransformer = new DocumentClientRequestTransformer(newConnection);
 
   const user = new UserUniqueEmail();
   user.id = '1';
   user.email = 'user@example.com';
 
-  const putItem = transformer.toDynamoPutItem(user);
+  const putItem = newTransformer.toDynamoPutItem(user);
   expect(putItem).toEqual([
     {
       Put: {
@@ -165,16 +166,16 @@ test('transforms put item request consisting unique attributes with provided pri
     email: string;
   }
 
-  const connection = createTestConnection({
+  const newConnection = createTestConnection({
     entities: [UserUniqueEmail],
   });
-  transformer = new DocumentClientRequestTransformer(connection);
+  const newTransformer = new DocumentClientRequestTransformer(newConnection);
 
   const user = new UserUniqueEmail();
   user.id = '1';
   user.email = 'user@example.com';
 
-  const putItem = transformer.toDynamoPutItem(user);
+  const putItem = newTransformer.toDynamoPutItem(user);
   expect(putItem).toEqual([
     {
       Put: {
@@ -236,6 +237,83 @@ test('transforms update item request', () => {
     TableName: 'test-table',
     UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
   });
+});
+
+test('transforms update item record with unique attributes', () => {
+  const updatedItem = transformer.toDynamoUpdateItem<
+    UserPrimaryKey,
+    UserUniqueEmail
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      name: 'new name',
+      email: 'new@email.com',
+    },
+    // when updating unique attributes, previous values must be provided, otherwise can be ignored
+    {
+      email: 'old@email.com',
+    }
+  );
+  expect(updatedItem).toEqual([
+    {
+      Update: {
+        ExpressionAttributeNames: {
+          '#attr0': 'name',
+          '#attr1': 'email',
+        },
+        ExpressionAttributeValues: {
+          ':val0': 'new name',
+          ':val1': 'new@email.com',
+        },
+        Key: {PK: 'USER#1', SK: 'USER#1'},
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+      },
+    },
+    {
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
+test('throws an error when trying to update unique attributes but no previous values are provided', () => {
+  const updatedItem = () =>
+    transformer.toDynamoUpdateItem<UserPrimaryKey, UserUniqueEmail>(
+      UserUniqueEmail,
+      {
+        id: '1',
+      },
+      {
+        name: 'new name',
+        email: 'new@email.com',
+      }
+    );
+
+  expect(updatedItem).toThrow(
+    'Failed to find resolve previous value for unique attribute "email", when updating unique attributes their old value must be provided in "previousUniqueAttributes".'
+  );
 });
 
 /**
