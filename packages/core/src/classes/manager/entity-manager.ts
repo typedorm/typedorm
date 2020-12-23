@@ -17,6 +17,7 @@ import {EntityTransformer} from '../transformer/entity-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {isWriteTransactionItemList} from '../transaction/type-guards';
+import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loder';
 
 export interface EntityManagerUpdateOptions {
   /**
@@ -215,19 +216,45 @@ export class EntityManager {
       Entity
     >(entityClass, primaryKey, body, options);
 
-    if (!isWriteTransactionItemList(dynamoUpdateItem)) {
+    if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
       const response = await this.connection.documentClient
         .update(dynamoUpdateItem)
         .promise();
 
       return this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
+        // return all new attributes
         response.Attributes ?? {}
       );
     }
 
-    // TODO: handle update for transaction
-    return null as any;
+    // first get existing item, so that we can safely clear previous unique attributes
+    const existingItem = await this.findOne<PrimaryKey, Entity>(
+      entityClass,
+      primaryKey
+    );
+
+    if (!existingItem) {
+      throw new Error(
+        `Failed to update entity, could not find entity with primary key "${JSON.stringify(
+          primaryKey
+        )}"`
+      );
+    }
+
+    const updateItemList = dynamoUpdateItem.lazyLoadTransactionWriteItems(
+      existingItem
+    );
+
+    const transaction = new WriteTransaction(this.connection, updateItemList);
+    // since write transaction does not return any, we will need to get the latest one from dynamo
+    await this.connection.transactionManger.write(transaction);
+    const updatedItem = (await this.findOne<PrimaryKey, Entity>(
+      entityClass,
+      primaryKey
+    )) as Entity;
+
+    return updatedItem;
   }
 
   /**

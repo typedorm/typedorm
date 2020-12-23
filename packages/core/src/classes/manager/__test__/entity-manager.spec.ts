@@ -228,7 +228,7 @@ test('throws an error if trying to perform exists check with partial primary key
 /**
  * @group update
  */
-test('updates item', async () => {
+test('updates item and return all new attributes', async () => {
   dcMock.update.mockReturnValue({
     promise: () => ({
       Attributes: {
@@ -237,7 +237,7 @@ test('updates item', async () => {
         GSI1PK: 'USER#STATUS#active',
         GSI1SK: 'USER#Me',
         id: '1',
-        name: 'Me',
+        name: 'user',
         status: 'active',
       },
     }),
@@ -273,7 +273,7 @@ test('updates item', async () => {
     UpdateExpression:
       'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2, #attr3 = :val3',
   });
-  expect(updatedItem).toEqual({id: '1', name: 'Me', status: 'active'});
+  expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
 });
 
 test('updates item and attributes marked to be autoUpdated', async () => {
