@@ -251,13 +251,18 @@ test('transforms update item record with unique attributes', () => {
     {
       name: 'new name',
       email: 'new@email.com',
-    },
-    // when updating unique attributes, previous values must be provided, otherwise can be ignored
-    {
-      email: 'old@email.com',
     }
   );
-  expect(updatedItem).toEqual([
+
+  const lazyWriteItemListLoader = (updatedItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  const writeItemList = lazyWriteItemListLoader({
+    name: 'new name',
+    email: 'old@email.com',
+  });
+  expect(writeItemList).toEqual([
     {
       Update: {
         ExpressionAttributeNames: {
@@ -290,7 +295,7 @@ test('transforms update item record with unique attributes', () => {
     },
     {
       Delete: {
-        Item: {
+        Key: {
           PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
           SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
         },
@@ -298,24 +303,6 @@ test('transforms update item record with unique attributes', () => {
       },
     },
   ]);
-});
-
-test('throws an error when trying to update unique attributes but no previous values are provided', () => {
-  const updatedItem = () =>
-    transformer.toDynamoUpdateItem<UserPrimaryKey, UserUniqueEmail>(
-      UserUniqueEmail,
-      {
-        id: '1',
-      },
-      {
-        name: 'new name',
-        email: 'new@email.com',
-      }
-    );
-
-  expect(updatedItem).toThrow(
-    'Failed to find resolve previous value for unique attribute "email", when updating unique attributes their old value must be provided in "previousUniqueAttributes".'
-  );
 });
 
 /**

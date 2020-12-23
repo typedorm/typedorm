@@ -7,9 +7,11 @@ import {
   INDEX_TYPE,
   PrimaryKeyAttributes,
   QUERY_ORDER,
+  Replace,
   RequireOnlyOne,
   RETURN_VALUES,
   ScalarType,
+  Table,
   UpdateAttributes,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
@@ -21,7 +23,9 @@ import {Connection} from '../connection/connection';
 import {ExpressionBuilder} from '../expression-builder';
 import {EntityManagerUpdateOptions} from '../manager/entity-manager';
 import {AttributeMetadata} from '../metadata/attribute-metadata';
+import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {BaseTransformer} from './base-transformer';
+import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loder';
 
 export interface ManagerToDynamoQueryItemsOptions {
   /**
@@ -179,11 +183,10 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
-    previousUniqueAttributes: UpdateAttributes<PrimaryKey, Entity> = {},
     options: EntityManagerUpdateOptions = {}
   ):
     | DynamoDB.DocumentClient.UpdateItemInput
-    | DynamoDB.DocumentClient.TransactWriteItemList {
+    | LazyTransactionWriteItemListLoader {
     // default values
     const {nestedKeySeparator = '.'} = options;
 
@@ -242,16 +245,16 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       .getUniqueAttributesForEntity(entityClass)
       .filter(attr => !!body[attr.name]);
 
-    const itemToUpdate = {
+    const itemToUpdate: DynamoDB.DocumentClient.UpdateItemInput = {
       TableName: tableName,
       Key: {
         ...parsedPrimaryKey,
       },
       UpdateExpression,
+      // request all new attributes
+      ReturnValues: RETURN_VALUES.ALL_NEW,
       ExpressionAttributeNames,
       ExpressionAttributeValues,
-      // get all the updated attributes, these will later be used to remove previous unique items
-      ReturnValues: RETURN_VALUES.ALL_NEW,
     };
 
     // when item does not have any unique attributes to update, return putItemInput
@@ -259,51 +262,15 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return itemToUpdate;
     }
 
-    // updating unique attributes also require checking if new value exists
-    const uniqueRecordConditionExpression = new ExpressionBuilder().buildUniqueRecordConditionExpression(
-      metadata.table
-    );
+    // if there are unique attributes, return a lazy loader, which will return write item list
+    const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdateItemFactory<
+      PrimaryKey,
+      Entity
+    >(metadata.table, uniqueAttributesToUpdate, itemToUpdate, body);
 
-    // map all unique attributes to [put, delete] item tuple
-    const uniqueAttributeInputs: DynamoDB.DocumentClient.TransactWriteItemList = uniqueAttributesToUpdate.flatMap(
-      attr => {
-        // when updating unique attributes, their old values must exist in "previousUniqueAttributes"
-        if (!previousUniqueAttributes[attr.name]) {
-          throw new Error(
-            `Failed to find resolve previous value for unique attribute "${attr.name}", when updating unique attributes their old value must be provided in "previousUniqueAttributes".`
-          );
-        }
-
-        return [
-          // create record with new value
-          {
-            Put: {
-              TableName: metadata.table.name,
-              Item: {
-                ...this.getParsedPrimaryKey(metadata.table, attr.unique, body),
-              },
-              ...uniqueRecordConditionExpression,
-            },
-          },
-          // delete earlier record
-          {
-            Delete: {
-              TableName: metadata.table.name,
-              Item: {
-                ...this.getParsedPrimaryKey(
-                  metadata.table,
-                  attr.unique,
-                  previousUniqueAttributes
-                ),
-              },
-            },
-          },
-        ] as DynamoDB.DocumentClient.TransactWriteItemList;
-      }
-    );
-
-    // in order for update express to succeed, all listed must succeed in a transaction
-    return [{Update: itemToUpdate}, ...uniqueAttributeInputs];
+    return {
+      lazyLoadTransactionWriteItems,
+    };
   }
 
   toDynamoDeleteItem<PrimaryKey, Entity>(
@@ -459,6 +426,74 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     return {
       ...queryInputParams,
+    };
+  }
+
+  /**
+   * Lazy build update item input
+   * This is helpful in cases where we don't you have all the attributes to build item input, and the caller will need to
+   * to perform some sort of async call in order to fetch attributes and proceed with build
+   *
+   */
+  private lazyToDynamoUpdateItemFactory<PrimaryKey, Entity>(
+    table: Table,
+    uniqueAttributesToUpdate: Replace<
+      AttributeMetadata,
+      'unique',
+      {
+        unique: DynamoEntitySchemaPrimaryKey;
+      }
+    >[],
+    mainItem: DynamoDB.DocumentClient.UpdateItemInput,
+    newBody: UpdateAttributes<PrimaryKey, Entity>
+  ) {
+    // returns transact write item list
+    return (previousItemBody: any) => {
+      // updating unique attributes also require checking if new value exists
+      const uniqueRecordConditionExpression = new ExpressionBuilder().buildUniqueRecordConditionExpression(
+        table
+      );
+
+      // map all unique attributes to [put, delete] item tuple
+      const uniqueAttributeInputs: DynamoDB.DocumentClient.TransactWriteItemList = uniqueAttributesToUpdate.flatMap(
+        attr => {
+          const uniqueAttributeWriteItems: DynamoDB.DocumentClient.TransactWriteItemList = [
+            {
+              Put: {
+                TableName: table.name,
+                Item: {
+                  ...this.getParsedPrimaryKey(table, attr.unique, newBody),
+                },
+                ...uniqueRecordConditionExpression,
+              },
+            },
+          ];
+
+          // if unique attribute previously existed, remove it as part of the same transaction
+          if (previousItemBody[attr.name]) {
+            uniqueAttributeWriteItems.push({
+              Delete: {
+                TableName: table.name,
+                Key: {
+                  ...this.getParsedPrimaryKey(
+                    table,
+                    attr.unique,
+                    previousItemBody
+                  ),
+                },
+              },
+            });
+          }
+
+          return uniqueAttributeWriteItems;
+        }
+      );
+
+      // in order for update express to succeed, all listed must succeed in a transaction
+      return [
+        {Update: mainItem},
+        ...uniqueAttributeInputs,
+      ] as DynamoDB.DocumentClient.TransactWriteItemList;
     };
   }
 }
