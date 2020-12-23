@@ -55,8 +55,9 @@ export class TransactionManager {
           );
           return reject(transactionError);
         }
+
         return resolve(response);
       });
-    });
+    }) as Promise<DynamoDB.DocumentClient.TransactWriteItemsOutput>;
   }
 }

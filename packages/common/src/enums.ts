@@ -3,6 +3,7 @@ export enum RETURN_VALUES {
   ALL_NEW = 'ALL_NEW',
   UPDATED_OLD = 'UPDATED_OLD',
   UPDATED_NEW = 'UPDATED_NEW',
+  NONE = 'NONE',
 }
 
 export enum INDEX_TYPE {
