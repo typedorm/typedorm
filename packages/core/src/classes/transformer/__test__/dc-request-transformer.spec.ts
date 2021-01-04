@@ -276,7 +276,6 @@ test('transforms update item record with unique attributes', () => {
           ':val2': 'USER#new name',
         },
         Key: {PK: 'USER#1', SK: 'USER#1'},
-        ReturnValues: 'ALL_NEW',
         TableName: 'test-table',
         UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
       },
