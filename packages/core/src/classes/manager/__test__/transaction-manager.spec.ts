@@ -114,7 +114,6 @@ test('performs write transactions', async () => {
             PK: 'USER#1',
             SK: 'USER#1',
           },
-          ReturnValues: 'ALL_NEW',
           TableName: 'test-table',
           UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
         },

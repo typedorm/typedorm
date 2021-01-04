@@ -1,5 +1,5 @@
 /**
- * Current transaction write items limit
+ * Current transaction write items limit set by dynamodb itself
  */
 export const TRANSACTION_WRITE_ITEMS_LIMIT = 25;
 
