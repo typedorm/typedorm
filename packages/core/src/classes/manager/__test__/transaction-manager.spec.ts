@@ -4,6 +4,10 @@ import {Connection} from '../../connection/connection';
 import {WriteTransaction} from '../../transaction/write-transaction';
 import {TransactionManager} from '../transaction-manager';
 import {User} from '../../../../__mocks__/user';
+import {
+  UserUniqueEmail,
+  UserUniqueEmailPrimaryKey,
+} from '@typedorm/core/__mocks__/user-unique-email';
 
 let manager: TransactionManager;
 const dcMock = {
@@ -13,7 +17,7 @@ const dcMock = {
 let connection: Connection;
 beforeEach(() => {
   connection = createTestConnection({
-    entities: [User],
+    entities: [User, UserUniqueEmail],
     documentClient: dcMock,
   });
   manager = new TransactionManager(connection);
@@ -26,7 +30,7 @@ afterEach(() => {
 /**
  * @group write
  */
-test('performs write transactions', async () => {
+test('performs write transactions for simple writes', async () => {
   dcMock.transactWrite.mockReturnValue({
     promise: jest.fn().mockReturnValue({
       ConsumedCapacity: [{}],
@@ -145,4 +149,194 @@ test('performs write transactions', async () => {
     ConsumedCapacity: [{}],
     ItemCollectionMetrics: [{}],
   });
+});
+
+test('performs write transactions for entities with unique attributes ', async () => {
+  connection.entityManager.findOne = jest.fn().mockReturnValue({
+    id: '1',
+    email: 'olduser@example.com',
+  });
+
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const transaction = new WriteTransaction(connection).chian<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >({
+    update: {
+      item: UserUniqueEmail,
+      primaryKey: {
+        id: '1',
+      },
+      body: {
+        email: 'new@example.com',
+        status: 'active',
+      },
+    },
+  });
+
+  await manager.write(transaction);
+
+  expect(dcMock.transactWrite).toHaveBeenCalledTimes(1);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Update: {
+          ExpressionAttributeNames: {
+            '#attr0': 'email',
+            '#attr1': 'status',
+            '#attr2': 'GSI1PK',
+          },
+          ExpressionAttributeValues: {
+            ':val0': 'new@example.com',
+            ':val1': 'active',
+            ':val2': 'USER#STATUS#active',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+          UpdateExpression:
+            'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+        },
+      },
+      {
+        Put: {
+          ConditionExpression:
+            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+          ExpressionAttributeNames: {
+            '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
+          },
+          Item: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@example.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@example.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+      {
+        Delete: {
+          Key: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#olduser@example.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#olduser@example.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+});
+
+test('performs write transactions for entities with non existing unique attributes ', async () => {
+  connection.entityManager.findOne = jest.fn().mockReturnValue({
+    id: '1',
+    status: 'inactive',
+  });
+
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const transaction = new WriteTransaction(connection).chian<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >({
+    update: {
+      item: UserUniqueEmail,
+      primaryKey: {
+        id: '1',
+      },
+      body: {
+        email: 'new@example.com',
+        status: 'active',
+      },
+    },
+  });
+
+  await manager.write(transaction);
+
+  expect(dcMock.transactWrite).toHaveBeenCalledTimes(1);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Update: {
+          ExpressionAttributeNames: {
+            '#attr0': 'email',
+            '#attr1': 'status',
+            '#attr2': 'GSI1PK',
+          },
+          ExpressionAttributeValues: {
+            ':val0': 'new@example.com',
+            ':val1': 'active',
+            ':val2': 'USER#STATUS#active',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+          UpdateExpression:
+            'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+        },
+      },
+      {
+        Put: {
+          ConditionExpression:
+            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+          ExpressionAttributeNames: {
+            '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
+          },
+          Item: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@example.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@example.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+});
+
+test('throws an error if no existing item found', async () => {
+  connection.entityManager.findOne = jest.fn();
+
+  const transaction = new WriteTransaction(connection).chian<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >({
+    update: {
+      item: UserUniqueEmail,
+      primaryKey: {
+        id: '1',
+      },
+      body: {
+        email: 'new@example.com',
+        status: 'active',
+      },
+    },
+  });
+
+  const update = () => manager.write(transaction);
+
+  expect(dcMock.transactWrite).not.toHaveBeenCalled();
+  await expect(update).rejects.toThrow(
+    'Failed to update entity, could not find entity with primary key "{"id":"1"}"'
+  );
 });
