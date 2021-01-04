@@ -284,7 +284,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   toDynamoDeleteItem<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
     primaryKey: PrimaryKey
-  ): DynamoDB.DocumentClient.DeleteItemInput {
+  ):
+    | DynamoDB.DocumentClient.DeleteItemInput
+    | LazyTransactionWriteItemListLoader {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
     const tableName = metadata.table.name;
@@ -299,11 +301,32 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       throw new Error('Primary could not be resolved');
     }
 
-    return {
+    const uniqueAttributesToRemove = this.connection.getUniqueAttributesForEntity(
+      entityClass
+    );
+
+    const mainItemToRemove = {
       TableName: tableName,
       Key: {
         ...parsedPrimaryKey,
       },
+    };
+    // if item does not have any unique attributes return it as is
+    if (!uniqueAttributesToRemove?.length) {
+      return mainItemToRemove;
+    }
+
+    // or return lazy resolver
+    const lazyLoadTransactionWriteItems = this.lazyToDynamoRemoveItemFactory(
+      metadata.table,
+      uniqueAttributesToRemove,
+      mainItemToRemove
+    );
+
+    return {
+      primaryKeyAttributes: primaryKey,
+      entityClass,
+      lazyLoadTransactionWriteItems,
     };
   }
 
@@ -500,6 +523,50 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       // in order for update express to succeed, all listed must succeed in a transaction
       return [
         {Update: mainItem},
+        ...uniqueAttributeInputs,
+      ] as DynamoDB.DocumentClient.TransactWriteItem[];
+    };
+  }
+
+  /**
+   * lazily resolve all unique attribute items to remove
+   * @param table
+   * @param uniqueAttributesToRemove
+   * @param mainItem
+   */
+  private lazyToDynamoRemoveItemFactory(
+    table: Table,
+    uniqueAttributesToRemove: Replace<
+      AttributeMetadata,
+      'unique',
+      {
+        unique: DynamoEntitySchemaPrimaryKey;
+      }
+    >[],
+    mainItem: DynamoDB.DocumentClient.DeleteItemInput
+  ) {
+    return (existingItemBody: any) => {
+      const uniqueAttributeInputs: DynamoDB.DocumentClient.TransactWriteItemList = uniqueAttributesToRemove.map(
+        attr => {
+          return {
+            Delete: {
+              TableName: table.name,
+              Key: {
+                ...this.getParsedPrimaryKey(
+                  table,
+                  attr.unique,
+                  existingItemBody
+                ),
+              },
+            },
+          };
+        }
+      );
+
+      return [
+        {
+          Delete: mainItem,
+        },
         ...uniqueAttributeInputs,
       ] as DynamoDB.DocumentClient.TransactWriteItem[];
     };

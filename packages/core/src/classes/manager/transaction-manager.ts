@@ -18,7 +18,7 @@ export class TransactionManager {
             return item;
           }
 
-          // if updating unique attribute in transaction, get previous value of attributes and remove in transaction
+          // if updating/removing unique attribute in transaction, get previous value of attributes
           const existingItem = await this.connection.entityManager.findOne(
             item.entityClass,
             item.primaryKeyAttributes
@@ -26,7 +26,9 @@ export class TransactionManager {
 
           if (!existingItem) {
             throw new Error(
-              `Failed to update entity, could not find entity with primary key "${JSON.stringify(
+              `Failed to process entity "${
+                item.entityClass.name
+              }", could not find entity with primary key "${JSON.stringify(
                 item.primaryKeyAttributes
               )}"`
             );

@@ -21,9 +21,16 @@ export interface WriteTransactionUpdate<PrimaryKey, Entity> {
     options?: EntityManagerUpdateOptions;
   };
 }
+export interface WriteTransactionRemove<PrimaryKey, Entity> {
+  delete: {
+    item: EntityTarget<Entity>;
+    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+  };
+}
 export type WriteTransactionChainItem<PrimaryKey, Entity> =
   | WriteTransactionCreate<Entity>
-  | WriteTransactionUpdate<PrimaryKey, Entity>;
+  | WriteTransactionUpdate<PrimaryKey, Entity>
+  | WriteTransactionRemove<PrimaryKey, Entity>;
 
 /**
  * Base Transaction
