@@ -262,11 +262,20 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return itemToUpdate;
     }
 
+    // drop return values from itemToUpdate for transact write item input
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {ReturnValues, ...itemToUpdateForTransactWrite} = itemToUpdate;
+
     // if there are unique attributes, return a lazy loader, which will return write item list
     const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdateItemFactory<
       PrimaryKey,
       Entity
-    >(metadata.table, uniqueAttributesToUpdate, itemToUpdate, body);
+    >(
+      metadata.table,
+      uniqueAttributesToUpdate,
+      itemToUpdateForTransactWrite,
+      body
+    );
 
     return {
       lazyLoadTransactionWriteItems,
