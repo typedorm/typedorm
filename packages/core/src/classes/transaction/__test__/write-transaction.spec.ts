@@ -111,9 +111,9 @@ test('chains complex transaction requests', () => {
         item: user,
       },
     })
-    .chian<UserPrimaryKey, User>({
+    .chian<UserPrimaryKey, UserUniqueEmail>({
       update: {
-        item: User,
+        item: UserUniqueEmail,
         primaryKey: {
           id: '123',
         },
@@ -123,7 +123,7 @@ test('chains complex transaction requests', () => {
       },
     });
 
-  expect(transaction.items).toEqual([
+  expect(transaction.items).toMatchObject([
     {
       Put: {
         ConditionExpression:
@@ -162,19 +162,9 @@ test('chains complex transaction requests', () => {
       },
     },
     {
-      Update: {
-        ExpressionAttributeNames: {
-          '#attr0': 'email',
-        },
-        ExpressionAttributeValues: {
-          ':val0': 'example@email.com',
-        },
-        Key: {
-          PK: 'USER#123',
-          SK: 'USER#123',
-        },
-        TableName: 'test-table',
-        UpdateExpression: 'SET #attr0 = :val0',
+      entityClass: UserUniqueEmail,
+      primaryKeyAttributes: {
+        id: '123',
       },
     },
   ]);

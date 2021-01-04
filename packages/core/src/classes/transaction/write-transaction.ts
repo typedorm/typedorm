@@ -1,6 +1,5 @@
 import {DynamoDB} from 'aws-sdk';
 import {dropProp} from '../../helpers/drop-prop';
-
 import {Connection} from '../connection/connection';
 import {
   isLazyTransactionWriteItemListLoader,
