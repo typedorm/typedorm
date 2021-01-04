@@ -1,6 +1,11 @@
 import {DynamoDB} from 'aws-sdk';
+import {dropProp} from '../../helpers/drop-prop';
 
 import {Connection} from '../connection/connection';
+import {
+  isLazyTransactionWriteItemListLoader,
+  LazyTransactionWriteItemListLoader,
+} from '../transformer/is-lazy-transaction-write-item-list-loder';
 import {
   Transaction,
   WriteTransactionChainItem,
@@ -13,7 +18,10 @@ import {
 } from './type-guards';
 
 export class WriteTransaction extends Transaction {
-  protected _items: DynamoDB.DocumentClient.TransactWriteItemList;
+  protected _items: (
+    | LazyTransactionWriteItemListLoader
+    | DynamoDB.DocumentClient.TransactWriteItem
+  )[];
 
   constructor(
     connection: Connection,
@@ -33,16 +41,20 @@ export class WriteTransaction extends Transaction {
     if (isCreateTransaction(chainedItem)) {
       this.items = this.chainCreateTransaction(chainedItem);
     } else if (isUpdateTransaction(chainedItem)) {
-      //TODO: add support for update item in list
       const {item, body, primaryKey, options} = chainedItem.update;
-      this._items.push({
-        Update: this._dcReqTransformer.toDynamoUpdateItem<PrimaryKey, Entity>(
-          item,
-          primaryKey,
-          body,
-          options
-        ) as DynamoDB.Update,
-      });
+
+      const itemToUpdate = this._dcReqTransformer.toDynamoUpdateItem<
+        PrimaryKey,
+        Entity
+      >(item, primaryKey, body, options);
+
+      if (!isLazyTransactionWriteItemListLoader(itemToUpdate)) {
+        this.items.push({
+          Update: dropProp(itemToUpdate, 'ReturnValues') as DynamoDB.Update,
+        });
+      } else {
+        this.items.push(itemToUpdate);
+      }
     }
     return this;
   }
@@ -73,7 +85,12 @@ export class WriteTransaction extends Transaction {
     return this._items;
   }
 
-  set items(items: DynamoDB.DocumentClient.TransactWriteItemList) {
+  set items(
+    items: (
+      | DynamoDB.DocumentClient.TransactWriteItem
+      | LazyTransactionWriteItemListLoader
+    )[]
+  ) {
     this._items = [...this.items, ...items];
   }
 }

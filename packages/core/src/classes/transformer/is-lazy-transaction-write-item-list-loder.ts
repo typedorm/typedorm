@@ -1,9 +1,12 @@
+import {EntityTarget} from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 
 export type LazyTransactionWriteItemListLoader = {
   lazyLoadTransactionWriteItems: (
     previousItemBody: any
-  ) => DynamoDB.DocumentClient.TransactWriteItemList;
+  ) => DynamoDB.DocumentClient.TransactWriteItem[];
+  entityClass: EntityTarget<any>;
+  primaryKeyAttributes: any;
 };
 
 export const isLazyTransactionWriteItemListLoader = (

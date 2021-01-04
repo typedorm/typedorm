@@ -15,6 +15,7 @@ import {
   UpdateAttributes,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
+import {dropProp} from '../../helpers/drop-prop';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {parseKey} from '../../helpers/parse-key';
@@ -262,10 +263,6 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return itemToUpdate;
     }
 
-    // drop return values from itemToUpdate for transact write item input
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const {ReturnValues, ...itemToUpdateForTransactWrite} = itemToUpdate;
-
     // if there are unique attributes, return a lazy loader, which will return write item list
     const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdateItemFactory<
       PrimaryKey,
@@ -273,11 +270,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     >(
       metadata.table,
       uniqueAttributesToUpdate,
-      itemToUpdateForTransactWrite,
+      dropProp(itemToUpdate, 'ReturnValues'),
       body
     );
 
     return {
+      primaryKeyAttributes,
+      entityClass,
       lazyLoadTransactionWriteItems,
     };
   }
@@ -502,7 +501,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return [
         {Update: mainItem},
         ...uniqueAttributeInputs,
-      ] as DynamoDB.DocumentClient.TransactWriteItemList;
+      ] as DynamoDB.DocumentClient.TransactWriteItem[];
     };
   }
 }

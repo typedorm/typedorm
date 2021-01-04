@@ -7,6 +7,7 @@ import {
 import {Connection} from '../connection/connection';
 import {EntityManagerUpdateOptions} from '../manager/entity-manager';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
+import {LazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loder';
 
 // transaction interfaces
 export interface WriteTransactionCreate<Entity> {
@@ -28,9 +29,11 @@ export type WriteTransactionChainItem<PrimaryKey, Entity> =
  * Base Transaction
  */
 export abstract class Transaction {
-  protected _items:
-    | DynamoDB.DocumentClient.TransactWriteItemList
-    | DynamoDB.DocumentClient.TransactGetItemList;
+  protected _items: (
+    | DynamoDB.DocumentClient.TransactWriteItem
+    | LazyTransactionWriteItemListLoader
+    | DynamoDB.DocumentClient.TransactGetItem
+  )[];
 
   protected _dcReqTransformer: DocumentClientRequestTransformer;
 
