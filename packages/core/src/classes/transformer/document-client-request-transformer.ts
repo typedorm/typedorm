@@ -33,7 +33,7 @@ export interface ManagerToDynamoQueryItemsOptions {
    * Sort key condition
    * @default none - no sort key condition is applied
    */
-  keyCondition?: RequireOnlyOne<
+  keyCondition: RequireOnlyOne<
     {
       [key in FindKeyScalarOperator]: ScalarType;
     } &
