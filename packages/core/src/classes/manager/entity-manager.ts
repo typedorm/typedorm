@@ -201,20 +201,20 @@ export class EntityManager {
   /**
    *
    * @param entityClass Entity class to update
-   * @param primaryKey Primary key
+   * @param primaryKeyAttributes Primary key
    * @param body Attributes to update
    * @param options update options
    */
   async update<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>,
+    primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
     options?: EntityManagerUpdateOptions
   ): Promise<Entity> {
     const dynamoUpdateItem = this._dcReqTransformer.toDynamoUpdateItem<
       PrimaryKey,
       Entity
-    >(entityClass, primaryKey, body, options);
+    >(entityClass, primaryKeyAttributes, body, options);
 
     if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
       const response = await this.connection.documentClient
@@ -231,13 +231,13 @@ export class EntityManager {
     // first get existing item, so that we can safely clear previous unique attributes
     const existingItem = await this.findOne<PrimaryKey, Entity>(
       entityClass,
-      primaryKey
+      primaryKeyAttributes
     );
 
     if (!existingItem) {
       throw new Error(
         `Failed to update entity, could not find entity with primary key "${JSON.stringify(
-          primaryKey
+          primaryKeyAttributes
         )}"`
       );
     }
@@ -251,7 +251,7 @@ export class EntityManager {
     await this.connection.transactionManger.write(transaction);
     const updatedItem = (await this.findOne<PrimaryKey, Entity>(
       entityClass,
-      primaryKey
+      primaryKeyAttributes
     )) as Entity;
 
     return updatedItem;
@@ -260,16 +260,16 @@ export class EntityManager {
   /**
    * Deletes an entity by primary key
    * @param entityClass Entity Class to delete
-   * @param primaryKey Entity Primary key
+   * @param primaryKeyAttributes Entity Primary key
    */
-  async delete<PrimaryKey, Entity>(
+  async delete<PrimaryKeyAttributes, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKey: PrimaryKey
+    primaryKeyAttributes: PrimaryKeyAttributes
   ) {
     const dynamoDeleteItem = this._dcReqTransformer.toDynamoDeleteItem<
-      PrimaryKey,
+      PrimaryKeyAttributes,
       Entity
-    >(entityClass, primaryKey);
+    >(entityClass, primaryKeyAttributes);
 
     if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
       await this.connection.documentClient.delete(dynamoDeleteItem).promise();
@@ -279,15 +279,15 @@ export class EntityManager {
     }
 
     // first get existing item, so that we can safely clear previous unique attributes
-    const existingItem = await this.findOne<PrimaryKey, Entity>(
+    const existingItem = await this.findOne<PrimaryKeyAttributes, Entity>(
       entityClass,
-      primaryKey
+      primaryKeyAttributes
     );
 
     if (!existingItem) {
       throw new Error(
         `Failed to update entity, could not find entity with primary key "${JSON.stringify(
-          primaryKey
+          primaryKeyAttributes
         )}"`
       );
     }
