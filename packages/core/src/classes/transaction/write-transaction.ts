@@ -12,6 +12,7 @@ import {
 } from './transaction';
 import {
   isCreateTransaction,
+  isRemoveTransaction,
   isUpdateTransaction,
   isWriteTransactionItemList,
 } from './type-guards';
@@ -37,8 +38,10 @@ export class WriteTransaction extends Transaction {
   chian<PrimaryKey, Entity>(
     chainedItem: WriteTransactionChainItem<PrimaryKey, Entity>
   ): WriteTransaction {
+    // create
     if (isCreateTransaction(chainedItem)) {
       this.items = this.chainCreateTransaction(chainedItem);
+      // update
     } else if (isUpdateTransaction(chainedItem)) {
       const {item, body, primaryKey, options} = chainedItem.update;
 
@@ -46,7 +49,6 @@ export class WriteTransaction extends Transaction {
         PrimaryKey,
         Entity
       >(item, primaryKey, body, options);
-
       if (!isLazyTransactionWriteItemListLoader(itemToUpdate)) {
         this.items.push({
           Update: dropProp(itemToUpdate, 'ReturnValues') as DynamoDB.Update,
@@ -54,6 +56,23 @@ export class WriteTransaction extends Transaction {
       } else {
         this.items.push(itemToUpdate);
       }
+      // remove
+    } else if (isRemoveTransaction(chainedItem)) {
+      const {item, primaryKey} = chainedItem.delete;
+
+      const itemToRemove = this._dcReqTransformer.toDynamoDeleteItem<
+        PrimaryKey,
+        Entity
+      >(item, primaryKey);
+      if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
+        this.items.push({
+          Delete: itemToRemove,
+        });
+      } else {
+        this.items.push(itemToRemove);
+      }
+    } else {
+      return this;
     }
     return this;
   }

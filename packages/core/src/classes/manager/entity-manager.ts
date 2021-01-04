@@ -271,8 +271,33 @@ export class EntityManager {
       Entity
     >(entityClass, primaryKey);
 
-    await this.connection.documentClient.delete(dynamoDeleteItem).promise();
+    if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
+      await this.connection.documentClient.delete(dynamoDeleteItem).promise();
+      return {
+        success: true,
+      };
+    }
 
+    // first get existing item, so that we can safely clear previous unique attributes
+    const existingItem = await this.findOne<PrimaryKey, Entity>(
+      entityClass,
+      primaryKey
+    );
+
+    if (!existingItem) {
+      throw new Error(
+        `Failed to update entity, could not find entity with primary key "${JSON.stringify(
+          primaryKey
+        )}"`
+      );
+    }
+
+    const deleteItemList = dynamoDeleteItem.lazyLoadTransactionWriteItems(
+      existingItem
+    );
+    const transaction = new WriteTransaction(this.connection, deleteItemList);
+    // delete main item and all it's unique attributes as part of single transaction
+    await this.connection.transactionManger.write(transaction);
     return {
       success: true,
     };

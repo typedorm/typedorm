@@ -337,6 +337,61 @@ test('throws an error if no existing item found', async () => {
 
   expect(dcMock.transactWrite).not.toHaveBeenCalled();
   await expect(update).rejects.toThrow(
-    'Failed to update entity, could not find entity with primary key "{"id":"1"}"'
+    'Failed to process entity "UserUniqueEmail", could not find entity with primary key "{"id":"1"}"'
   );
+});
+
+test('performs write transactions when removing entities with unique attributes ', async () => {
+  connection.entityManager.findOne = jest.fn().mockReturnValue({
+    id: '1',
+    email: 'olduser@example.com',
+  });
+
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const transaction = new WriteTransaction(connection).chian<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >({
+    delete: {
+      item: UserUniqueEmail,
+      primaryKey: {
+        id: '1',
+      },
+    },
+  });
+
+  await manager.write(transaction);
+
+  expect(dcMock.transactWrite).toHaveBeenCalledTimes(1);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Delete: {
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+        },
+      },
+      {
+        Delete: {
+          Key: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#olduser@example.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#olduser@example.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
 });

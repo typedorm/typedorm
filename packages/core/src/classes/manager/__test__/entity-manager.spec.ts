@@ -11,8 +11,10 @@ import {
   UserAutoGenerateAttributesPrimaryKey,
   UserAutoGenerateAttributes,
 } from '../../../../__mocks__/user-auto-generate-attributes';
+import {Connection} from '../../connection/connection';
 
 let manager: EntityManager;
+let connection: Connection;
 const dcMock = {
   put: jest.fn(),
   get: jest.fn(),
@@ -22,7 +24,7 @@ const dcMock = {
   transactWrite: jest.fn(),
 };
 beforeEach(() => {
-  const connection = createTestConnection({
+  connection = createTestConnection({
     entities: [User, UserUniqueEmail, UserAutoGenerateAttributes],
     documentClient: dcMock,
   });
@@ -468,6 +470,58 @@ test('throws an error when trying to delete item by non primary key attributes',
       name: 'User',
     })
   ).rejects.toThrowError('Could not resolve "id" from given dictionary');
+});
+
+test('deletes an item with unique attributes', async () => {
+  manager.findOne = jest.fn().mockReturnValue({
+    id: '1',
+    email: 'old@email.com',
+    status: 'active',
+  });
+
+  const deleteItemOperation = dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const deletedResponse = await manager.delete<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >(UserUniqueEmail, {
+    id: '1',
+  });
+
+  expect(deleteItemOperation).toHaveBeenCalledTimes(1);
+  expect(deleteItemOperation).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Delete: {
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+        },
+      },
+      {
+        Delete: {
+          Key: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+  expect(deletedResponse).toEqual({
+    success: true,
+  });
 });
 
 /**

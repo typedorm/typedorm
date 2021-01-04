@@ -5,7 +5,10 @@ import {User, UserGSI1} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {UserPrimaryKey} from '../../../../__mocks__/user';
 import {DocumentClientRequestTransformer} from '../document-client-request-transformer';
-import {UserUniqueEmail} from '../../../../__mocks__/user-unique-email';
+import {
+  UserUniqueEmail,
+  UserUniqueEmailPrimaryKey,
+} from '../../../../__mocks__/user-unique-email';
 
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {
@@ -320,6 +323,21 @@ test('transforms delete item request', () => {
       SK: 'USER#1',
     },
     TableName: 'test-table',
+  });
+});
+
+test('transforms delete item request with unique attributes', () => {
+  const deleteItemInput = transformer.toDynamoDeleteItem<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >(UserUniqueEmail, {
+    id: '1',
+  });
+  expect(deleteItemInput).toMatchObject({
+    entityClass: UserUniqueEmail,
+    primaryKeyAttributes: {
+      id: '1',
+    },
   });
 });
 
