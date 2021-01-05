@@ -75,9 +75,11 @@ test('chains simple transaction requests', () => {
           status: 'active',
         },
         TableName: 'test-table',
-        ConditionExpression: 'attribute_not_exists(#CE_PK)',
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
         ExpressionAttributeNames: {
           '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
         },
       },
     },
@@ -89,7 +91,6 @@ test('chains simple transaction requests', () => {
           ':val1': 'USER#new name',
         },
         Key: {PK: 'USER#123', SK: 'USER#123'},
-        ReturnValues: 'ALL_NEW',
         TableName: 'test-table',
         UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
       },
@@ -110,9 +111,9 @@ test('chains complex transaction requests', () => {
         item: user,
       },
     })
-    .chian<UserPrimaryKey, User>({
+    .chian<UserPrimaryKey, UserUniqueEmail>({
       update: {
-        item: User,
+        item: UserUniqueEmail,
         primaryKey: {
           id: '123',
         },
@@ -122,12 +123,14 @@ test('chains complex transaction requests', () => {
       },
     });
 
-  expect(transaction.items).toEqual([
+  expect(transaction.items).toMatchObject([
     {
       Put: {
-        ConditionExpression: 'attribute_not_exists(#CE_PK)',
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
         ExpressionAttributeNames: {
           '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
         },
         Item: {
           PK: 'USER#1',
@@ -145,9 +148,11 @@ test('chains complex transaction requests', () => {
     },
     {
       Put: {
-        ConditionExpression: 'attribute_not_exists(#CE_PK)',
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
         ExpressionAttributeNames: {
           '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
         },
         Item: {
           PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
@@ -157,20 +162,9 @@ test('chains complex transaction requests', () => {
       },
     },
     {
-      Update: {
-        ExpressionAttributeNames: {
-          '#attr0': 'email',
-        },
-        ExpressionAttributeValues: {
-          ':val0': 'example@email.com',
-        },
-        Key: {
-          PK: 'USER#123',
-          SK: 'USER#123',
-        },
-        ReturnValues: 'ALL_NEW',
-        TableName: 'test-table',
-        UpdateExpression: 'SET #attr0 = :val0',
+      entityClass: UserUniqueEmail,
+      primaryKeyAttributes: {
+        id: '123',
       },
     },
   ]);

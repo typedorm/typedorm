@@ -12,8 +12,7 @@ export function buildPrimaryKeySchema({
   attributes: {[key: string]: string};
 }) {
   const partitionKeyInterpolations = getInterpolatedKeys(
-    primaryKey.partitionKey,
-    attributes
+    primaryKey.partitionKey
   );
 
   const tablePartitionKeyName = table.partitionKey;
@@ -30,10 +29,7 @@ export function buildPrimaryKeySchema({
 
     // build primary key
     const tableSortKeyName = table.sortKey ?? '';
-    const sortKeyInterpolations = getInterpolatedKeys(
-      primaryKey.sortKey,
-      attributes
-    );
+    const sortKeyInterpolations = getInterpolatedKeys(primaryKey.sortKey);
     return {
       [tablePartitionKeyName]: primaryKey.partitionKey,
       [tableSortKeyName]: primaryKey.sortKey,

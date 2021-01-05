@@ -1,9 +1,25 @@
+import {Table} from '@typedorm/common';
 import {isEmptyObject} from '../helpers/is-empty-object';
 import {isObject} from '../helpers/is-object';
 import {Condition} from './condition/condition';
 import {KeyCondition} from './condition/key-condition';
 
 export class ExpressionBuilder {
+  /**
+   * Higher level function to build unique record condition expression
+   * @param table table to build unique record expression for
+   */
+  buildUniqueRecordConditionExpression(table: Table) {
+    const uniqueRecordCondition = table.usesCompositeKey()
+      ? new Condition()
+          .attributeNotExist(table.partitionKey)
+          .and()
+          .attributeNotExist(table.sortKey)
+      : new Condition().attributeNotExist(table.partitionKey);
+
+    return this.buildConditionExpression(uniqueRecordCondition);
+  }
+
   buildConditionExpression(condition: Condition) {
     if (!condition.expression) {
       return {ConditionExpression: ''};

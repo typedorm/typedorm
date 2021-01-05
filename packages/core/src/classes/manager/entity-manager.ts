@@ -3,7 +3,6 @@ import {
   EntityAttributes,
   EntityTarget,
   PrimaryKeyAttributes,
-  RETURN_VALUES,
   UpdateAttributes,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
@@ -16,17 +15,15 @@ import {
 } from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
+import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
+import {isWriteTransactionItemList} from '../transaction/type-guards';
+import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loder';
 
 export interface EntityManagerUpdateOptions {
   /**
    * @default '.'
    */
   nestedKeySeparator?: string;
-
-  /**
-   * @default ALL_NEW
-   */
-  returnValues?: RETURN_VALUES;
 }
 
 export interface EntityManagerQueryOptions
@@ -51,8 +48,10 @@ export class EntityManager {
     const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(entity);
     const entityClass = getConstructorForInstance(entity);
 
-    if (!Array.isArray(dynamoPutItemInput)) {
+    if (!isWriteTransactionItemList(dynamoPutItemInput)) {
       await this.connection.documentClient.put(dynamoPutItemInput).promise();
+
+      // by default dynamodb does not return attributes on create operation, so return one
       const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
         dynamoPutItemInput.Item
@@ -61,18 +60,19 @@ export class EntityManager {
       return itemToReturn;
     }
 
-    // when put item is set to array, one or more attributes are marked as unique
-    // to maintain all records consistency, all items must be put into db as a single transaction
+    // dynamoPutItemInput is a transact item list, meaning that it contains one or more unique attributes, which also
+    // needs to be created along with original item
+
     const transaction = new WriteTransaction(
       this.connection,
-      dynamoPutItemInput.map(putItem => ({Put: putItem}))
+      dynamoPutItemInput
     );
     await this.connection.transactionManger.write(transaction);
 
     const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
-      // if create operation contains multiple items, first one will the original requested item
-      dynamoPutItemInput[0].Item
+      // if create operation contains multiple items, first one will the original item
+      dynamoPutItemInput[0]?.Put?.Item ?? {}
     );
 
     return itemToReturn;
@@ -131,12 +131,7 @@ export class EntityManager {
       attributes
     ).reduce(
       (acc, [attrKey, value]) => {
-        if (
-          this.connection.isUsedForPrimaryKey(
-            metadata.schema.primaryKey,
-            attrKey
-          )
-        ) {
+        if (isUsedForPrimaryKey(metadata.schema.primaryKey, attrKey)) {
           acc.primaryKeyAttributes[attrKey] = value;
         } else if (uniqueAttributeNames.includes(attrKey)) {
           acc.uniqueAttributes[attrKey] = value;
@@ -206,47 +201,103 @@ export class EntityManager {
   /**
    *
    * @param entityClass Entity class to update
-   * @param primaryKey Primary key
+   * @param primaryKeyAttributes Primary key
    * @param body Attributes to update
    * @param options update options
    */
   async update<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>,
+    primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
     options?: EntityManagerUpdateOptions
   ): Promise<Entity> {
     const dynamoUpdateItem = this._dcReqTransformer.toDynamoUpdateItem<
       PrimaryKey,
       Entity
-    >(entityClass, primaryKey, body, options);
+    >(entityClass, primaryKeyAttributes, body, options);
 
-    const response = await this.connection.documentClient
-      .update(dynamoUpdateItem)
-      .promise();
+    if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
+      const response = await this.connection.documentClient
+        .update(dynamoUpdateItem)
+        .promise();
 
-    return this._entityTransformer.fromDynamoEntity<Entity>(
+      return this._entityTransformer.fromDynamoEntity<Entity>(
+        entityClass,
+        // return all new attributes
+        response.Attributes ?? {}
+      );
+    }
+
+    // first get existing item, so that we can safely clear previous unique attributes
+    const existingItem = await this.findOne<PrimaryKey, Entity>(
       entityClass,
-      response.Attributes ?? {}
+      primaryKeyAttributes
     );
+
+    if (!existingItem) {
+      throw new Error(
+        `Failed to update entity, could not find entity with primary key "${JSON.stringify(
+          primaryKeyAttributes
+        )}"`
+      );
+    }
+
+    const updateItemList = dynamoUpdateItem.lazyLoadTransactionWriteItems(
+      existingItem
+    );
+
+    const transaction = new WriteTransaction(this.connection, updateItemList);
+    // since write transaction does not return any, we will need to get the latest one from dynamo
+    await this.connection.transactionManger.write(transaction);
+    const updatedItem = (await this.findOne<PrimaryKey, Entity>(
+      entityClass,
+      primaryKeyAttributes
+    )) as Entity;
+
+    return updatedItem;
   }
 
   /**
    * Deletes an entity by primary key
    * @param entityClass Entity Class to delete
-   * @param primaryKey Entity Primary key
+   * @param primaryKeyAttributes Entity Primary key
    */
-  async delete<PrimaryKey, Entity>(
+  async delete<PrimaryKeyAttributes, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKey: PrimaryKey
+    primaryKeyAttributes: PrimaryKeyAttributes
   ) {
     const dynamoDeleteItem = this._dcReqTransformer.toDynamoDeleteItem<
-      PrimaryKey,
+      PrimaryKeyAttributes,
       Entity
-    >(entityClass, primaryKey);
+    >(entityClass, primaryKeyAttributes);
 
-    await this.connection.documentClient.delete(dynamoDeleteItem).promise();
+    if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
+      await this.connection.documentClient.delete(dynamoDeleteItem).promise();
+      return {
+        success: true,
+      };
+    }
 
+    // first get existing item, so that we can safely clear previous unique attributes
+    const existingItem = await this.findOne<PrimaryKeyAttributes, Entity>(
+      entityClass,
+      primaryKeyAttributes
+    );
+
+    if (!existingItem) {
+      throw new Error(
+        `Failed to update entity, could not find entity with primary key "${JSON.stringify(
+          primaryKeyAttributes
+        )}"`
+      );
+    }
+
+    const deleteItemList = dynamoDeleteItem.lazyLoadTransactionWriteItems(
+      existingItem
+    );
+    const transaction = new WriteTransaction(this.connection, deleteItemList);
+    // delete main item and all it's unique attributes as part of single transaction
+    await this.connection.transactionManger.write(transaction);
     return {
       success: true,
     };

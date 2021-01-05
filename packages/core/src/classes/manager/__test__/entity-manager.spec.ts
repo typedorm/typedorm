@@ -11,17 +11,20 @@ import {
   UserAutoGenerateAttributesPrimaryKey,
   UserAutoGenerateAttributes,
 } from '../../../../__mocks__/user-auto-generate-attributes';
+import {Connection} from '../../connection/connection';
 
 let manager: EntityManager;
+let connection: Connection;
 const dcMock = {
   put: jest.fn(),
   get: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
   query: jest.fn(),
+  transactWrite: jest.fn(),
 };
 beforeEach(() => {
-  const connection = createTestConnection({
+  connection = createTestConnection({
     entities: [User, UserUniqueEmail, UserAutoGenerateAttributes],
     documentClient: dcMock,
   });
@@ -60,9 +63,11 @@ test('creates entity', async () => {
       status: 'active',
     },
     TableName: 'test-table',
-    ConditionExpression: 'attribute_not_exists(#CE_PK)',
+    ConditionExpression:
+      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
     },
   });
   expect(userEntity).toEqual({
@@ -96,9 +101,11 @@ test('creates entity and returns all attributes, including auto generated ones',
       updatedAt: 1606896235,
     },
     TableName: 'test-table',
-    ConditionExpression: 'attribute_not_exists(#CE_PK)',
+    ConditionExpression:
+      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
     },
   });
   expect(userEntity).toEqual({
@@ -224,7 +231,7 @@ test('throws an error if trying to perform exists check with partial primary key
 /**
  * @group update
  */
-test('updates item', async () => {
+test('updates item and return all new attributes', async () => {
   dcMock.update.mockReturnValue({
     promise: () => ({
       Attributes: {
@@ -233,7 +240,7 @@ test('updates item', async () => {
         GSI1PK: 'USER#STATUS#active',
         GSI1SK: 'USER#Me',
         id: '1',
-        name: 'Me',
+        name: 'user',
         status: 'active',
       },
     }),
@@ -269,7 +276,7 @@ test('updates item', async () => {
     UpdateExpression:
       'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2, #attr3 = :val3',
   });
-  expect(updatedItem).toEqual({id: '1', name: 'Me', status: 'active'});
+  expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
 });
 
 test('updates item and attributes marked to be autoUpdated', async () => {
@@ -321,6 +328,116 @@ test('updates item and attributes marked to be autoUpdated', async () => {
   expect(updatedItem).toEqual({id: '1', name: 'Me', status: 'active'});
 });
 
+test('updates item with unique attributes and returns all updated attributes', async () => {
+  manager.findOne = jest
+    .fn()
+    // mock first call to return existing item, this will be called before update is performed
+    .mockImplementationOnce(() => ({
+      id: '1',
+      email: 'old@email.com',
+      status: 'active',
+    }))
+    // mock send call to return new updated item, this will be called after update is performed
+    .mockImplementationOnce(() => ({
+      id: '1',
+      email: 'new@email.com',
+      status: 'active',
+    }));
+
+  const updateOperationSpy = dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const updatedItem = await manager.update<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      email: 'new@examil.com',
+    }
+  );
+
+  expect(updateOperationSpy).toHaveBeenCalledTimes(1);
+  expect(updateOperationSpy).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Update: {
+          ExpressionAttributeNames: {
+            '#attr0': 'email',
+          },
+          ExpressionAttributeValues: {
+            ':val0': 'new@examil.com',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+          UpdateExpression: 'SET #attr0 = :val0',
+        },
+      },
+      {
+        Put: {
+          ConditionExpression:
+            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+          ExpressionAttributeNames: {
+            '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
+          },
+          Item: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@examil.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@examil.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+      {
+        Delete: {
+          Key: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+  expect(updatedItem).toEqual({
+    id: '1',
+    email: 'new@email.com',
+    status: 'active',
+  });
+});
+
+test('does not update an item when failed to get item by key', async () => {
+  manager.findOne = jest.fn();
+
+  const updatedItem = async () =>
+    await manager.update<UserUniqueEmailPrimaryKey, UserUniqueEmail>(
+      UserUniqueEmail,
+      {
+        id: '1',
+      },
+      {
+        email: 'new@examil.com',
+      }
+    );
+
+  await expect(updatedItem).rejects.toThrow(
+    'Failed to update entity, could not find entity with primary key "{"id":"1"}"'
+  );
+});
+
 /**
  * @group delete
  */
@@ -353,6 +470,58 @@ test('throws an error when trying to delete item by non primary key attributes',
       name: 'User',
     })
   ).rejects.toThrowError('Could not resolve "id" from given dictionary');
+});
+
+test('deletes an item with unique attributes', async () => {
+  manager.findOne = jest.fn().mockReturnValue({
+    id: '1',
+    email: 'old@email.com',
+    status: 'active',
+  });
+
+  const deleteItemOperation = dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const deletedResponse = await manager.delete<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >(UserUniqueEmail, {
+    id: '1',
+  });
+
+  expect(deleteItemOperation).toHaveBeenCalledTimes(1);
+  expect(deleteItemOperation).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Delete: {
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+        },
+      },
+      {
+        Delete: {
+          Key: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+  expect(deletedResponse).toEqual({
+    success: true,
+  });
 });
 
 /**
