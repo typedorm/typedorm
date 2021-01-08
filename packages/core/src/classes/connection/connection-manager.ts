@@ -23,7 +23,13 @@ export class ConnectionManager {
         `There is already an existing connection with name "${name}".`
       );
     }
-    this.connections.set(name, new Connection(options));
+    this.connections.set(
+      name,
+      new Connection(
+        options,
+        this.clearByName.bind(this) // bind Connection manager ctx
+      )
+    );
 
     const createdConnection = this.connections.get(name);
     if (!createdConnection) {
@@ -36,5 +42,9 @@ export class ConnectionManager {
 
   clear() {
     this.connections = new Map<string, Connection>();
+  }
+
+  clearByName(name: string) {
+    this.connections.delete(name);
   }
 }

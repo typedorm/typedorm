@@ -3,6 +3,7 @@ import {getConnection} from '@typedorm/core';
 import {User} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import path from 'path';
+import {ConnectionManager} from '../connection-manager';
 jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
 
 beforeEach(() => {
@@ -96,4 +97,24 @@ test('Connection manager should properly configure global table instance for sin
   const userMetadata = getConnection().getEntityByTarget(AnotherUser);
 
   expect(userMetadata.table).toEqual(globalTable);
+});
+
+/**
+ * Issue: 38
+ */
+test('Auto removes connection when failed to connect', () => {
+  const connectionManager = new ConnectionManager();
+  const createdConnection = connectionManager.create({
+    entities: [User],
+  });
+
+  createdConnection.buildMetadatas = jest.fn().mockImplementation(() => {
+    throw new Error('Failed to build metadata');
+  });
+
+  createdConnection.connect();
+
+  expect(() => connectionManager.get()).toThrow(
+    'No such connection with name "default" exists'
+  );
 });
