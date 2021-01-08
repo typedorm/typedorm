@@ -87,3 +87,43 @@ test('builds update expression for complex nested object', () => {
     },
   });
 });
+
+/**
+ * Issue 41
+ */
+test('allows updating attribute with undefined value', () => {
+  const item = {
+    'user.name': undefined,
+  };
+  const expression = expressionBuilder.buildUpdateExpression(item);
+  expect(expression).toEqual({
+    UpdateExpression: 'SET #attr0_inner0.#attr0_inner1 = :val0',
+    ExpressionAttributeNames: {
+      '#attr0_inner0': 'user',
+      '#attr0_inner1': 'name',
+    },
+    ExpressionAttributeValues: {
+      ':val0': null,
+    },
+  });
+});
+
+/**
+ * Issue 41
+ */
+test('allows updating attribute with empty string', () => {
+  const item = {
+    'user.name': '',
+  };
+  const expression = expressionBuilder.buildUpdateExpression(item);
+  expect(expression).toEqual({
+    UpdateExpression: 'SET #attr0_inner0.#attr0_inner1 = :val0',
+    ExpressionAttributeNames: {
+      '#attr0_inner0': 'user',
+      '#attr0_inner1': 'name',
+    },
+    ExpressionAttributeValues: {
+      ':val0': '',
+    },
+  });
+});

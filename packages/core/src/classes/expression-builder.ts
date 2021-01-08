@@ -59,7 +59,7 @@ export class ExpressionBuilder {
 
         const expValKey = `:val${index}`;
         acc.UpdateExpression += ` ${expAttrKey} = ${expValKey}`;
-        acc.ExpressionAttributeValues[expValKey] = item[key];
+        acc.ExpressionAttributeValues[expValKey] = item[key] ?? null;
         return acc;
       },
       {
