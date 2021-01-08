@@ -26,7 +26,10 @@ export class Connection {
   private _entityMetadatas: Map<string, EntityMetadata>;
   private isConnected: boolean;
 
-  constructor(private options: ConnectionOptions) {
+  constructor(
+    private options: ConnectionOptions,
+    private destroySelf: (name: string) => void
+  ) {
     const {table, name = 'default'} = options;
     if (table) {
       this.table = table;
@@ -58,15 +61,21 @@ export class Connection {
       );
     }
 
-    this._entityMetadatas = new Map(
-      this.buildMetadatas().map(entityMeta => [
-        entityMeta.target.name,
-        entityMeta,
-      ])
-    );
+    try {
+      this._entityMetadatas = new Map(
+        this.buildMetadatas().map(entityMeta => [
+          entityMeta.target.name,
+          entityMeta,
+        ])
+      );
 
-    this.isConnected = true;
-    return this;
+      this.isConnected = true;
+      return this;
+    } catch (err) {
+      // Failed to connect to connection, clear self from connection manager
+      this.destroySelf(this.name);
+      return;
+    }
   }
 
   get entityMetadatas() {
@@ -141,7 +150,7 @@ export class Connection {
     });
   }
 
-  private buildMetadatas() {
+  buildMetadatas() {
     return new ConnectionMetadataBuilder(this).buildEntityMetadatas(
       this.options.entities
     );

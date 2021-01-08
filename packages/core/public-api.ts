@@ -14,7 +14,16 @@ export * from './src/classes/manager/transaction-manager';
 
 export function createConnection(options: ConnectionOptions) {
   const connection = connectionManger().create(options);
-  return connection.connect();
+
+  const connected = connection.connect();
+
+  if (!connected) {
+    throw new Error(
+      `Failed to create connection with options: ${JSON.stringify(options)}`
+    );
+  }
+
+  return connected;
 }
 
 export function createConnections(optionsList: ConnectionOptions[]) {
