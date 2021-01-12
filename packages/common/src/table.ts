@@ -22,11 +22,13 @@ export interface GSIIndexOptions {
   type: INDEX_TYPE.GSI;
   partitionKey: string;
   sortKey: string;
+  isSparse?: boolean;
 }
 
 export interface LSIIndexOptions {
   type: INDEX_TYPE.LSI;
   sortKey: string;
+  isSparse?: boolean;
 }
 
 export type IndexOptions = GSIIndexOptions | LSIIndexOptions;
