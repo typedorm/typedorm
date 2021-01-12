@@ -17,11 +17,16 @@ import {BaseMetadata} from './base-metadata';
 import {InternalAttributeMetadata} from './internal-attribute-metadata';
 
 export type DynamoEntitySchemaPrimaryKey = {
-  [key: string]: any;
-  _interpolations?: {[key: string]: string[]};
+  attributes: {[key: string]: any};
+  metadata: {
+    _interpolations?: {[key: string]: string[]};
+  };
 };
 export type DynamoEntityIndexesSchema = {
-  [key: string]: DynamoEntityIndexSchema;
+  [key: string]: {
+    attributes: {[key: string]: any};
+    metadata: DynamoEntityIndexSchema;
+  };
 };
 
 export type DynamoEntityIndexSchema = {
@@ -29,9 +34,9 @@ export type DynamoEntityIndexSchema = {
   _name?: string;
   // for LSI, only contains interpolations for sort key
   _interpolations?: {[key: string]: string[]};
-  // entity transformer will inject additional attributes
-  [key: string]: any;
-} & IndexOptions;
+  isSparse: boolean;
+  type: INDEX_TYPE;
+};
 
 export interface DynamoEntitySchema {
   primaryKey: DynamoEntitySchemaPrimaryKey;
@@ -142,11 +147,13 @@ export class EntityMetadata extends BaseMetadata {
         acc[key] = {
           [tableIndexSignature.sortKey]: currentIndex.sortKey,
           type: tableIndexSignature.type,
+          isSparse: !!currentIndex.isSparse, // by default all indexes are non-sparse
           _name: key,
           _interpolations: {
             [tableIndexSignature.sortKey]: sortKeyInterpolations,
           },
         };
+
         return acc;
       } else {
         if (currentIndex.type !== INDEX_TYPE.GSI) {
@@ -161,6 +168,7 @@ export class EntityMetadata extends BaseMetadata {
         acc[key] = {
           [tableIndexSignature.partitionKey]: currentIndex.partitionKey,
           [tableIndexSignature.sortKey]: currentIndex.sortKey,
+          isSparse: !!currentIndex.isSparse,
           type: tableIndexSignature.type,
           _name: key,
           // remove any duplicates from partition or sort keys

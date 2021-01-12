@@ -128,6 +128,7 @@ test('creates entity metadata with complex composite and indexes key', () => {
       GSI1: {
         GSI1PK: 'USER#{{id}}#NAME#{{name}}',
         GSI1SK: 'Name#{{name}}',
+        isSparse: false,
         _interpolations: {
           GSI1PK: ['id', 'name'],
           GSI1SK: ['name'],
@@ -137,6 +138,7 @@ test('creates entity metadata with complex composite and indexes key', () => {
       },
       LSI1: {
         LSI1SK: 'AGE#{{age}}',
+        isSparse: false,
         _interpolations: {
           LSI1SK: ['age'],
         },

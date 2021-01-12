@@ -61,25 +61,27 @@ export abstract class BaseTransformer {
       const index = indexes[key];
 
       const tableIndexSignature = metadata.table.getIndexByKey(
-        index._name ?? ''
+        index.metadata._name ?? ''
       );
       // remove all other metadata from indexes
       const onlyKeysIndex = (index => {
         if (
-          index.type === INDEX_TYPE.GSI &&
+          index.metadata.type === INDEX_TYPE.GSI &&
           tableIndexSignature.type === INDEX_TYPE.GSI
         ) {
           return {
             [tableIndexSignature.partitionKey]:
-              index[tableIndexSignature.partitionKey],
-            [tableIndexSignature.sortKey]: index[tableIndexSignature.sortKey],
+              index.attributes[tableIndexSignature.partitionKey],
+            [tableIndexSignature.sortKey]:
+              index.attributes[tableIndexSignature.sortKey],
           };
         } else if (
-          index.type === INDEX_TYPE.LSI &&
+          index.metadata.type === INDEX_TYPE.LSI &&
           tableIndexSignature.type === INDEX_TYPE.LSI
         ) {
           return {
-            [tableIndexSignature.sortKey]: index[tableIndexSignature.sortKey],
+            [tableIndexSignature.sortKey]:
+              index.attributes[tableIndexSignature.sortKey],
           };
         } else {
           return index;
@@ -134,7 +136,8 @@ export abstract class BaseTransformer {
 
         Object.keys(indexes).forEach(key => {
           const currIndex = indexes[key];
-          const interpolationsForCurrIndex = currIndex._interpolations ?? {};
+          const interpolationsForCurrIndex =
+            currIndex.metadata._interpolations ?? {};
 
           // if current index does not have any interpolations to resolve, move onto next one
           if (isEmptyObject(interpolationsForCurrIndex)) {
@@ -148,7 +151,7 @@ export abstract class BaseTransformer {
 
             if (currentInterpolation.includes(attrKey)) {
               const parsedIndex = parseKey(
-                currIndex[interpolationKey],
+                currIndex.attributes[interpolationKey],
                 attributes
               );
               acc[interpolationKey] = parsedIndex;
@@ -173,31 +176,7 @@ export abstract class BaseTransformer {
     primaryKey: DynamoEntitySchemaPrimaryKey,
     attributes: {[key in keyof Entity]: any}
   ) {
-    const normalizedPrimaryKey = this.getNormalizedPrimaryKey(
-      table,
-      primaryKey
-    );
-
-    return this.recursiveParseEntity(normalizedPrimaryKey, attributes);
-  }
-
-  /**
-   * Returns normalized primary key
-   * Normalized as in with only containing partition and sort key
-   * @param table
-   * @param primaryKey
-   */
-  getNormalizedPrimaryKey(
-    table: Table,
-    primaryKey: DynamoEntitySchemaPrimaryKey
-  ) {
-    return Object.keys(primaryKey).reduce((acc, key) => {
-      // remove all not key attributes on schema
-      if (table.partitionKey === key || table.sortKey === key) {
-        acc[key] = primaryKey[key];
-      }
-      return acc;
-    }, {} as Pick<DynamoEntitySchemaPrimaryKey, string | number>);
+    return this.recursiveParseEntity(primaryKey.attributes, attributes);
   }
 
   /**
@@ -206,13 +185,28 @@ export abstract class BaseTransformer {
    * @param schema schema to resolve
    * @param entity entity to resolve schema against
    */
-  protected recursiveParseEntity<Entity>(schema: any, entity: Entity) {
+  protected recursiveParseEntity<Entity>(
+    schema: any,
+    entity: Entity,
+    isSparse = false
+  ) {
     const parsedSchema = Object.keys(schema).reduce((acc, key) => {
       const currentValue = schema[key];
       if (isObject(currentValue)) {
-        acc[key] = this.recursiveParseEntity(currentValue, entity);
+        acc[key] = this.recursiveParseEntity(
+          currentValue,
+          entity,
+          !!currentValue.isSparse
+        );
       } else {
-        acc[key] = parseKey(currentValue, entity);
+        const parsedKey = parseKey(currentValue, entity, {
+          isSparseIndex: isSparse,
+        });
+
+        // do not include sparse indexes in acc
+        if (parsedKey) {
+          acc[key] = parsedKey;
+        }
       }
       return acc;
     }, {} as any);

@@ -1,4 +1,5 @@
 import {User} from '../../../../__mocks__/user';
+import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
 import {EntityMetadataBuilder} from '../entity-metadata-builder';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {
@@ -9,6 +10,7 @@ import {
   Table,
 } from '@typedorm/common';
 import {table} from '../../../../__mocks__/table';
+
 jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('12-3-1-23-12'),
 }));
@@ -49,6 +51,7 @@ test('builds simple entity metadata', () => {
       GSI1: {
         GSI1PK: 'USER#STATUS#{{status}}',
         GSI1SK: 'USER#{{name}}',
+        isSparse: false,
         _interpolations: {
           GSI1PK: ['status'],
           GSI1SK: ['name'],
@@ -60,6 +63,33 @@ test('builds simple entity metadata', () => {
     primaryKey: {
       PK: 'USER#{{id}}',
       SK: 'USER#{{id}}',
+      _interpolations: {
+        PK: ['id'],
+        SK: ['id'],
+      },
+    },
+  });
+});
+
+test('builds metadata for entity with sparse indexes', () => {
+  const [metadata] = metadataBuilder.build([UserSparseIndexes]);
+  expect(metadata.schema).toEqual({
+    indexes: {
+      GSI1: {
+        GSI1PK: 'USER_SPARSE_INDEXES#STATUS#{{status}}',
+        GSI1SK: 'USER_SPARSE_INDEXES#{{name}}',
+        isSparse: true,
+        _interpolations: {
+          GSI1PK: ['status'],
+          GSI1SK: ['name'],
+        },
+        _name: 'GSI1',
+        type: 'GLOBAL_SECONDARY_INDEX',
+      },
+    },
+    primaryKey: {
+      PK: 'USER_SPARSE_INDEXES#{{id}}',
+      SK: 'USER_SPARSE_INDEXES#{{id}}',
       _interpolations: {
         PK: ['id'],
         SK: ['id'],

@@ -17,6 +17,18 @@ describe('parseKey()', () => {
     expect(parsed).toEqual('USER#1111');
   });
 
+  it('should parse sparseIndex key', () => {
+    const parsed = parseKey(
+      'USER#{{id}}#{{status}}',
+      {
+        id: 1111,
+      },
+      {isSparseIndex: true}
+    );
+
+    expect(parsed).toEqual('');
+  });
+
   it('should parse key multiple interpolation occurrences', () => {
     const parsed = parseKey('USER#{{id}}#CLASS#{{classId}}', {
       id: 1111,
@@ -28,7 +40,7 @@ describe('parseKey()', () => {
 
   it('should thrown an error when no mapping found in dictionary', () => {
     expect(() => parseKey('USER#{{id}}', {})).toThrowError(
-      'Could not resolve "id" from given dictionary'
+      '"id" was referenced in USER#{{id}} but it\'s value could not be resolved.'
     );
   });
 });
