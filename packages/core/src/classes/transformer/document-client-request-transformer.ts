@@ -240,6 +240,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     const metadata = this.connection.getEntityByTarget(entityClass);
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.UPDATE,
+      'Before',
+      metadata.name,
+      primaryKeyAttributes,
+      body,
+      options
+    );
     const tableName = metadata.table.name;
 
     const parsedPrimaryKey = this.getParsedPrimaryKey(
@@ -303,6 +311,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // when item does not have any unique attributes to update, return putItemInput
     if (!uniqueAttributesToUpdate.length) {
+      this.connection.logger.logTransform(
+        TRANSFORM_OPERATION.UPDATE,
+        'After',
+        metadata.name,
+        null,
+        itemToUpdate
+      );
       return itemToUpdate;
     }
 
@@ -310,7 +325,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdateItemFactory<
       PrimaryKey,
       Entity
-    >(metadata.table, uniqueAttributesToUpdate, itemToUpdate, body);
+    >(
+      metadata.table,
+      metadata.name,
+      uniqueAttributesToUpdate,
+      itemToUpdate,
+      body
+    );
 
     return {
       lazyLoadTransactionWriteItems,
@@ -322,7 +343,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     primaryKey: PrimaryKey
   ): DynamoDB.DocumentClient.DeleteItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
-
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.DELETE,
+      'Before',
+      metadata.name,
+      primaryKey
+    );
     const tableName = metadata.table.name;
 
     const parsedPrimaryKey = this.getParsedPrimaryKey(
@@ -335,12 +361,20 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       throw new Error('Primary could not be resolved');
     }
 
-    return {
+    const transformedDeleteItem = {
       TableName: tableName,
       Key: {
         ...parsedPrimaryKey,
       },
     };
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.DELETE,
+      'After',
+      metadata.name,
+      null,
+      transformedDeleteItem
+    );
+    return transformedDeleteItem;
   }
 
   toDynamoQueryItem<PartitionKeyAttributes, Entity>(
@@ -350,8 +384,16 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     },
     queryOptions?: ManagerToDynamoQueryItemsOptions
   ): DynamoDB.DocumentClient.QueryInput {
-    const {table, schema} = this.connection.getEntityByTarget(entityClass);
-
+    const {table, schema, name} = this.connection.getEntityByTarget(
+      entityClass
+    );
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.QUERY,
+      'Before',
+      name,
+      partitionKeyAttributes,
+      queryOptions
+    );
     const queryIndexName = partitionKeyAttributes.queryIndex ?? '';
     let indexToQuery: IndexOptions | undefined;
     if (partitionKeyAttributes.queryIndex) {
@@ -405,13 +447,23 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // if no query options are present, resolve key condition expression
     if (!queryOptions || isEmptyObject(queryOptions)) {
-      return {
+      const transformedQueryItem = {
         TableName: table.name,
         IndexName: partitionKeyAttributes.queryIndex,
         ...this._expressionBuilder.buildKeyConditionExpression(
           partitionKeyCondition
         ),
       };
+
+      this.connection.logger.logTransform(
+        TRANSFORM_OPERATION.QUERY,
+        'After',
+        name,
+        null,
+        transformedQueryItem
+      );
+
+      return transformedQueryItem;
     }
 
     const parsedSortKey = {} as {name: string};
@@ -468,9 +520,15 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
     }
 
-    return {
-      ...queryInputParams,
-    };
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.QUERY,
+      'After',
+      name,
+      null,
+      queryInputParams
+    );
+
+    return queryInputParams;
   }
 
   /**
@@ -481,6 +539,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
    */
   private lazyToDynamoUpdateItemFactory<PrimaryKey, Entity>(
     table: Table,
+    entityName: string,
     uniqueAttributesToUpdate: Replace<
       AttributeMetadata,
       'unique',
@@ -534,10 +593,20 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       );
 
       // in order for update express to succeed, all listed must succeed in a transaction
-      return [
+      const updateTransactionItems = [
         {Update: mainItem},
         ...uniqueAttributeInputs,
       ] as DynamoDB.DocumentClient.TransactWriteItemList;
+
+      this.connection.logger.logTransform(
+        TRANSFORM_OPERATION.UPDATE,
+        'After',
+        entityName,
+        null,
+        updateTransactionItems
+      );
+
+      return updateTransactionItems;
     };
   }
 }
