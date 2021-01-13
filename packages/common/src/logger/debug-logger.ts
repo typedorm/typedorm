@@ -58,7 +58,7 @@ export class DebugLogger {
         ...(options
           ? [
               chalk.blueBright('\nOptions: '),
-              chalk.white(this.ensurePrintable(body)),
+              chalk.white(this.ensurePrintable(options)),
             ]
           : [])
       );
