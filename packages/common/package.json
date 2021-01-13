@@ -12,6 +12,10 @@
     "@typedorm/core": "0.0.0-PLACEHOLDER",
     "reflect-metadata": "^0.1.13"
   },
+  "dependencies": {
+    "debug": "^4.3.1",
+    "chalk": "^4.1.0"
+  },
   "publishConfig": {
     "tag": "TAG-PLACEHOLDER",
     "access": "public"

@@ -3,6 +3,7 @@ import {
   EntityTarget,
   Replace,
   Table,
+  DebugLogger,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
@@ -24,6 +25,7 @@ export class Connection {
   readonly transactionManger: TransactionManager;
   readonly defaultConfig: {queryItemsImplicitLimit: number};
   readonly documentClient: DynamoDB.DocumentClient;
+  readonly logger: DebugLogger;
 
   private _entityMetadatas: Map<string, EntityMetadata>;
   private isConnected: boolean;
@@ -54,6 +56,7 @@ export class Connection {
      * This makes sure that we only ever build entity metadatas once per connection
      */
     this.isConnected = false;
+    this.logger = new DebugLogger();
   }
 
   connect() {

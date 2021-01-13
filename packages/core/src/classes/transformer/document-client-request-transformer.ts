@@ -13,6 +13,7 @@ import {
   ScalarType,
   Table,
   UpdateAttributes,
+  TRANSFORM_OPERATION,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
@@ -75,6 +76,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   ): DynamoDB.DocumentClient.GetItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.GET,
+      'Before',
+      metadata.name,
+      primaryKey
+    );
+
     const tableName = this.getTableNameForEntity(entityClass);
 
     const parsedPrimaryKey = this.getParsedPrimaryKey(
@@ -87,12 +95,20 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       throw new Error('Primary could not be resolved');
     }
 
-    return {
+    const transformBody = {
       TableName: tableName,
       Key: {
         ...parsedPrimaryKey,
       },
     };
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.GET,
+      'After',
+      metadata.name,
+      null,
+      transformBody
+    );
+    return transformBody;
   }
 
   toDynamoPutItem<Entity>(
@@ -102,8 +118,17 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     | DynamoDB.DocumentClient.PutItemInput
     | DynamoDB.DocumentClient.TransactWriteItemList {
     const entityClass = getConstructorForInstance(entity);
-    const {table, internalAttributes} = this.connection.getEntityByTarget(
+    const {table, internalAttributes, name} = this.connection.getEntityByTarget(
       entityClass
+    );
+
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.PUT,
+      'Before',
+      name,
+      null,
+      entity,
+      options
     );
 
     const uniqueAttributes = this.connection.getUniqueAttributesForEntity(
@@ -195,7 +220,6 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     const metadata = this.connection.getEntityByTarget(entityClass);
-
     const tableName = metadata.table.name;
 
     const parsedPrimaryKey = this.getParsedPrimaryKey(
