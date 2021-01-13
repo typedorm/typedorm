@@ -165,6 +165,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     if (!uniqueAttributes.length) {
+      this.connection.logger.logTransform(
+        TRANSFORM_OPERATION.PUT,
+        'After',
+        name,
+        null,
+        dynamoPutItem
+      );
       return dynamoPutItem;
     }
 
@@ -202,7 +209,20 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       });
     }
 
-    return [{Put: dynamoPutItem}, ...uniqueAttributePutItems];
+    const uniqueAttributesPutItems = [
+      {Put: dynamoPutItem},
+      ...uniqueAttributePutItems,
+    ];
+
+    this.connection.logger.logTransform(
+      TRANSFORM_OPERATION.PUT,
+      'After',
+      name,
+      null,
+      uniqueAttributesPutItems
+    );
+
+    return uniqueAttributesPutItems;
   }
 
   toDynamoUpdateItem<PrimaryKey, Entity>(
