@@ -1,4 +1,4 @@
-import {DynamoEntity, EntityTarget} from '@typedorm/common';
+import {DynamoEntity, EntityTarget, TRANSFORM_TYPE} from '@typedorm/common';
 import {Connection} from '../connection/connection';
 import {BaseTransformer} from './base-transformer';
 
@@ -18,6 +18,13 @@ export class EntityTransformer extends BaseTransformer {
     dynamoEntity: DynamoEntity<Entity>
   ): Entity {
     const entityMetadata = this.connection.getEntityByTarget(entityClass);
+    this.connection.logger.logTransform(
+      TRANSFORM_TYPE.RESPONSE,
+      'Before',
+      entityMetadata.name,
+      null,
+      dynamoEntity
+    );
 
     const entityPrimaryKeys = Object.keys(entityMetadata.schema.primaryKey);
     const entityInternalAttributeKeys = entityMetadata.internalAttributes.map(
@@ -32,7 +39,7 @@ export class EntityTransformer extends BaseTransformer {
       })
       .flat();
 
-    return Object.keys(dynamoEntity).reduce((acc, key) => {
+    const transformedEntity = Object.keys(dynamoEntity).reduce((acc, key) => {
       if (
         entityPrimaryKeys.includes(key) ||
         entityIndexes.includes(key) ||
@@ -43,5 +50,15 @@ export class EntityTransformer extends BaseTransformer {
       (acc as any)[key] = (dynamoEntity as any)[key];
       return acc;
     }, {} as Entity);
+
+    this.connection.logger.logTransform(
+      TRANSFORM_TYPE.RESPONSE,
+      'After',
+      entityMetadata.name,
+      null,
+      transformedEntity
+    );
+
+    return transformedEntity;
   }
 }

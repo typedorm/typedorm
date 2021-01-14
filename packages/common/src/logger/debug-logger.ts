@@ -1,37 +1,22 @@
 import debug from 'debug';
 import chalk from 'chalk';
 
-export enum TRANSFORM_OPERATION {
+export enum TRANSFORM_TYPE {
   GET = 'GET',
   PUT = 'PUT',
   UPDATE = 'UPDATE',
   DELETE = 'DELETE',
   QUERY = 'QUERY',
+  RESPONSE = 'RESPONSE',
 }
 
 export class DebugLogger {
   // log
-  private debugQueryLog = debug('typedorm:query:log');
   private debugTransformLog = debug('typedorm:transform:log');
-
-  // error
-  private debugQueryError = debug('typedorm:query:log');
-  private debugTransformError = debug('typedorm:transform:error');
-
-  logQuery(prefix: string, query: string) {
-    if (this.debugQueryLog.enabled) {
-      this.debugQueryLog(prefix, chalk.white(this.ensurePrintable(query)));
-    }
-  }
-
-  errorQuery(error: any) {
-    if (this.debugQueryError.enabled) {
-      this.debugQueryError(chalk.red(this.ensurePrintable(error)));
-    }
-  }
+  constructor() {}
 
   logTransform(
-    operation: TRANSFORM_OPERATION,
+    operation: TRANSFORM_TYPE,
     prefix: string,
     entityName: string,
     primaryKey: any,
@@ -62,12 +47,6 @@ export class DebugLogger {
             ]
           : [])
       );
-    }
-  }
-
-  errorTransform(error: any) {
-    if (this.debugTransformError.enabled) {
-      this.debugTransformError(chalk.red(this.ensurePrintable(error)));
     }
   }
 
