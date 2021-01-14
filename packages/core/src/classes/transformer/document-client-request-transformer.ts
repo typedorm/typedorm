@@ -328,6 +328,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       Entity
     >(
       metadata.table,
+      metadata.name,
       uniqueAttributesToUpdate,
       dropProp(itemToUpdate, 'ReturnValues'),
       body
@@ -377,12 +378,19 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     };
     // if item does not have any unique attributes return it as is
     if (!uniqueAttributesToRemove?.length) {
+      this.connection.logger.logTransform(
+        TRANSFORM_TYPE.DELETE,
+        'After',
+        metadata.name,
+        primaryKey
+      );
       return mainItemToRemove;
     }
 
     // or return lazy resolver
     const lazyLoadTransactionWriteItems = this.lazyToDynamoRemoveItemFactory(
       metadata.table,
+      metadata.name,
       uniqueAttributesToRemove,
       mainItemToRemove
     );
@@ -614,6 +622,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         {Update: mainItem},
         ...uniqueAttributeInputs,
       ] as DynamoDB.DocumentClient.TransactWriteItem[];
+      this.connection.logger.logTransform(
+        TRANSFORM_TYPE.UPDATE,
+        'After',
+        entityName,
+        null,
+        updateTransactionItems
+      );
+      return updateTransactionItems;
     };
   }
 
@@ -625,6 +641,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
    */
   private lazyToDynamoRemoveItemFactory(
     table: Table,
+    entityName: string,
     uniqueAttributesToRemove: Replace<
       AttributeMetadata,
       'unique',
@@ -652,12 +669,22 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         }
       );
 
-      return [
+      const deleteTransactionItems = [
         {
           Delete: mainItem,
         },
         ...uniqueAttributeInputs,
       ] as DynamoDB.DocumentClient.TransactWriteItem[];
+
+      this.connection.logger.logTransform(
+        TRANSFORM_TYPE.DELETE,
+        'After',
+        entityName,
+        null,
+        deleteTransactionItems
+      );
+
+      return deleteTransactionItems;
     };
   }
 }

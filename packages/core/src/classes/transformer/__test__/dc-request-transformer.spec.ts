@@ -339,6 +339,38 @@ test('transforms delete item request with unique attributes', () => {
       id: '1',
     },
   });
+
+  const lazyWriteItemListLoader = (deleteItemInput as any)
+    .lazyLoadTransactionWriteItems;
+
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  const deleteItemList = lazyWriteItemListLoader({
+    id: '1',
+    name: 'new name',
+    email: 'old@email.com',
+  });
+
+  expect(deleteItemList).toEqual([
+    {
+      Delete: {
+        TableName: 'test-table',
+        Key: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+        },
+      },
+    },
+    {
+      Delete: {
+        TableName: 'test-table',
+        Key: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+        },
+      },
+    },
+  ]);
 });
 
 /**
