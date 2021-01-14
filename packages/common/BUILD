@@ -7,6 +7,7 @@ setup_ts_build(
     deps = [
         "@npm//reflect-metadata",
         "@npm//debug",
+        "@npm//@types/debug",
         "@npm//chalk"
     ],
     visibility = ["//packages:__subpackages__"]
