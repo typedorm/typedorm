@@ -19,7 +19,7 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 
 ![Stability](https://img.shields.io/badge/Stability-Unstable-orange?style=for-the-badge)
 
-TypeDORM is currency in it's very early stage of development so breaking changes are likely. Consider this before using it in production.
+TypeDORM is currently in it's very early stage of development so breaking changes are likely. Consider this before using it in production.
 
 Please submit an issue for any bugs or suggestions [here](https://github.com/typedorm/typedorm/issues), or you can reach out to me on twitter [@whimzy_live](https://mobile.twitter.com/whimzy_live).
 
@@ -221,6 +221,5 @@ To find out more about how the data looks like when it is stored in dynamo have 
 
 ## Current Limitations
 
-- TypDORM currently is not able to connect with dynamodb table using aws credentials and only works within environment like lambda/ec2 that already has access to dynamo table, but this will be resolved very soon.
 - To keep things simple TypeDORM, at the moment WILL NOT create/update table configuration and must be done separately.
 - There is very minimal support for providing different arguments to queries, and will be resolved soon.
