@@ -5,11 +5,15 @@ import {User, UserGSI1} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {UserPrimaryKey} from '../../../../__mocks__/user';
 import {DocumentClientRequestTransformer} from '../document-client-request-transformer';
+import {
+  UserUniqueEmail,
+  UserUniqueEmailPrimaryKey,
+} from '../../../../__mocks__/user-unique-email';
 
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {
   const connection = createTestConnection({
-    entities: [User, Customer],
+    entities: [User, Customer, UserUniqueEmail],
   });
   transformer = new DocumentClientRequestTransformer(connection);
 });
@@ -69,9 +73,11 @@ test('transforms put item requests', () => {
       __en: 'user',
       status: 'active',
     },
-    ConditionExpression: 'attribute_not_exists(#CE_PK)',
+    ConditionExpression:
+      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
     },
     TableName: 'test-table',
   });
@@ -98,37 +104,43 @@ test('transforms put item request with unique attributes', () => {
     email: string;
   }
 
-  const connection = createTestConnection({
+  const newConnection = createTestConnection({
     entities: [UserUniqueEmail],
   });
-  transformer = new DocumentClientRequestTransformer(connection);
+  const newTransformer = new DocumentClientRequestTransformer(newConnection);
 
   const user = new UserUniqueEmail();
   user.id = '1';
   user.email = 'user@example.com';
 
-  const putItem = transformer.toDynamoPutItem(user);
+  const putItem = newTransformer.toDynamoPutItem(user);
   expect(putItem).toEqual([
     {
-      ConditionExpression: 'attribute_not_exists(#CE_PK)',
-      ExpressionAttributeNames: {'#CE_PK': 'PK'},
-      Item: {
-        PK: 'USER#1',
-        SK: 'USER#1',
-        email: 'user@example.com',
-        id: '1',
-        __en: 'user',
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+          email: 'user@example.com',
+          id: '1',
+          __en: 'user',
+        },
+        TableName: 'test-table',
       },
-      TableName: 'test-table',
     },
     {
-      ConditionExpression: 'attribute_not_exists(#CE_PK)',
-      ExpressionAttributeNames: {'#CE_PK': 'PK'},
-      Item: {
-        PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
-        SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+        },
+        TableName: 'test-table',
       },
-      TableName: 'test-table',
     },
   ]);
 });
@@ -157,37 +169,43 @@ test('transforms put item request consisting unique attributes with provided pri
     email: string;
   }
 
-  const connection = createTestConnection({
+  const newConnection = createTestConnection({
     entities: [UserUniqueEmail],
   });
-  transformer = new DocumentClientRequestTransformer(connection);
+  const newTransformer = new DocumentClientRequestTransformer(newConnection);
 
   const user = new UserUniqueEmail();
   user.id = '1';
   user.email = 'user@example.com';
 
-  const putItem = transformer.toDynamoPutItem(user);
+  const putItem = newTransformer.toDynamoPutItem(user);
   expect(putItem).toEqual([
     {
-      ConditionExpression: 'attribute_not_exists(#CE_PK)',
-      ExpressionAttributeNames: {'#CE_PK': 'PK'},
-      Item: {
-        PK: 'USER#1',
-        SK: 'USER#1',
-        email: 'user@example.com',
-        id: '1',
-        __en: 'user',
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+          email: 'user@example.com',
+          id: '1',
+          __en: 'user',
+        },
+        TableName: 'test-table',
       },
-      TableName: 'test-table',
     },
     {
-      ConditionExpression: 'attribute_not_exists(#CE_PK)',
-      ExpressionAttributeNames: {'#CE_PK': 'PK'},
-      Item: {
-        PK: 'CUSTOM#user@example.com',
-        SK: 'CUSTOM#user@example.com',
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'CUSTOM#user@example.com',
+          SK: 'CUSTOM#user@example.com',
+        },
+        TableName: 'test-table',
       },
-      TableName: 'test-table',
     },
   ]);
 });
@@ -224,6 +242,71 @@ test('transforms update item request', () => {
   });
 });
 
+test('transforms update item record with unique attributes', () => {
+  const updatedItem = transformer.toDynamoUpdateItem<
+    UserPrimaryKey,
+    UserUniqueEmail
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      name: 'new name',
+      email: 'new@email.com',
+    }
+  );
+
+  const lazyWriteItemListLoader = (updatedItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  const writeItemList = lazyWriteItemListLoader({
+    name: 'new name',
+    email: 'old@email.com',
+  });
+  expect(writeItemList).toEqual([
+    {
+      Update: {
+        ExpressionAttributeNames: {
+          '#attr0': 'name',
+          '#attr1': 'email',
+          '#attr2': 'GSI1SK',
+        },
+        ExpressionAttributeValues: {
+          ':val0': 'new name',
+          ':val1': 'new@email.com',
+          ':val2': 'USER#new name',
+        },
+        Key: {PK: 'USER#1', SK: 'USER#1'},
+        TableName: 'test-table',
+        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+      },
+    },
+    {
+      Put: {
+        ConditionExpression:
+          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
 /**
  * @group toDynamoDeleteItem
  */
@@ -241,6 +324,53 @@ test('transforms delete item request', () => {
     },
     TableName: 'test-table',
   });
+});
+
+test('transforms delete item request with unique attributes', () => {
+  const deleteItemInput = transformer.toDynamoDeleteItem<
+    UserUniqueEmailPrimaryKey,
+    UserUniqueEmail
+  >(UserUniqueEmail, {
+    id: '1',
+  });
+  expect(deleteItemInput).toMatchObject({
+    entityClass: UserUniqueEmail,
+    primaryKeyAttributes: {
+      id: '1',
+    },
+  });
+
+  const lazyWriteItemListLoader = (deleteItemInput as any)
+    .lazyLoadTransactionWriteItems;
+
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  const deleteItemList = lazyWriteItemListLoader({
+    id: '1',
+    name: 'new name',
+    email: 'old@email.com',
+  });
+
+  expect(deleteItemList).toEqual([
+    {
+      Delete: {
+        TableName: 'test-table',
+        Key: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+        },
+      },
+    },
+    {
+      Delete: {
+        TableName: 'test-table',
+        Key: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+        },
+      },
+    },
+  ]);
 });
 
 /**

@@ -1,14 +1,27 @@
 import {DynamoDB} from 'aws-sdk';
+import {dropProp} from '../../helpers/drop-prop';
 import {Connection} from '../connection/connection';
 import {
-  isCreateTransaction,
-  isUpdateTransaction,
+  isLazyTransactionWriteItemListLoader,
+  LazyTransactionWriteItemListLoader,
+} from '../transformer/is-lazy-transaction-write-item-list-loder';
+import {
   Transaction,
   WriteTransactionChainItem,
+  WriteTransactionCreate,
 } from './transaction';
+import {
+  isCreateTransaction,
+  isRemoveTransaction,
+  isUpdateTransaction,
+  isWriteTransactionItemList,
+} from './type-guards';
 
 export class WriteTransaction extends Transaction {
-  protected _items: DynamoDB.DocumentClient.TransactWriteItemList;
+  protected _items: (
+    | LazyTransactionWriteItemListLoader
+    | DynamoDB.DocumentClient.TransactWriteItem
+  )[];
 
   constructor(
     connection: Connection,
@@ -25,41 +38,77 @@ export class WriteTransaction extends Transaction {
   chian<PrimaryKey, Entity>(
     chainedItem: WriteTransactionChainItem<PrimaryKey, Entity>
   ): WriteTransaction {
+    // create
     if (isCreateTransaction(chainedItem)) {
-      const {
-        create: {item},
-      } = chainedItem;
-
-      const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem<Entity>(
-        item
-      );
-
-      // when put item is set to array, one or more attributes are marked as unique
-      // to maintain all records consistency, all items must be put into db as a single transaction
-      if (!Array.isArray(dynamoPutItemInput)) {
-        this._items.push({
-          Put: dynamoPutItemInput,
-        });
-      } else {
-        this._items.push(
-          ...dynamoPutItemInput.map(puttItem => ({Put: puttItem}))
-        );
-      }
+      this.items = this.chainCreateTransaction(chainedItem);
+      // update
     } else if (isUpdateTransaction(chainedItem)) {
       const {item, body, primaryKey, options} = chainedItem.update;
-      this._items.push({
-        Update: this._dcReqTransformer.toDynamoUpdateItem<PrimaryKey, Entity>(
-          item,
-          primaryKey,
-          body,
-          options
-        ) as DynamoDB.Update,
-      });
+
+      const itemToUpdate = this._dcReqTransformer.toDynamoUpdateItem<
+        PrimaryKey,
+        Entity
+      >(item, primaryKey, body, options);
+      if (!isLazyTransactionWriteItemListLoader(itemToUpdate)) {
+        this.items.push({
+          Update: dropProp(itemToUpdate, 'ReturnValues') as DynamoDB.Update,
+        });
+      } else {
+        this.items.push(itemToUpdate);
+      }
+      // remove
+    } else if (isRemoveTransaction(chainedItem)) {
+      const {item, primaryKey} = chainedItem.delete;
+
+      const itemToRemove = this._dcReqTransformer.toDynamoDeleteItem<
+        PrimaryKey,
+        Entity
+      >(item, primaryKey);
+      if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
+        this.items.push({
+          Delete: itemToRemove,
+        });
+      } else {
+        this.items.push(itemToRemove);
+      }
+    } else {
+      return this;
     }
     return this;
   }
 
+  private chainCreateTransaction<Entity>(
+    chainedItem: WriteTransactionCreate<Entity>
+  ) {
+    const {
+      create: {item},
+    } = chainedItem;
+
+    const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem<Entity>(
+      item
+    );
+
+    if (!isWriteTransactionItemList(dynamoPutItemInput)) {
+      return [
+        {
+          Put: dynamoPutItemInput,
+        },
+      ] as DynamoDB.DocumentClient.TransactWriteItemList;
+    }
+
+    return [...dynamoPutItemInput];
+  }
+
   get items() {
     return this._items;
+  }
+
+  set items(
+    items: (
+      | DynamoDB.DocumentClient.TransactWriteItem
+      | LazyTransactionWriteItemListLoader
+    )[]
+  ) {
+    this._items = [...this.items, ...items];
   }
 }

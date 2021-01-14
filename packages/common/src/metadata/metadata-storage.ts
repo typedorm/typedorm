@@ -2,6 +2,10 @@ import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, EntityTarget} from '@typedorm/common';
 import {IndexOptions, Table} from '../table';
 import {AttributeOptionsUniqueType} from '../decorators/attribute.decorator';
 
+export const IsAutoGenerateAttributeRawMetadataOptions = (
+  attr: any
+): attr is AutoGenerateAttributeRawMetadataOptions => !!attr.strategy;
+
 export type PrimaryKey = SimplePrimaryKey | CompositePrimaryKey;
 export type SimplePrimaryKey = {
   partitionKey: string;
@@ -24,22 +28,25 @@ export interface EntityRawMetadataOptions {
   table?: Table;
 }
 
-export interface AttributeRawMetadataOptions {
+interface BaseAttributeRawMetadataOptions {
   name: string;
   type: any;
+}
+export interface AttributeRawMetadataOptions
+  extends BaseAttributeRawMetadataOptions {
   unique?: AttributeOptionsUniqueType;
 }
 
 export interface AutoGenerateAttributeRawMetadataOptions
-  extends AttributeRawMetadataOptions {
+  extends BaseAttributeRawMetadataOptions {
   strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY;
   autoUpdate?: boolean;
 }
 
 export class MetadataStorage {
-  private _entities: Map<string, EntityRawMetadataOptions>;
+  private _entities: Map<EntityTarget<any>, EntityRawMetadataOptions>;
   private _attributes: Map<
-    string,
+    EntityTarget<any>,
     Map<
       string,
       AttributeRawMetadataOptions | AutoGenerateAttributeRawMetadataOptions
@@ -51,12 +58,12 @@ export class MetadataStorage {
     this._attributes = new Map();
   }
 
-  hasKnownEntityByName(name: string) {
-    return this._entities.has(name);
+  hasKnownEntity<Entity>(entityClass: EntityTarget<Entity>) {
+    return this._entities.has(entityClass);
   }
 
   getRawAttributesForEntity<Entity>(entityClass: EntityTarget<Entity>) {
-    const attributes = this._attributes.get(entityClass.name)?.values();
+    const attributes = this._attributes.get(entityClass)?.values();
 
     if (!attributes) {
       throw new Error(`No entity with name "${entityClass.name}" could be resolved, 
@@ -66,7 +73,7 @@ export class MetadataStorage {
   }
 
   getRawEntityByTarget<Entity>(entityClass: EntityTarget<Entity>) {
-    const entity = this._entities.get(entityClass.name);
+    const entity = this._entities.get(entityClass);
 
     if (!entity) {
       throw new Error(`No entity with name "${entityClass.name}" could be resolved, 
@@ -79,18 +86,18 @@ export class MetadataStorage {
     entityClass: EntityTarget<Entity>,
     attribute: AttributeRawMetadataOptions
   ) {
-    let attributesForEntity = this._attributes.get(entityClass.name);
+    let attributesForEntity = this._attributes.get(entityClass);
 
     if (!attributesForEntity) {
       attributesForEntity = new Map();
     }
 
     attributesForEntity.set(attribute.name, attribute);
-    this._attributes.set(entityClass.name, attributesForEntity);
+    this._attributes.set(entityClass, attributesForEntity);
   }
 
   addRawEntity(entity: EntityRawMetadataOptions) {
-    this._entities.set(entity.target.name, entity);
+    this._entities.set(entity.target, entity);
   }
 
   get entities() {

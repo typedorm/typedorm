@@ -7,12 +7,13 @@ import {
 import {Connection} from '../connection/connection';
 import {EntityManagerUpdateOptions} from '../manager/entity-manager';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
+import {LazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loder';
 
 // transaction interfaces
-interface WriteTransactionCreate<Entity> {
+export interface WriteTransactionCreate<Entity> {
   create: {item: Entity};
 }
-interface WriteTransactionUpdate<PrimaryKey, Entity> {
+export interface WriteTransactionUpdate<PrimaryKey, Entity> {
   update: {
     item: EntityTarget<Entity>;
     primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
@@ -20,32 +21,26 @@ interface WriteTransactionUpdate<PrimaryKey, Entity> {
     options?: EntityManagerUpdateOptions;
   };
 }
+export interface WriteTransactionRemove<PrimaryKey, Entity> {
+  delete: {
+    item: EntityTarget<Entity>;
+    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+  };
+}
 export type WriteTransactionChainItem<PrimaryKey, Entity> =
   | WriteTransactionCreate<Entity>
-  | WriteTransactionUpdate<PrimaryKey, Entity>;
-
-// custom type guards
-export function isCreateTransaction<Entity>(
-  item: any
-): item is WriteTransactionCreate<Entity> {
-  return (item as WriteTransactionCreate<Entity>).create !== undefined;
-}
-
-export function isUpdateTransaction<PrimaryKey, Entity>(
-  item: any
-): item is WriteTransactionUpdate<PrimaryKey, Entity> {
-  return (
-    (item as WriteTransactionUpdate<PrimaryKey, Entity>).update !== undefined
-  );
-}
+  | WriteTransactionUpdate<PrimaryKey, Entity>
+  | WriteTransactionRemove<PrimaryKey, Entity>;
 
 /**
  * Base Transaction
  */
 export abstract class Transaction {
-  protected _items:
-    | DynamoDB.DocumentClient.TransactWriteItemList
-    | DynamoDB.DocumentClient.TransactGetItemList;
+  protected _items: (
+    | DynamoDB.DocumentClient.TransactWriteItem
+    | LazyTransactionWriteItemListLoader
+    | DynamoDB.DocumentClient.TransactGetItem
+  )[];
 
   protected _dcReqTransformer: DocumentClientRequestTransformer;
 

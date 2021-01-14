@@ -18,7 +18,7 @@ export class ConnectionMetadataBuilder {
 
     // filter all entities that are not marked with `@Entity` decorator
     const entitiesToBuild = possibleEntitiesToBuild.filter(entity =>
-      MetadataManager.metadataStorage.hasKnownEntityByName(entity.name)
+      MetadataManager.metadataStorage.hasKnownEntity(entity)
     );
 
     return new EntityMetadataBuilder(this.connection).build(entitiesToBuild);
