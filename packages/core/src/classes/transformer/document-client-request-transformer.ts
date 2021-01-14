@@ -13,7 +13,7 @@ import {
   ScalarType,
   Table,
   UpdateAttributes,
-  TRANSFORM_OPERATION,
+  TRANSFORM_TYPE,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
@@ -77,7 +77,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.GET,
+      TRANSFORM_TYPE.GET,
       'Before',
       metadata.name,
       primaryKey
@@ -102,7 +102,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       },
     };
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.GET,
+      TRANSFORM_TYPE.GET,
       'After',
       metadata.name,
       null,
@@ -123,7 +123,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     );
 
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.PUT,
+      TRANSFORM_TYPE.PUT,
       'Before',
       name,
       null,
@@ -165,7 +165,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     if (!uniqueAttributes.length) {
       this.connection.logger.logTransform(
-        TRANSFORM_OPERATION.PUT,
+        TRANSFORM_TYPE.PUT,
         'After',
         name,
         null,
@@ -214,7 +214,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     ];
 
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.PUT,
+      TRANSFORM_TYPE.PUT,
       'After',
       name,
       null,
@@ -241,7 +241,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     const metadata = this.connection.getEntityByTarget(entityClass);
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.UPDATE,
+      TRANSFORM_TYPE.UPDATE,
       'Before',
       metadata.name,
       primaryKeyAttributes,
@@ -312,7 +312,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     // when item does not have any unique attributes to update, return putItemInput
     if (!uniqueAttributesToUpdate.length) {
       this.connection.logger.logTransform(
-        TRANSFORM_OPERATION.UPDATE,
+        TRANSFORM_TYPE.UPDATE,
         'After',
         metadata.name,
         null,
@@ -344,7 +344,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   ): DynamoDB.DocumentClient.DeleteItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.DELETE,
+      TRANSFORM_TYPE.DELETE,
       'Before',
       metadata.name,
       primaryKey
@@ -368,7 +368,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       },
     };
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.DELETE,
+      TRANSFORM_TYPE.DELETE,
       'After',
       metadata.name,
       null,
@@ -388,7 +388,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       entityClass
     );
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.QUERY,
+      TRANSFORM_TYPE.QUERY,
       'Before',
       name,
       partitionKeyAttributes,
@@ -456,7 +456,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
 
       this.connection.logger.logTransform(
-        TRANSFORM_OPERATION.QUERY,
+        TRANSFORM_TYPE.QUERY,
         'After',
         name,
         null,
@@ -521,7 +521,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     this.connection.logger.logTransform(
-      TRANSFORM_OPERATION.QUERY,
+      TRANSFORM_TYPE.QUERY,
       'After',
       name,
       null,
@@ -599,7 +599,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ] as DynamoDB.DocumentClient.TransactWriteItemList;
 
       this.connection.logger.logTransform(
-        TRANSFORM_OPERATION.UPDATE,
+        TRANSFORM_TYPE.UPDATE,
         'After',
         entityName,
         null,
