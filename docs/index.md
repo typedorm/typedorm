@@ -6,4 +6,5 @@ Document index that covers, list of pages available
 - [Step by step guide](./guide.md)
 - [Entity inheritance](./entity-inheritance.md)
 - [Working with multiple connections](./multiple-connection.md)
+- [Debugging](./debugging.md)
 - [API](./api.md)

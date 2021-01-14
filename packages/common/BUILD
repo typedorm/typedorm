@@ -5,7 +5,10 @@ setup_ts_build(
     name = "library",
     module_name = "@typedorm/common",
     deps = [
-        "@npm//reflect-metadata"
+        "@npm//reflect-metadata",
+        "@npm//debug",
+        "@npm//@types/debug",
+        "@npm//chalk"
     ],
     visibility = ["//packages:__subpackages__"]
 )
