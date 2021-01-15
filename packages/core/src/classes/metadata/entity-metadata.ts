@@ -2,7 +2,6 @@ import {
   EntityRawMetadataOptions,
   EntityTarget,
   Indexes,
-  IndexOptions,
   INDEX_TYPE,
   INTERNAL_ENTITY_ATTRIBUTE,
   Table,
@@ -125,7 +124,7 @@ export class EntityMetadata extends BaseMetadata {
     table: Table;
     indexes: Indexes;
     attributes: {[key: string]: string};
-  }) {
+  }): DynamoEntityIndexesSchema {
     return Object.keys(indexes).reduce((acc, key) => {
       const tableIndexSignature = table.getIndexByKey(key);
       if (!tableIndexSignature) {
@@ -145,12 +144,16 @@ export class EntityMetadata extends BaseMetadata {
           throw new Error('Index signature mismatch.');
         }
         acc[key] = {
-          [tableIndexSignature.sortKey]: currentIndex.sortKey,
-          type: tableIndexSignature.type,
-          isSparse: !!currentIndex.isSparse, // by default all indexes are non-sparse
-          _name: key,
-          _interpolations: {
-            [tableIndexSignature.sortKey]: sortKeyInterpolations,
+          attributes: {
+            [tableIndexSignature.sortKey]: currentIndex.sortKey,
+          },
+          metadata: {
+            type: tableIndexSignature.type,
+            isSparse: !!currentIndex.isSparse, // by default all indexes are non-sparse
+            _name: key,
+            _interpolations: {
+              [tableIndexSignature.sortKey]: sortKeyInterpolations,
+            },
           },
         };
 
@@ -166,19 +169,23 @@ export class EntityMetadata extends BaseMetadata {
         );
 
         acc[key] = {
-          [tableIndexSignature.partitionKey]: currentIndex.partitionKey,
-          [tableIndexSignature.sortKey]: currentIndex.sortKey,
-          isSparse: !!currentIndex.isSparse,
-          type: tableIndexSignature.type,
-          _name: key,
-          // remove any duplicates from partition or sort keys
-          _interpolations: {
-            [tableIndexSignature.partitionKey]: partitionKeyInterpolations,
-            [tableIndexSignature.sortKey]: sortKeyInterpolations,
+          attributes: {
+            [tableIndexSignature.partitionKey]: currentIndex.partitionKey,
+            [tableIndexSignature.sortKey]: currentIndex.sortKey,
+          },
+          metadata: {
+            isSparse: !!currentIndex.isSparse,
+            type: tableIndexSignature.type,
+            _name: key,
+            // remove any duplicates from partition or sort keys
+            _interpolations: {
+              [tableIndexSignature.partitionKey]: partitionKeyInterpolations,
+              [tableIndexSignature.sortKey]: sortKeyInterpolations,
+            },
           },
         };
         return acc;
       }
-    }, {} as any);
+    }, {} as DynamoEntityIndexesSchema);
   }
 }

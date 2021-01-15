@@ -152,7 +152,7 @@ export class Connection {
     primaryKey: DynamoEntitySchemaPrimaryKey,
     attributeName: string
   ) {
-    const primaryKeyInterpolations = primaryKey._interpolations ?? {};
+    const primaryKeyInterpolations = primaryKey.metadata._interpolations ?? {};
     return Object.keys(primaryKeyInterpolations).some(key => {
       const currInterpolation = primaryKeyInterpolations[key];
       return currInterpolation.includes(attributeName);

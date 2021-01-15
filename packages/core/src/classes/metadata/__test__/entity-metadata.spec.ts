@@ -53,9 +53,13 @@ test('create entity metadata for per entity table', () => {
   expect(userEntityMetadata.schema).toEqual({
     indexes: {},
     primaryKey: {
-      PK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
+      attributes: {
+        PK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+        },
       },
     },
   });
@@ -126,32 +130,44 @@ test('creates entity metadata with complex composite and indexes key', () => {
   expect(complexEntityMetadata.schema).toEqual({
     indexes: {
       GSI1: {
-        GSI1PK: 'USER#{{id}}#NAME#{{name}}',
-        GSI1SK: 'Name#{{name}}',
-        isSparse: false,
-        _interpolations: {
-          GSI1PK: ['id', 'name'],
-          GSI1SK: ['name'],
+        attributes: {
+          GSI1PK: 'USER#{{id}}#NAME#{{name}}',
+          GSI1SK: 'Name#{{name}}',
         },
-        _name: 'GSI1',
-        type: 'GLOBAL_SECONDARY_INDEX',
+        metadata: {
+          isSparse: false,
+          _interpolations: {
+            GSI1PK: ['id', 'name'],
+            GSI1SK: ['name'],
+          },
+          _name: 'GSI1',
+          type: 'GLOBAL_SECONDARY_INDEX',
+        },
       },
       LSI1: {
-        LSI1SK: 'AGE#{{age}}',
-        isSparse: false,
-        _interpolations: {
-          LSI1SK: ['age'],
+        attributes: {
+          LSI1SK: 'AGE#{{age}}',
         },
-        _name: 'LSI1',
-        type: 'LOCAL_SECONDARY_INDEX',
+        metadata: {
+          isSparse: false,
+          _interpolations: {
+            LSI1SK: ['age'],
+          },
+          _name: 'LSI1',
+          type: 'LOCAL_SECONDARY_INDEX',
+        },
       },
     },
     primaryKey: {
-      PK: 'USER#{{id}}',
-      SK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
-        SK: ['id'],
+      attributes: {
+        PK: 'USER#{{id}}',
+        SK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
       },
     },
   });

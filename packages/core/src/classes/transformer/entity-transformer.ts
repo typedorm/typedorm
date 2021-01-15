@@ -26,7 +26,9 @@ export class EntityTransformer extends BaseTransformer {
       dynamoEntity
     );
 
-    const entityPrimaryKeys = Object.keys(entityMetadata.schema.primaryKey);
+    const entityPrimaryKeys = Object.keys(
+      entityMetadata.schema.primaryKey.attributes
+    );
     const entityInternalAttributeKeys = entityMetadata.internalAttributes.map(
       attr => attr.name
     );
@@ -34,8 +36,7 @@ export class EntityTransformer extends BaseTransformer {
     const entityMetadataSchemaIndexes = entityMetadata.schema.indexes ?? {};
     const entityIndexes = Object.keys(entityMetadataSchemaIndexes)
       .map(key => {
-        const currentIndex = entityMetadataSchemaIndexes[key];
-        return Object.keys(currentIndex._interpolations ?? {});
+        return Object.keys(entityMetadataSchemaIndexes[key].attributes ?? {});
       })
       .flat();
 

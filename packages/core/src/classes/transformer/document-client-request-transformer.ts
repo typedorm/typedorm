@@ -452,7 +452,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     ) {
       parsedPartitionKey.name = table.partitionKey;
       parsedPartitionKey.value = parseKey(
-        schema.primaryKey[table.partitionKey],
+        schema.primaryKey.attributes[table.partitionKey],
         partitionKeyAttributes
       );
     } else {
@@ -461,7 +461,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
       const schemaForIndexToQuery = (schema.indexes ?? {})[queryIndexName];
       parsedPartitionKey.value = parseKey(
-        schemaForIndexToQuery[indexToQuery.partitionKey],
+        schemaForIndexToQuery.attributes[indexToQuery.partitionKey],
         partitionKeyAttributes
       );
     }

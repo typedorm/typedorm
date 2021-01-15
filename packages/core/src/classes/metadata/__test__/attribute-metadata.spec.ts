@@ -35,11 +35,15 @@ test('unique attribute has required metadata', () => {
     name: 'id',
     type: 'String',
     unique: {
-      PK: 'DRM_GEN_USER.ID#{{id}}',
-      SK: 'DRM_GEN_USER.ID#{{id}}',
-      _interpolations: {
-        PK: ['id'],
-        SK: ['id'],
+      attributes: {
+        PK: 'DRM_GEN_USER.ID#{{id}}',
+        SK: 'DRM_GEN_USER.ID#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
       },
     },
   });
@@ -64,11 +68,15 @@ test('unique attribute has required metadata with specified primary key', () => 
     name: 'name',
     type: 'String',
     unique: {
-      PK: 'USER.NAME#{{name}}',
-      SK: 'USER.NAME#{{name}}',
-      _interpolations: {
-        PK: ['name'],
-        SK: ['name'],
+      attributes: {
+        PK: 'USER.NAME#{{name}}',
+        SK: 'USER.NAME#{{name}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['name'],
+          SK: ['name'],
+        },
       },
     },
   });

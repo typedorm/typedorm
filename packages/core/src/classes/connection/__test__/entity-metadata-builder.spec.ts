@@ -49,23 +49,31 @@ test('builds simple entity metadata', () => {
   expect(metadata.schema).toEqual({
     indexes: {
       GSI1: {
-        GSI1PK: 'USER#STATUS#{{status}}',
-        GSI1SK: 'USER#{{name}}',
-        isSparse: false,
-        _interpolations: {
-          GSI1PK: ['status'],
-          GSI1SK: ['name'],
+        attributes: {
+          GSI1PK: 'USER#STATUS#{{status}}',
+          GSI1SK: 'USER#{{name}}',
         },
-        _name: 'GSI1',
-        type: 'GLOBAL_SECONDARY_INDEX',
+        metadata: {
+          isSparse: false,
+          _interpolations: {
+            GSI1PK: ['status'],
+            GSI1SK: ['name'],
+          },
+          _name: 'GSI1',
+          type: 'GLOBAL_SECONDARY_INDEX',
+        },
       },
     },
     primaryKey: {
-      PK: 'USER#{{id}}',
-      SK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
-        SK: ['id'],
+      attributes: {
+        PK: 'USER#{{id}}',
+        SK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
       },
     },
   });
@@ -76,23 +84,31 @@ test('builds metadata for entity with sparse indexes', () => {
   expect(metadata.schema).toEqual({
     indexes: {
       GSI1: {
-        GSI1PK: 'USER_SPARSE_INDEXES#STATUS#{{status}}',
-        GSI1SK: 'USER_SPARSE_INDEXES#{{name}}',
-        isSparse: true,
-        _interpolations: {
-          GSI1PK: ['status'],
-          GSI1SK: ['name'],
+        attributes: {
+          GSI1PK: 'USER_SPARSE_INDEXES#STATUS#{{status}}',
+          GSI1SK: 'USER_SPARSE_INDEXES#{{name}}',
         },
-        _name: 'GSI1',
-        type: 'GLOBAL_SECONDARY_INDEX',
+        metadata: {
+          isSparse: true,
+          _interpolations: {
+            GSI1PK: ['status'],
+            GSI1SK: ['name'],
+          },
+          _name: 'GSI1',
+          type: 'GLOBAL_SECONDARY_INDEX',
+        },
       },
     },
     primaryKey: {
-      PK: 'USER_SPARSE_INDEXES#{{id}}',
-      SK: 'USER_SPARSE_INDEXES#{{id}}',
-      _interpolations: {
-        PK: ['id'],
-        SK: ['id'],
+      attributes: {
+        PK: 'USER_SPARSE_INDEXES#{{id}}',
+        SK: 'USER_SPARSE_INDEXES#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
       },
     },
   });
@@ -174,9 +190,13 @@ test('builds entity metadata with global table config', () => {
   expect(entityMetadata.schema).toEqual({
     indexes: {},
     primaryKey: {
-      PK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
+      attributes: {
+        PK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+        },
       },
     },
   });
