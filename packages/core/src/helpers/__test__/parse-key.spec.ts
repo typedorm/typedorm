@@ -1,4 +1,5 @@
 import {parseKey} from '../parse-key';
+import {SparseIndexParseError} from '@typedorm/common';
 
 describe('parseKey()', () => {
   it('should parse key and replace interpolation values with actual value', () => {
@@ -18,15 +19,16 @@ describe('parseKey()', () => {
   });
 
   it('should parse sparseIndex key', () => {
-    const parsed = parseKey(
-      'USER#{{id}}#{{status}}',
-      {
-        id: 1111,
-      },
-      {isSparseIndex: true}
-    );
+    const parsed = () =>
+      parseKey(
+        'USER#{{id}}#{{status}}',
+        {
+          id: 1111,
+        },
+        {isSparseIndex: true}
+      );
 
-    expect(parsed).toEqual('');
+    expect(parsed).toThrowError(SparseIndexParseError);
   });
 
   it('should parse key multiple interpolation occurrences', () => {
