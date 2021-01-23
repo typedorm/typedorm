@@ -149,7 +149,11 @@ export class EntityMetadata extends BaseMetadata {
           },
           metadata: {
             type: tableIndexSignature.type,
-            isSparse: !!currentIndex.isSparse, // by default all indexes are non-sparse
+            isSparse:
+              currentIndex.isSparse === undefined ||
+              currentIndex.isSparse === null
+                ? true // by default all indexes are sparse
+                : !!currentIndex.isSparse,
             _name: key,
             _interpolations: {
               [tableIndexSignature.sortKey]: sortKeyInterpolations,
@@ -174,7 +178,11 @@ export class EntityMetadata extends BaseMetadata {
             [tableIndexSignature.sortKey]: currentIndex.sortKey,
           },
           metadata: {
-            isSparse: !!currentIndex.isSparse,
+            isSparse:
+              currentIndex.isSparse === undefined ||
+              currentIndex.isSparse === null
+                ? true // by default all indexes are sparse
+                : !!currentIndex.isSparse,
             type: tableIndexSignature.type,
             _name: key,
             // remove any duplicates from partition or sort keys
