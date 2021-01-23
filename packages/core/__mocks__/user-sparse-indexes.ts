@@ -24,6 +24,11 @@ export interface UserSparseIndexesGSI1 {
       type: INDEX_TYPE.GSI,
       isSparse: true,
     },
+    LSI1: {
+      // isSparse: true, all indexes are sparse by default
+      sortKey: 'AGE#{{age}}',
+      type: INDEX_TYPE.LSI,
+    },
   },
 })
 export class UserSparseIndexes

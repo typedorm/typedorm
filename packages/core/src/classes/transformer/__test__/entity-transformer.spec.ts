@@ -103,8 +103,6 @@ test('transforms simple model to dynamo entity', () => {
 });
 
 test('transforms entity with sparse index when variable referenced in sort key is missing a value', () => {
-  // name is referenced by GSI1 sort key, and is also marked as sparse index
-
   const user = new UserSparseIndexes();
   user.id = '111';
   user.status = 'active';
@@ -118,19 +116,15 @@ test('transforms entity with sparse index when variable referenced in sort key i
   });
 });
 
-test('transforms entity with sparse index when variable referenced in partition key is missing a value', () => {
-  // name is referenced by GSI1 sort key, and is also marked as sparse index
-
+test('transforms entity with sparse LSI index when variable referenced is missing a value', () => {
   const user = new UserSparseIndexes();
   user.id = '111';
-  user.name = 'Sparse User';
 
   const response = transformer.toDynamoEntity(user);
   expect(response).toEqual({
     PK: 'USER_SPARSE_INDEXES#111',
     SK: 'USER_SPARSE_INDEXES#111',
     id: '111',
-    name: 'Sparse User',
   });
 });
 

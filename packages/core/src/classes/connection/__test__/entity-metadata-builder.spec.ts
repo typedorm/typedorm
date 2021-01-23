@@ -98,6 +98,19 @@ test('builds metadata for entity with sparse indexes', () => {
           type: 'GLOBAL_SECONDARY_INDEX',
         },
       },
+      LSI1: {
+        attributes: {
+          LSI1SK: 'AGE#{{age}}',
+        },
+        metadata: {
+          _interpolations: {
+            LSI1SK: ['age'],
+          },
+          _name: 'LSI1',
+          isSparse: true,
+          type: 'LOCAL_SECONDARY_INDEX',
+        },
+      },
     },
     primaryKey: {
       attributes: {
