@@ -19,9 +19,13 @@ test('builds primary key schema for composite table', () => {
   });
 
   expect(schema).toEqual({
-    PK: 'DEMO#{{id}}',
-    _interpolations: {
-      PK: ['id'],
+    attributes: {
+      PK: 'DEMO#{{id}}',
+    },
+    metadata: {
+      _interpolations: {
+        PK: ['id'],
+      },
     },
   });
 });
@@ -63,11 +67,15 @@ test('builds primary key schema for composite table', () => {
   });
 
   expect(schema).toEqual({
-    PK: 'DEMO#{{id}}',
-    SK: 'DEMO#{{id}}',
-    _interpolations: {
-      PK: ['id'],
-      SK: ['id'],
+    attributes: {
+      PK: 'DEMO#{{id}}',
+      SK: 'DEMO#{{id}}',
+    },
+    metadata: {
+      _interpolations: {
+        PK: ['id'],
+        SK: ['id'],
+      },
     },
   });
 });

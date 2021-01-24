@@ -155,7 +155,9 @@ test('throws an error when trying to do a get request with non primary key attri
     manager.findOne(User, {
       name: 'User',
     })
-  ).rejects.toThrowError('Could not resolve "id" from given dictionary');
+  ).rejects.toThrowError(
+    '"id" was referenced in USER#{{id}} but it\'s value could not be resolved.'
+  );
 });
 
 /**
@@ -225,7 +227,9 @@ test('throws an error if trying to perform exists check with partial primary key
     manager.findOne(User, {
       name: 'User',
     })
-  ).rejects.toThrowError('Could not resolve "id" from given dictionary');
+  ).rejects.toThrowError(
+    '"id" was referenced in USER#{{id}} but it\'s value could not be resolved.'
+  );
 });
 
 /**
@@ -469,7 +473,9 @@ test('throws an error when trying to delete item by non primary key attributes',
     manager.delete(User, {
       name: 'User',
     })
-  ).rejects.toThrowError('Could not resolve "id" from given dictionary');
+  ).rejects.toThrowError(
+    '"id" was referenced in USER#{{id}} but it\'s value could not be resolved.'
+  );
 });
 
 test('deletes an item with unique attributes', async () => {

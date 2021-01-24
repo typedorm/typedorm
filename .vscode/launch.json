@@ -43,8 +43,7 @@
       "internalConsoleOptions": "neverOpen",
       "port": 9229,
       "env": {
-        "NODE_ENV": "test",
-        "DEBUG": "typedorm:*"
+        "NODE_ENV": "test"
       }
     }
   ]

@@ -31,7 +31,14 @@ Table({
   sortKey
 
   // Indexes if there are any
-  indexes
+  indexes: {
+    [indexName] : {
+      partitionKey
+      sortKey
+      // Type of index: INDEX_TYPE
+      type
+    }
+  }
 })
 ```
 
@@ -46,7 +53,7 @@ Declare an entity to be registered in TypeDORM domain
   // Name of the entity that will be saved as __en attribute on each record
   name,
 
-  // table where the entity be saved
+  // Table where the entity be saved
   // @optional
   // Required when no global table exits in connection
   table
@@ -61,7 +68,25 @@ Declare an entity to be registered in TypeDORM domain
 
   // Additional indexes to add to entity
   // @optional
-  indexes
+  indexes: {
+    // Each index specified here can only exist if it is also declared on attached table instance
+    [indexName] : {
+      // Partition key attribute name for this entity
+      // @optional
+      // Required when index type is GSI
+      partitionKey
+
+      // Sort key attribute name for this entity
+      sortKey
+
+      // Type of index: INDEX_TYPE
+      type
+
+      // Defines if the current index should be considered sparse
+      // @default true - all indexes are marked sparse by default
+      isSparse
+    }
+  }
 })
 ```
 

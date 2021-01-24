@@ -1,9 +1,15 @@
+import {SparseIndexParseError} from '@typedorm/common';
+
 const regexExp = {
   interpolation: /\{{.+?\}}/g,
   interpolatedWord: /\{{(.+?)\}}/,
 };
 
-export function parseKey<Entity>(key: string, dict: Entity) {
+export function parseKey<Entity>(
+  key: string,
+  dict: Entity,
+  {isSparseIndex}: {isSparseIndex: boolean} = {isSparseIndex: false}
+) {
   return key.replace(regexExp.interpolation, substr => {
     const match = regexExp.interpolatedWord.exec(substr);
     let variable: any;
@@ -17,8 +23,17 @@ export function parseKey<Entity>(key: string, dict: Entity) {
     }
 
     const valueToReplace = (dict as any)[variable];
+
     if (valueToReplace === undefined || valueToReplace === null) {
-      throw new Error(`Could not resolve "${variable}" from given dictionary`);
+      const error = new Error(
+        `"${variable}" was referenced in ${key} but it's value could not be resolved.`
+      );
+
+      // this is what tells transformer to ignore including parsed values
+      if (isSparseIndex) {
+        throw new SparseIndexParseError(key);
+      }
+      throw error;
     }
 
     return valueToReplace.toString();

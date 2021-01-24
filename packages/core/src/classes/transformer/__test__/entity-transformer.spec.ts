@@ -4,11 +4,17 @@ import {Organisation} from '../../../../__mocks__/organisation';
 import {User} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityTransformer} from '../entity-transformer';
+import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
 
 let transformer: EntityTransformer;
 beforeEach(() => {
   const connection = createTestConnection({
-    entities: [User, Organisation, UserAutoGenerateAttributes],
+    entities: [
+      User,
+      Organisation,
+      UserAutoGenerateAttributes,
+      UserSparseIndexes,
+    ],
   });
   transformer = new EntityTransformer(connection);
 });
@@ -93,6 +99,32 @@ test('transforms simple model to dynamo entity', () => {
     id: '111',
     name: 'Test User',
     status: 'inactive',
+  });
+});
+
+test('transforms entity with sparse index when variable referenced in sort key is missing a value', () => {
+  const user = new UserSparseIndexes();
+  user.id = '111';
+  user.status = 'active';
+
+  const response = transformer.toDynamoEntity(user);
+  expect(response).toEqual({
+    PK: 'USER_SPARSE_INDEXES#111',
+    SK: 'USER_SPARSE_INDEXES#111',
+    id: '111',
+    status: 'active',
+  });
+});
+
+test('transforms entity with sparse LSI index when variable referenced is missing a value', () => {
+  const user = new UserSparseIndexes();
+  user.id = '111';
+
+  const response = transformer.toDynamoEntity(user);
+  expect(response).toEqual({
+    PK: 'USER_SPARSE_INDEXES#111',
+    SK: 'USER_SPARSE_INDEXES#111',
+    id: '111',
   });
 });
 

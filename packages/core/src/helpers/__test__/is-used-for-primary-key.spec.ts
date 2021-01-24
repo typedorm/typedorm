@@ -21,9 +21,13 @@ test('checks if given attribute is referenced in raw primary key', () => {
 test('checks if given attribute is referenced in formatted primary key', () => {
   const isNotUsed = isUsedForPrimaryKey(
     {
-      PK: 'USER#{{id}}#NAME#{{name}}:something',
-      _interpolations: {
-        PK: ['id', 'name'],
+      attributes: {
+        PK: 'USER#{{id}}#NAME#{{name}}:something',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id', 'name'],
+        },
       },
     },
     'role'
@@ -32,11 +36,15 @@ test('checks if given attribute is referenced in formatted primary key', () => {
 
   const isUsed = isUsedForPrimaryKey(
     {
-      PK: 'USER#{{id}}#NAME#{{name}}:something',
-      SK: 'USER#{{id}}#ROLE#{{role}}',
-      _interpolations: {
-        PK: ['id', 'name'],
-        SK: ['id', 'role'],
+      attributes: {
+        PK: 'USER#{{id}}#NAME#{{name}}:something',
+        SK: 'USER#{{id}}#ROLE#{{role}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id', 'name'],
+          SK: ['id', 'role'],
+        },
       },
     },
     'role'
