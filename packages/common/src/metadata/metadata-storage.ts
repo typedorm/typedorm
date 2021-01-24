@@ -58,6 +58,10 @@ export class MetadataStorage {
     this._attributes = new Map();
   }
 
+  getEntityByName(name: string) {
+    return this.entities.find(en => en.name === name);
+  }
+
   hasKnownEntity<Entity>(entityClass: EntityTarget<Entity>) {
     return this._entities.has(entityClass);
   }
