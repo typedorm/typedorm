@@ -1,6 +1,7 @@
 import {User} from './../../../../__mocks__/user';
 import {table} from './../../../../__mocks__/table';
 import {AttributeMetadata} from '../attribute-metadata';
+import {AttributeMetadataUnsupportedDefaultValueError} from '@typedorm/common';
 
 test('attribute has required metadata', () => {
   const attMetadata = new AttributeMetadata({
@@ -97,5 +98,58 @@ test('fails when given primary key schema for unique references unknown variable
 
   expect(attrMetadata).toThrow(
     'key "USER.NAME#{{email}}" references variable "email" but it could not be resolved'
+  );
+});
+
+test('default value of scalar type is properly assigned', () => {
+  const attrMetadata = new AttributeMetadata({
+    name: 'name',
+    entityClass: User,
+    table,
+    type: 'String',
+    default: 'some default value',
+  });
+
+  expect(Object.assign({}, attrMetadata)).toEqual({
+    entityClass: User,
+    table,
+    type: 'String',
+    name: 'name',
+    default: 'some default value',
+  });
+});
+
+test('default value of scalar factory type is properly assigned', () => {
+  const attrMetadata = new AttributeMetadata({
+    name: 'id',
+    entityClass: User,
+    table,
+    type: 'Number',
+    default: () => 2,
+  });
+
+  expect(Object.assign({}, attrMetadata)).toEqual({
+    entityClass: User,
+    table,
+    type: 'Number',
+    name: 'id',
+    default: 2,
+  });
+});
+
+test('fails when type of default value is not supported one', () => {
+  const attrMetadata = () =>
+    new AttributeMetadata({
+      name: 'id',
+      entityClass: User,
+      table,
+      type: 'Number',
+      default: {
+        id: '2',
+      } as any,
+    });
+
+  expect(attrMetadata).toThrow(
+    typeof AttributeMetadataUnsupportedDefaultValueError
   );
 });

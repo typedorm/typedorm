@@ -7,6 +7,8 @@ import {
   SimplePrimaryKey,
   Table,
   IsPrimaryKey,
+  ScalarType,
+  AttributeMetadataUnsupportedDefaultValueError,
 } from '@typedorm/common';
 import {buildPrimaryKeySchema} from '../../helpers/build-primary-key-schema';
 import {DynamoEntitySchemaPrimaryKey} from './entity-metadata';
@@ -14,31 +16,57 @@ import {
   BaseAttributeMetadataOptions,
   BaseAttributeMetadata,
 } from './base-attribute-metadata';
+import {isScalarType} from '../../helpers/is-scalar-type';
 
 export interface AttributeMetadataOptions extends BaseAttributeMetadataOptions {
   table: Table;
   entityClass: EntityTarget<any>;
   unique?: AttributeOptionsUniqueType;
+  default?: ScalarType | (() => ScalarType);
 }
 
 export class AttributeMetadata extends BaseAttributeMetadata {
   readonly unique?: DynamoEntitySchemaPrimaryKey;
+  readonly default?: ScalarType;
   readonly table: Table;
   readonly entityClass: EntityTarget<any>;
-  constructor({
-    name,
-    type,
-    entityClass,
-    unique,
-    table,
-  }: AttributeMetadataOptions) {
+  constructor(options: AttributeMetadataOptions) {
+    const {name, type, entityClass, unique, table} = options;
+
     super({name, type});
     this.entityClass = entityClass;
     this.table = table;
+    this.default = this.getDefaultValue(name, options.default);
 
     if (unique) {
       this.unique = this.buildUniqueAttributesPrimaryKey(unique);
     }
+  }
+
+  private getDefaultValue(
+    attrName: string,
+    defaultValue: AttributeMetadataOptions['default']
+  ) {
+    let scalarDefaultValue: ScalarType | undefined = undefined;
+    if (!defaultValue) {
+      return;
+    }
+
+    // if a factory function was provided get returned value
+    if (typeof defaultValue === 'function') {
+      scalarDefaultValue = defaultValue();
+    } else {
+      scalarDefaultValue = defaultValue as ScalarType;
+    }
+
+    if (isScalarType(scalarDefaultValue)) {
+      return scalarDefaultValue;
+    }
+
+    throw new AttributeMetadataUnsupportedDefaultValueError(
+      attrName,
+      defaultValue
+    );
   }
 
   private buildUniqueAttributesPrimaryKey(unique: AttributeOptionsUniqueType) {
