@@ -1,6 +1,7 @@
 import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, EntityTarget} from '@typedorm/common';
 import {IndexOptions, Table} from '../table';
 import {AttributeOptionsUniqueType} from '../decorators/attribute.decorator';
+import {ScalarType} from '../helpers/scalar-type';
 
 export const IsAutoGenerateAttributeRawMetadataOptions = (
   attr: any
@@ -35,6 +36,7 @@ interface BaseAttributeRawMetadataOptions {
 export interface AttributeRawMetadataOptions
   extends BaseAttributeRawMetadataOptions {
   unique?: AttributeOptionsUniqueType;
+  default?: ScalarType | (() => ScalarType);
 }
 
 export interface AutoGenerateAttributeRawMetadataOptions
