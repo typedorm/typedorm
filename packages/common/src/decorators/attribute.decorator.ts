@@ -41,6 +41,7 @@ export function Attribute(options?: AttributeOptions): PropertyDecorator {
       name: propertyKey.toString(),
       type,
       unique: options?.unique,
+      default: options?.default,
     } as AttributeRawMetadataOptions;
 
     MetadataManager.metadataStorage.addRawAttribute(
