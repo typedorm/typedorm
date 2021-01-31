@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import {ScalarType} from '../helpers/scalar-type';
 import {MetadataManager} from '../metadata/metadata-manager';
 import {
   AttributeRawMetadataOptions,
@@ -21,6 +22,10 @@ export interface AttributeOptions {
    * @default false
    */
   isEnum?: boolean;
+  /**
+   * Assign default value to attribute
+   */
+  default?: ScalarType | (() => ScalarType);
 }
 
 export function Attribute(options?: AttributeOptions): PropertyDecorator {
@@ -36,6 +41,7 @@ export function Attribute(options?: AttributeOptions): PropertyDecorator {
       name: propertyKey.toString(),
       type,
       unique: options?.unique,
+      default: options?.default,
     } as AttributeRawMetadataOptions;
 
     MetadataManager.metadataStorage.addRawAttribute(

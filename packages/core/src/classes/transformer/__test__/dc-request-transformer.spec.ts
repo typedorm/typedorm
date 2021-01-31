@@ -145,6 +145,59 @@ test('transforms put item request with unique attributes', () => {
   ]);
 });
 
+test('transforms put item request with default values ', () => {
+  resetTestConnection();
+
+  @Entity({
+    table,
+    name: 'product',
+    primaryKey: {
+      partitionKey: 'PRD#{{id}}',
+      sortKey: 'PRD#{{id}}',
+    },
+  })
+  class Product {
+    @Attribute()
+    id: string;
+
+    @Attribute({
+      default: () => 'available',
+    })
+    status: string;
+  }
+
+  const newConnection = createTestConnection({
+    entities: [Product],
+  });
+  const newTransformer = new DocumentClientRequestTransformer(newConnection);
+
+  const product = new Product();
+  product.id = '1';
+
+  const putItem = newTransformer.toDynamoPutItem(product);
+  expect(putItem).toEqual({
+    ConditionExpression:
+      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+    ExpressionAttributeNames: {
+      '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
+    },
+    Item: {
+      PK: 'PRD#1',
+      SK: 'PRD#1',
+      __en: 'product',
+      id: '1',
+      status: 'available',
+    },
+    TableName: 'test-table',
+  });
+
+  // when overriding item, this can
+  product.status = 'unavailable';
+  const overriddenPutItem = newTransformer.toDynamoPutItem(product) as any;
+  expect(overriddenPutItem.Item.status).toEqual('unavailable');
+});
+
 test('transforms put item request consisting unique attributes with provided primary key', () => {
   resetTestConnection();
 
