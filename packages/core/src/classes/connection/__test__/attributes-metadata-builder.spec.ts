@@ -147,11 +147,15 @@ test('builds metadata for attribute with explicit entity', () => {
       entityClass: Admin,
       table,
       unique: {
-        PK: 'USER.EMAIL#{{email}}',
-        SK: 'USER.EMAIL#{{email}}',
-        _interpolations: {
-          PK: ['email'],
-          SK: ['email'],
+        attributes: {
+          PK: 'USER.EMAIL#{{email}}',
+          SK: 'USER.EMAIL#{{email}}',
+        },
+        metadata: {
+          _interpolations: {
+            PK: ['email'],
+            SK: ['email'],
+          },
         },
       },
     },
@@ -188,11 +192,15 @@ test('builds metadata with implicit primary key for unique attribute', () => {
       entityClass: UserUniqueEmail,
       table,
       unique: {
-        PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#{{email}}',
-        SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#{{email}}',
-        _interpolations: {
-          PK: ['email'],
-          SK: ['email'],
+        attributes: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#{{email}}',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#{{email}}',
+        },
+        metadata: {
+          _interpolations: {
+            PK: ['email'],
+            SK: ['email'],
+          },
         },
       },
     },

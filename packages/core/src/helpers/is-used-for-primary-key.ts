@@ -27,7 +27,7 @@ export function isUsedForPrimaryKey(
     }
     // when parsed primary key is provided, flatten all interpolations to an array
   } else {
-    const interpolationsToFlatten = primaryKey._interpolations ?? {};
+    const interpolationsToFlatten = primaryKey.metadata._interpolations ?? {};
     primaryKeyInterpolations = [
       ...primaryKeyInterpolations,
       ...Object.keys(interpolationsToFlatten).flatMap(key => {

@@ -1,4 +1,5 @@
 import {User} from '../../../../__mocks__/user';
+import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
 import {EntityMetadataBuilder} from '../entity-metadata-builder';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {
@@ -9,6 +10,7 @@ import {
   Table,
 } from '@typedorm/common';
 import {table} from '../../../../__mocks__/table';
+
 jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('12-3-1-23-12'),
 }));
@@ -47,22 +49,79 @@ test('builds simple entity metadata', () => {
   expect(metadata.schema).toEqual({
     indexes: {
       GSI1: {
-        GSI1PK: 'USER#STATUS#{{status}}',
-        GSI1SK: 'USER#{{name}}',
-        _interpolations: {
-          GSI1PK: ['status'],
-          GSI1SK: ['name'],
+        attributes: {
+          GSI1PK: 'USER#STATUS#{{status}}',
+          GSI1SK: 'USER#{{name}}',
         },
-        _name: 'GSI1',
-        type: 'GLOBAL_SECONDARY_INDEX',
+        metadata: {
+          isSparse: false,
+          _interpolations: {
+            GSI1PK: ['status'],
+            GSI1SK: ['name'],
+          },
+          _name: 'GSI1',
+          type: 'GLOBAL_SECONDARY_INDEX',
+        },
       },
     },
     primaryKey: {
-      PK: 'USER#{{id}}',
-      SK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
-        SK: ['id'],
+      attributes: {
+        PK: 'USER#{{id}}',
+        SK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
+      },
+    },
+  });
+});
+
+test('builds metadata for entity with sparse indexes', () => {
+  const [metadata] = metadataBuilder.build([UserSparseIndexes]);
+  expect(metadata.schema).toEqual({
+    indexes: {
+      GSI1: {
+        attributes: {
+          GSI1PK: 'USER_SPARSE_INDEXES#STATUS#{{status}}',
+          GSI1SK: 'USER_SPARSE_INDEXES#{{name}}',
+        },
+        metadata: {
+          isSparse: true,
+          _interpolations: {
+            GSI1PK: ['status'],
+            GSI1SK: ['name'],
+          },
+          _name: 'GSI1',
+          type: 'GLOBAL_SECONDARY_INDEX',
+        },
+      },
+      LSI1: {
+        attributes: {
+          LSI1SK: 'AGE#{{age}}',
+        },
+        metadata: {
+          _interpolations: {
+            LSI1SK: ['age'],
+          },
+          _name: 'LSI1',
+          isSparse: true,
+          type: 'LOCAL_SECONDARY_INDEX',
+        },
+      },
+    },
+    primaryKey: {
+      attributes: {
+        PK: 'USER_SPARSE_INDEXES#{{id}}',
+        SK: 'USER_SPARSE_INDEXES#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
       },
     },
   });
@@ -144,9 +203,13 @@ test('builds entity metadata with global table config', () => {
   expect(entityMetadata.schema).toEqual({
     indexes: {},
     primaryKey: {
-      PK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
+      attributes: {
+        PK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+        },
       },
     },
   });

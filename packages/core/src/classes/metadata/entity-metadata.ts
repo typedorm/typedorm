@@ -2,7 +2,6 @@ import {
   EntityRawMetadataOptions,
   EntityTarget,
   Indexes,
-  IndexOptions,
   INDEX_TYPE,
   INTERNAL_ENTITY_ATTRIBUTE,
   Table,
@@ -17,11 +16,16 @@ import {BaseMetadata} from './base-metadata';
 import {InternalAttributeMetadata} from './internal-attribute-metadata';
 
 export type DynamoEntitySchemaPrimaryKey = {
-  [key: string]: any;
-  _interpolations?: {[key: string]: string[]};
+  attributes: {[key: string]: any};
+  metadata: {
+    _interpolations?: {[key: string]: string[]};
+  };
 };
 export type DynamoEntityIndexesSchema = {
-  [key: string]: DynamoEntityIndexSchema;
+  [key: string]: {
+    attributes: {[key: string]: any};
+    metadata: DynamoEntityIndexSchema;
+  };
 };
 
 export type DynamoEntityIndexSchema = {
@@ -29,9 +33,9 @@ export type DynamoEntityIndexSchema = {
   _name?: string;
   // for LSI, only contains interpolations for sort key
   _interpolations?: {[key: string]: string[]};
-  // entity transformer will inject additional attributes
-  [key: string]: any;
-} & IndexOptions;
+  isSparse: boolean;
+  type: INDEX_TYPE;
+};
 
 export interface DynamoEntitySchema {
   primaryKey: DynamoEntitySchemaPrimaryKey;
@@ -120,7 +124,7 @@ export class EntityMetadata extends BaseMetadata {
     table: Table;
     indexes: Indexes;
     attributes: {[key: string]: string};
-  }) {
+  }): DynamoEntityIndexesSchema {
     return Object.keys(indexes).reduce((acc, key) => {
       const tableIndexSignature = table.getIndexByKey(key);
       if (!tableIndexSignature) {
@@ -140,13 +144,23 @@ export class EntityMetadata extends BaseMetadata {
           throw new Error('Index signature mismatch.');
         }
         acc[key] = {
-          [tableIndexSignature.sortKey]: currentIndex.sortKey,
-          type: tableIndexSignature.type,
-          _name: key,
-          _interpolations: {
-            [tableIndexSignature.sortKey]: sortKeyInterpolations,
+          attributes: {
+            [tableIndexSignature.sortKey]: currentIndex.sortKey,
+          },
+          metadata: {
+            type: tableIndexSignature.type,
+            isSparse:
+              currentIndex.isSparse === undefined ||
+              currentIndex.isSparse === null
+                ? true // by default all indexes are sparse
+                : !!currentIndex.isSparse,
+            _name: key,
+            _interpolations: {
+              [tableIndexSignature.sortKey]: sortKeyInterpolations,
+            },
           },
         };
+
         return acc;
       } else {
         if (currentIndex.type !== INDEX_TYPE.GSI) {
@@ -159,18 +173,27 @@ export class EntityMetadata extends BaseMetadata {
         );
 
         acc[key] = {
-          [tableIndexSignature.partitionKey]: currentIndex.partitionKey,
-          [tableIndexSignature.sortKey]: currentIndex.sortKey,
-          type: tableIndexSignature.type,
-          _name: key,
-          // remove any duplicates from partition or sort keys
-          _interpolations: {
-            [tableIndexSignature.partitionKey]: partitionKeyInterpolations,
-            [tableIndexSignature.sortKey]: sortKeyInterpolations,
+          attributes: {
+            [tableIndexSignature.partitionKey]: currentIndex.partitionKey,
+            [tableIndexSignature.sortKey]: currentIndex.sortKey,
+          },
+          metadata: {
+            isSparse:
+              currentIndex.isSparse === undefined ||
+              currentIndex.isSparse === null
+                ? true // by default all indexes are sparse
+                : !!currentIndex.isSparse,
+            type: tableIndexSignature.type,
+            _name: key,
+            // remove any duplicates from partition or sort keys
+            _interpolations: {
+              [tableIndexSignature.partitionKey]: partitionKeyInterpolations,
+              [tableIndexSignature.sortKey]: sortKeyInterpolations,
+            },
           },
         };
         return acc;
       }
-    }, {} as any);
+    }, {} as DynamoEntityIndexesSchema);
   }
 }

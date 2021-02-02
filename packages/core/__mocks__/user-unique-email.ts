@@ -22,6 +22,7 @@ export interface UserUniqueEmailGSI1 {
       partitionKey: 'USER#STATUS#{{status}}',
       sortKey: 'USER#{{name}}',
       type: INDEX_TYPE.GSI,
+      isSparse: false,
     },
   },
 })

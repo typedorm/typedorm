@@ -1,7 +1,8 @@
-export function isScalarType(item: unknown) {
-  return (
-    typeof item === 'string' ||
+import {ScalarType} from '@typedorm/common';
+
+export const isScalarType = (item: any): item is ScalarType =>
+  item &&
+  (typeof item === 'string' ||
     typeof item === 'number' ||
-    Buffer.isBuffer(item)
-  );
-}
+    typeof item === 'boolean' ||
+    Buffer.isBuffer(item));

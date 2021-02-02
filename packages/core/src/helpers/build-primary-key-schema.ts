@@ -10,7 +10,12 @@ export function buildPrimaryKeySchema({
   table: Table;
   primaryKey: PrimaryKey;
   attributes: {[key: string]: string};
-}) {
+}): {
+  attributes: {[key: string]: string};
+  metadata: {
+    _interpolations: {[key: string]: any};
+  };
+} {
   const partitionKeyInterpolations = getInterpolatedKeys(
     primaryKey.partitionKey
   );
@@ -31,11 +36,15 @@ export function buildPrimaryKeySchema({
     const tableSortKeyName = table.sortKey ?? '';
     const sortKeyInterpolations = getInterpolatedKeys(primaryKey.sortKey);
     return {
-      [tablePartitionKeyName]: primaryKey.partitionKey,
-      [tableSortKeyName]: primaryKey.sortKey,
-      _interpolations: {
-        [tablePartitionKeyName]: partitionKeyInterpolations,
-        [tableSortKeyName]: sortKeyInterpolations,
+      attributes: {
+        [tablePartitionKeyName]: primaryKey.partitionKey,
+        [tableSortKeyName]: primaryKey.sortKey,
+      },
+      metadata: {
+        _interpolations: {
+          [tablePartitionKeyName]: partitionKeyInterpolations,
+          [tableSortKeyName]: sortKeyInterpolations,
+        },
       },
     };
     // when current primary key is a simple key
@@ -50,9 +59,13 @@ export function buildPrimaryKeySchema({
 
     // build primary key
     return {
-      [tablePartitionKeyName]: primaryKey.partitionKey,
-      _interpolations: {
-        [tablePartitionKeyName]: partitionKeyInterpolations,
+      attributes: {
+        [tablePartitionKeyName]: primaryKey.partitionKey,
+      },
+      metadata: {
+        _interpolations: {
+          [tablePartitionKeyName]: partitionKeyInterpolations,
+        },
       },
     };
   }

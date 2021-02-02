@@ -35,5 +35,5 @@ test('builds entity metadata with path match', () => {
     path.resolve(__dirname, '../../../../__mocks__/**/*.ts')
   );
 
-  expect(entities.length).toEqual(5);
+  expect(entities.length).toEqual(6);
 });

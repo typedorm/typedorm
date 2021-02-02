@@ -20,22 +20,31 @@ test('Connection Manager should register metadata correctly', () => {
   expect(userMetadata.schema).toEqual({
     indexes: {
       GSI1: {
-        GSI1PK: 'USER#STATUS#{{status}}',
-        GSI1SK: 'USER#{{name}}',
-        _interpolations: {
-          GSI1PK: ['status'],
-          GSI1SK: ['name'],
+        attributes: {
+          GSI1PK: 'USER#STATUS#{{status}}',
+          GSI1SK: 'USER#{{name}}',
         },
-        _name: 'GSI1',
-        type: 'GLOBAL_SECONDARY_INDEX',
+        metadata: {
+          _interpolations: {
+            GSI1PK: ['status'],
+            GSI1SK: ['name'],
+          },
+          _name: 'GSI1',
+          isSparse: false,
+          type: 'GLOBAL_SECONDARY_INDEX',
+        },
       },
     },
     primaryKey: {
-      PK: 'USER#{{id}}',
-      SK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
-        SK: ['id'],
+      attributes: {
+        PK: 'USER#{{id}}',
+        SK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
       },
     },
   });
@@ -51,22 +60,31 @@ test('Connection Manager should register metadata for entity loaded from path', 
   expect(userMetadata.schema).toEqual({
     indexes: {
       GSI1: {
-        GSI1PK: 'USER#STATUS#{{status}}',
-        GSI1SK: 'USER#{{name}}',
-        _interpolations: {
-          GSI1PK: ['status'],
-          GSI1SK: ['name'],
+        attributes: {
+          GSI1PK: 'USER#STATUS#{{status}}',
+          GSI1SK: 'USER#{{name}}',
         },
-        _name: 'GSI1',
-        type: 'GLOBAL_SECONDARY_INDEX',
+        metadata: {
+          _interpolations: {
+            GSI1PK: ['status'],
+            GSI1SK: ['name'],
+          },
+          _name: 'GSI1',
+          isSparse: false,
+          type: 'GLOBAL_SECONDARY_INDEX',
+        },
       },
     },
     primaryKey: {
-      PK: 'USER#{{id}}',
-      SK: 'USER#{{id}}',
-      _interpolations: {
-        PK: ['id'],
-        SK: ['id'],
+      attributes: {
+        PK: 'USER#{{id}}',
+        SK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
       },
     },
   });

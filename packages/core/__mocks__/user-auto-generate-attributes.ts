@@ -23,6 +23,7 @@ export interface UserAutoGenerateAttributesPrimaryKey {
       partitionKey: 'USER#UPDATED_AT#{{updatedAt}}',
       sortKey: 'USER#{{id}}',
       type: INDEX_TYPE.GSI,
+      isSparse: false,
     },
   },
 })

@@ -119,9 +119,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     | DynamoDB.DocumentClient.PutItemInput
     | DynamoDB.DocumentClient.TransactWriteItemList {
     const entityClass = getConstructorForInstance(entity);
-    const {table, internalAttributes, name} = this.connection.getEntityByTarget(
-      entityClass
-    );
+    const {
+      table,
+      internalAttributes,
+      name,
+      attributes,
+    } = this.connection.getEntityByTarget(entityClass);
 
     this.connection.logger.logTransform(
       TRANSFORM_TYPE.PUT,
@@ -143,9 +146,17 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return acc;
     }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
 
+    const attributesWithDefaultValues = attributes
+      .filter(attr => !!(attr as AttributeMetadata)?.default)
+      .reduce((acc, attr) => {
+        acc[attr.name] = (attr as AttributeMetadata).default;
+        return acc;
+      }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
+
     let dynamoPutItem = {
       Item: {
         ...entityInternalAttributes,
+        ...attributesWithDefaultValues,
         ...dynamoEntity,
       },
       TableName: table.name,
@@ -452,7 +463,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     ) {
       parsedPartitionKey.name = table.partitionKey;
       parsedPartitionKey.value = parseKey(
-        schema.primaryKey[table.partitionKey],
+        schema.primaryKey.attributes[table.partitionKey],
         partitionKeyAttributes
       );
     } else {
@@ -461,7 +472,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
       const schemaForIndexToQuery = (schema.indexes ?? {})[queryIndexName];
       parsedPartitionKey.value = parseKey(
-        schemaForIndexToQuery[indexToQuery.partitionKey],
+        schemaForIndexToQuery.attributes[indexToQuery.partitionKey],
         partitionKeyAttributes
       );
     }
