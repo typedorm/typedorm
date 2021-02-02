@@ -7,6 +7,7 @@ import {
   AutoGenerateAttribute,
   AUTO_GENERATE_ATTRIBUTE_STRATEGY,
   Entity,
+  MissingRequiredTableConfig,
   Table,
 } from '@typedorm/common';
 import {table} from '../../../../__mocks__/table';
@@ -257,4 +258,28 @@ test('overrides property of base class if it is defined again on derived class w
       entityClass: Customer,
     },
   ]);
+});
+
+/**
+ * Issue #60
+ */
+test('throws user friendly error when no table config is found for entity', () => {
+  @Entity({
+    name: 'no-table-entity',
+    primaryKey: {
+      partitionKey: 'id',
+    },
+  })
+  class NoTableEntity {
+    @Attribute()
+    id: string;
+  }
+
+  const tempConnection = () =>
+    createTestConnection({
+      name: 'temp',
+      entities: [NoTableEntity],
+    });
+
+  expect(tempConnection).toThrow(MissingRequiredTableConfig);
 });

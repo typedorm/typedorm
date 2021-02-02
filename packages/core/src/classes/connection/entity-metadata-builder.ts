@@ -1,4 +1,8 @@
-import {MetadataManager, Table} from '@typedorm/common';
+import {
+  MetadataManager,
+  MissingRequiredTableConfig,
+  Table,
+} from '@typedorm/common';
 import {
   AttributeMetadataType,
   EntityMetadata,
@@ -29,6 +33,10 @@ export class EntityMetadataBuilder {
         this.table = table;
       } else {
         this.table = this.connection.table;
+      }
+
+      if (!this.table) {
+        throw new MissingRequiredTableConfig(decoratedEntityClass.name);
       }
 
       const inheritedClasses = this.recursiveGetInheritanceTree(
