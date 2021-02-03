@@ -7,7 +7,7 @@ import {
 import {Connection} from '../connection/connection';
 import {EntityManagerUpdateOptions} from '../manager/entity-manager';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
-import {LazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loder';
+import {LazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 
 // transaction interfaces
 export interface WriteTransactionCreate<Entity> {
