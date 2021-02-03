@@ -26,6 +26,11 @@ export interface AttributeOptions {
    * Assign default value to attribute
    */
   default?: ScalarType | (() => ScalarType);
+  /**
+   * Defines whether the attribute should be hidden from response returned to client
+   * @default false
+   */
+  hidden?: boolean;
 }
 
 export function Attribute(options?: AttributeOptions): PropertyDecorator {
@@ -42,6 +47,7 @@ export function Attribute(options?: AttributeOptions): PropertyDecorator {
       type,
       unique: options?.unique,
       default: options?.default,
+      hidden: options?.hidden,
     } as AttributeRawMetadataOptions;
 
     MetadataManager.metadataStorage.addRawAttribute(
