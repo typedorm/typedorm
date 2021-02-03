@@ -1,10 +1,18 @@
 import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
-import {Attribute, Entity, INDEX_TYPE, Table} from '@typedorm/common';
+import {
+  Attribute,
+  AutoGenerateAttribute,
+  AUTO_GENERATE_ATTRIBUTE_STRATEGY,
+  Entity,
+  INDEX_TYPE,
+  Table,
+} from '@typedorm/common';
 import {Organisation} from '../../../../__mocks__/organisation';
 import {User} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityTransformer} from '../entity-transformer';
 import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
+import {table} from '@typedorm/core/__mocks__/table';
 
 let transformer: EntityTransformer;
 beforeEach(() => {
@@ -78,6 +86,55 @@ test('excludes internal attributes from transformed object', () => {
   expect(transformed).toEqual({
     id: '1',
     name: 'Me',
+  });
+});
+
+test('excludes hidden props from returned response', () => {
+  @Entity({
+    name: 'user-priv',
+    table,
+    primaryKey: {
+      partitionKey: 'USER#{{id}}',
+      sortKey: 'USER#{{id}}',
+    },
+  })
+  class UserPriv {
+    @Attribute()
+    id: string;
+
+    @Attribute()
+    username: string;
+
+    @Attribute({
+      hidden: true,
+    })
+    password: string;
+
+    @AutoGenerateAttribute({
+      strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.UUID4,
+      hidden: true,
+    })
+    createdAt: string;
+  }
+  transformer = new EntityTransformer(
+    createTestConnection({
+      entities: [UserPriv],
+      name: 'temp-hidden-props',
+    })
+  );
+
+  const dynamoEntity = {
+    PK: 'USER#1',
+    id: '1',
+    username: 'Me@21',
+    password: '12344',
+    createdAt: '13123123123',
+    __en: 'user-priv',
+  };
+  const transformed = transformer.fromDynamoEntity(UserPriv, dynamoEntity);
+  expect(transformed).toEqual({
+    id: '1',
+    username: 'Me@21',
   });
 });
 
