@@ -4,6 +4,7 @@ import {
   Replace,
   Table,
   DebugLogger,
+  MissingRequiredTableConfig,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
@@ -77,6 +78,9 @@ export class Connection {
       this.isConnected = true;
       return this;
     } catch (err) {
+      if (err instanceof MissingRequiredTableConfig) {
+        throw err;
+      }
       // Failed to connect to connection, clear self from connection manager
       this.destroySelf(this.name);
       return;
