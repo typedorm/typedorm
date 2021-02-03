@@ -604,6 +604,57 @@ test('finds items matching given query params', async () => {
   });
 });
 
+test('finds items with alternate syntax', async () => {
+  dcMock.query.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      Items: [
+        {
+          PK: 'USER#1',
+          SK: 'USER#1',
+          GSI1PK: 'USER#STATUS#active',
+          GSI1SK: 'USER#Me',
+          id: '1',
+          name: 'Me',
+          status: 'active',
+        },
+      ],
+    }),
+  });
+
+  const users = await manager.find<User>(User, 'USER#1', {
+    keyCondition: {
+      BEGINS_WITH: 'USER#',
+    },
+    limit: 10,
+  });
+
+  expect(dcMock.query).toHaveBeenCalledTimes(1);
+  expect(dcMock.query).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#KY_CE_SK': 'SK',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#1',
+      ':KY_CE_SK': 'USER#',
+    },
+    KeyConditionExpression:
+      '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+    Limit: 10,
+    ScanIndexForward: true,
+    TableName: 'test-table',
+  });
+  expect(users).toEqual({
+    items: [
+      {
+        id: '1',
+        name: 'Me',
+        status: 'active',
+      },
+    ],
+  });
+});
+
 test('finds item from given cursor position', async () => {
   dcMock.query.mockReturnValue({
     promise: jest.fn().mockReturnValue({

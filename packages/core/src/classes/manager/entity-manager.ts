@@ -11,13 +11,13 @@ import {Connection} from '../connection/connection';
 import {WriteTransaction} from '../transaction/write-transaction';
 import {
   DocumentClientRequestTransformer,
-  ManagerToDynamoQueryItemsOptions,
+  TransformerToDynamoQueryItemsOptions,
 } from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {isWriteTransactionItemList} from '../transaction/type-guards';
-import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loder';
+import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 
 export interface EntityManagerUpdateOptions {
   /**
@@ -27,7 +27,7 @@ export interface EntityManagerUpdateOptions {
 }
 
 export interface EntityManagerQueryOptions
-  extends ManagerToDynamoQueryItemsOptions {
+  extends TransformerToDynamoQueryItemsOptions {
   cursor?: DynamoDB.DocumentClient.Key;
 }
 
@@ -304,26 +304,24 @@ export class EntityManager {
   }
 
   /**
-   * Find items items using declarative query options
+   * Find items using declarative query options
    * @param entityClass Entity to query
-   * @param partitionKeyAttributes Partition key attributes, If querying an index,
+   * @param partitionKey Partition key attributes, If querying an index,
    * this is the partition key attributes of that index
    * @param queryOptions Query Options
    */
-  async find<
-    Entity,
-    PartitionKeyAttributes = Partial<EntityAttributes<Entity>>
-  >(
+  async find<Entity, PartitionKey = Partial<EntityAttributes<Entity>> | string>(
     entityClass: EntityTarget<Entity>,
-    partitionKeyAttributes: PartitionKeyAttributes & {
-      queryIndex?: string;
-    },
+    partitionKey: PartitionKey,
     queryOptions?: EntityManagerQueryOptions
-  ) {
+  ): Promise<{
+    items: DynamoDB.DocumentClient.ItemList;
+    cursor?: DynamoDB.DocumentClient.Key | undefined;
+  }> {
     const dynamoQueryItem = this._dcReqTransformer.toDynamoQueryItem<
-      PartitionKeyAttributes,
+      PartitionKey,
       Entity
-    >(entityClass, partitionKeyAttributes, queryOptions);
+    >(entityClass, partitionKey, queryOptions);
 
     const response = await this._internalRecursiveQuery({
       queryInput: dynamoQueryItem,

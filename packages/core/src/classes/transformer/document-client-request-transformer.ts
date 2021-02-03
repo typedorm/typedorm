@@ -27,9 +27,13 @@ import {EntityManagerUpdateOptions} from '../manager/entity-manager';
 import {AttributeMetadata} from '../metadata/attribute-metadata';
 import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {BaseTransformer} from './base-transformer';
-import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loder';
+import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
 
-export interface ManagerToDynamoQueryItemsOptions {
+export interface TransformerToDynamoQueryItemsOptions {
+  /**
+   * Index to query, when omitted, query will be run against main table
+   */
+  queryIndex?: string;
   /**
    * Sort key condition
    * @default none - no sort key condition is applied
@@ -415,10 +419,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
   toDynamoQueryItem<PartitionKeyAttributes, Entity>(
     entityClass: EntityTarget<Entity>,
-    partitionKeyAttributes: PartitionKeyAttributes & {
-      queryIndex?: string;
-    },
-    queryOptions?: ManagerToDynamoQueryItemsOptions
+    partitionKeyAttributes: PartitionKeyAttributes | string,
+    queryOptions?: TransformerToDynamoQueryItemsOptions
   ): DynamoDB.DocumentClient.QueryInput {
     const {table, schema, name} = this.connection.getEntityByTarget(
       entityClass
@@ -430,52 +432,57 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       partitionKeyAttributes,
       queryOptions
     );
-    const queryIndexName = partitionKeyAttributes.queryIndex ?? '';
+    const queryIndexName = queryOptions?.queryIndex;
     let indexToQuery: IndexOptions | undefined;
-    if (partitionKeyAttributes.queryIndex) {
-      const matchingIndex = table.getIndexByKey(
-        partitionKeyAttributes.queryIndex
-      );
+    if (queryIndexName) {
+      const matchingIndex = table.getIndexByKey(queryIndexName);
       if (!matchingIndex) {
         throw new Error(
-          `Requested to query items from index "${partitionKeyAttributes.queryIndex}", but no such index exists on table "${table.name}".`
+          `Requested to query items from index "${queryIndexName}", but no such index exists on table "${table.name}".`
         );
       }
 
       const matchingIndexOnEntity =
-        schema.indexes && schema.indexes[partitionKeyAttributes.queryIndex];
+        schema.indexes && schema.indexes[queryIndexName];
 
       if (!matchingIndexOnEntity) {
         throw new Error(
-          `Requested to query items from index "${partitionKeyAttributes.queryIndex}", but no such index exists on entity.`
+          `Requested to query items from index "${queryIndexName}", but no such index exists on entity.`
         );
       }
       indexToQuery = matchingIndex;
     }
 
-    const parsedPartitionKey = {} as {name: string; value: any};
     // query will be executed against main table or
     // if querying local  index, then partition key will be same as main table
+    const parsedPartitionKey = {} as {name: string; value: any};
     if (
       !queryIndexName ||
       !indexToQuery ||
       indexToQuery?.type === INDEX_TYPE.LSI
     ) {
       parsedPartitionKey.name = table.partitionKey;
-      parsedPartitionKey.value = parseKey(
-        schema.primaryKey.attributes[table.partitionKey],
-        partitionKeyAttributes
-      );
+      parsedPartitionKey.value =
+        typeof partitionKeyAttributes === 'string'
+          ? partitionKeyAttributes
+          : parseKey(
+              schema.primaryKey.attributes[table.partitionKey],
+              partitionKeyAttributes
+            );
     } else {
       // query is to be executed against global secondary index
       parsedPartitionKey.name = indexToQuery.partitionKey;
-
       const schemaForIndexToQuery = (schema.indexes ?? {})[queryIndexName];
-      parsedPartitionKey.value = parseKey(
-        schemaForIndexToQuery.attributes[indexToQuery.partitionKey],
-        partitionKeyAttributes
-      );
+
+      parsedPartitionKey.value =
+        typeof partitionKeyAttributes === 'string'
+          ? partitionKeyAttributes
+          : parseKey(
+              schemaForIndexToQuery.attributes[indexToQuery.partitionKey],
+              partitionKeyAttributes
+            );
     }
+
     const partitionKeyCondition = new KeyCondition().equals(
       parsedPartitionKey.name,
       parsedPartitionKey.value
@@ -485,7 +492,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     if (!queryOptions || isEmptyObject(queryOptions)) {
       const transformedQueryItem = {
         TableName: table.name,
-        IndexName: partitionKeyAttributes.queryIndex,
+        IndexName: queryIndexName,
         ...this._expressionBuilder.buildKeyConditionExpression(
           partitionKeyCondition
         ),
@@ -521,7 +528,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     let queryInputParams = {
       TableName: table.name,
-      IndexName: partitionKeyAttributes.queryIndex,
+      IndexName: queryIndexName,
       Limit: limit,
       ScanIndexForward: !order || order === QUERY_ORDER.ASC,
     } as DynamoDB.DocumentClient.QueryInput;

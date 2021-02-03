@@ -2,7 +2,7 @@ import {DynamoDB} from 'aws-sdk';
 import {TRANSACTION_WRITE_ITEMS_LIMIT} from '@typedorm/common';
 import {WriteTransaction} from '../transaction/write-transaction';
 import {Connection} from '../connection/connection';
-import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loder';
+import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 
 /**
  * Performs transactions using document client's writeTransaction

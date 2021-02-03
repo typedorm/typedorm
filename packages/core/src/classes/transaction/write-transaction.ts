@@ -4,7 +4,7 @@ import {Connection} from '../connection/connection';
 import {
   isLazyTransactionWriteItemListLoader,
   LazyTransactionWriteItemListLoader,
-} from '../transformer/is-lazy-transaction-write-item-list-loder';
+} from '../transformer/is-lazy-transaction-write-item-list-loader';
 import {
   Transaction,
   WriteTransactionChainItem,

@@ -481,9 +481,9 @@ test('transforms index based query item request', () => {
     User,
     {
       status: '13',
-      queryIndex: 'GSI1',
     },
     {
+      queryIndex: 'GSI1',
       keyCondition: {
         BETWEEN: ['jay', 'joe'],
       },
@@ -514,9 +514,9 @@ test('errors when querying unknown index', () => {
       User,
       {
         status: '13',
-        queryIndex: 'LSI1',
       },
       {
+        queryIndex: 'LSI1',
         keyCondition: {
           EQ: 'joe',
         },
