@@ -106,6 +106,14 @@ Declare Attribute on an entity
   // @optional
   // Required when attribute type is enum and referenced in key schema
   isEnum
+
+  // @optional
+  // Define default value for current attribute
+  default
+
+  // @optional
+  // Hides property from returned responses
+  hidden
 })
 ```
 
@@ -124,6 +132,10 @@ Declare Auto generated attribute on an entity
   // When true, attribute will be auto updated on write request with specified strategy
   // Useful for defining attributes like `updatedAt`
   autoUpdate
+
+  // @optional
+  // Hides property from returned responses
+  hidden
 })
 ```
 
