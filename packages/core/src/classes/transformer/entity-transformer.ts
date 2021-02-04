@@ -10,6 +10,7 @@ export class EntityTransformer extends BaseTransformer {
     super(connection);
   }
   /**
+   * Converts dynamodb entity to model defined in entities
    * @param entityClass - Target class to look metadata off
    * @param dynamoEntity
    */
@@ -33,6 +34,10 @@ export class EntityTransformer extends BaseTransformer {
       attr => attr.name
     );
 
+    const entityHiddenAttributeKeys = entityMetadata.attributes
+      .filter(attr => attr.hidden)
+      .map(attr => attr.name);
+
     const entityMetadataSchemaIndexes = entityMetadata.schema.indexes ?? {};
     const entityIndexes = Object.keys(entityMetadataSchemaIndexes)
       .map(key => {
@@ -41,10 +46,12 @@ export class EntityTransformer extends BaseTransformer {
       .flat();
 
     const transformedEntity = Object.keys(dynamoEntity).reduce((acc, key) => {
+      // if any of the below conditions are true, skip adding given attribute from returning response
       if (
         entityPrimaryKeys.includes(key) ||
         entityIndexes.includes(key) ||
-        entityInternalAttributeKeys.includes(key)
+        entityInternalAttributeKeys.includes(key) ||
+        entityHiddenAttributeKeys.includes(key)
       ) {
         return acc;
       }

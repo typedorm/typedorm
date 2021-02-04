@@ -32,6 +32,7 @@ export interface EntityRawMetadataOptions {
 interface BaseAttributeRawMetadataOptions {
   name: string;
   type: any;
+  hidden?: boolean;
 }
 export interface AttributeRawMetadataOptions
   extends BaseAttributeRawMetadataOptions {

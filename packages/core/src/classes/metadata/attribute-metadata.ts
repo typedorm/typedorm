@@ -31,9 +31,8 @@ export class AttributeMetadata extends BaseAttributeMetadata {
   readonly table: Table;
   readonly entityClass: EntityTarget<any>;
   constructor(options: AttributeMetadataOptions) {
-    const {name, type, entityClass, unique, table} = options;
-
-    super({name, type});
+    const {name, entityClass, unique, table} = options;
+    super(options);
     this.entityClass = entityClass;
     this.table = table;
     this.default = this.getDefaultValue(name, options.default);
