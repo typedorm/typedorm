@@ -1,8 +1,8 @@
 import {Table} from '@typedorm/common';
-import {isEmptyObject} from '../helpers/is-empty-object';
-import {isObject} from '../helpers/is-object';
-import {Condition} from './condition/condition';
-import {KeyCondition} from './condition/key-condition';
+import {isEmptyObject} from '../../helpers/is-empty-object';
+import {isObject} from '../../helpers/is-object';
+import {Condition} from './condition';
+import {KeyCondition} from './key-condition';
 
 export class ExpressionBuilder {
   /**

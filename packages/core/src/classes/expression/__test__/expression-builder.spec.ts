@@ -1,4 +1,4 @@
-import {Condition} from '../condition/condition';
+import {Condition} from '../condition';
 import {ExpressionBuilder} from '../expression-builder';
 
 const expressionBuilder = new ExpressionBuilder();
