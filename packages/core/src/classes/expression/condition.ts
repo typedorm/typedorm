@@ -1,6 +1,6 @@
-import {BaseCondition} from './base-condition';
+import {BaseExpressionInput} from './base-expression-input';
 
-export class Condition extends BaseCondition {
+export class Condition extends BaseExpressionInput {
   constructor(prefix?: string) {
     super();
     this.expression = prefix ?? '';

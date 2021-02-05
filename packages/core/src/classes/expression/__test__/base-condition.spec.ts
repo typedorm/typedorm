@@ -1,6 +1,6 @@
-import {BaseCondition, MERGE_STRATEGY} from '../base-condition';
+import {BaseExpressionInput, MERGE_STRATEGY} from '../base-expression-input';
 
-class TestCondition extends BaseCondition {
+class TestCondition extends BaseExpressionInput {
   protected getExpNameKey(key: string): string {
     return `#TC_${key}`;
   }

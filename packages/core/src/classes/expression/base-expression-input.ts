@@ -6,7 +6,7 @@ export enum MERGE_STRATEGY {
   OR = 'OR',
 }
 
-export abstract class BaseCondition {
+export abstract class BaseExpressionInput {
   expression: string;
   _names?: {[key: string]: any};
   _values?: {[key: string]: any};
@@ -87,7 +87,7 @@ export abstract class BaseCondition {
   }
 
   merge(
-    condition: BaseCondition,
+    condition: BaseExpressionInput,
     strategy: MERGE_STRATEGY = MERGE_STRATEGY.AND
   ): this {
     const {expression, names, values} = condition;

@@ -1,6 +1,6 @@
-import {BaseCondition} from './base-condition';
+import {BaseExpressionInput} from './base-expression-input';
 
-export class KeyCondition extends BaseCondition {
+export class KeyCondition extends BaseExpressionInput {
   constructor() {
     super();
   }
