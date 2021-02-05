@@ -41,7 +41,7 @@ export abstract class BaseExpressionInput {
 
   protected abstract getExpValueKey(key: string): string;
 
-  appendToExpression(segment: string) {
+  protected appendToExpression(segment: string) {
     if (!segment) {
       return;
     }
@@ -58,7 +58,7 @@ export abstract class BaseExpressionInput {
     this.expression += segment;
   }
 
-  addExpressionName(name: string) {
+  protected addExpressionName(name: string) {
     const expressionPrefixedName = this.getExpNameKey(name);
     if (this.names[expressionPrefixedName]) {
       throw new Error(
@@ -72,7 +72,7 @@ export abstract class BaseExpressionInput {
     return expressionPrefixedName;
   }
 
-  addExpressionValue(name: string, value: any) {
+  protected addExpressionValue(name: string, value: any) {
     const expressionPrefixedValue = this.getExpValueKey(name);
     if (this.values[expressionPrefixedValue]) {
       throw new Error(

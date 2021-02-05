@@ -1,5 +1,6 @@
 import {Condition} from '../condition';
 import {ExpressionBuilder} from '../expression-builder';
+import {Filter} from '../filter';
 
 const expressionBuilder = new ExpressionBuilder();
 
@@ -126,4 +127,15 @@ test('allows updating attribute with empty string', () => {
       ':val0': '',
     },
   });
+});
+
+/**
+ * @group buildFilterExpression
+ */
+test('builds filter expression', () => {
+  // FIXME:
+  const filter = new Filter();
+  const filterExpression = expressionBuilder.buildFilterExpression(filter);
+
+  expect(filterExpression).toEqual({});
 });

@@ -12,7 +12,7 @@ class TestCondition extends BaseExpressionInput {
   }
 }
 
-describe('BaseCondition', () => {
+describe('BaseExpressionInput', () => {
   it('should correctly chain conditions', () => {
     const condition = new TestCondition()
       .equals('name', 'Boi')

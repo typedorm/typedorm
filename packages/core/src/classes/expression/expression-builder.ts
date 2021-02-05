@@ -2,6 +2,7 @@ import {Table} from '@typedorm/common';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {isObject} from '../../helpers/is-object';
 import {Condition} from './condition';
+import {Filter} from './filter';
 import {KeyCondition} from './key-condition';
 
 export class ExpressionBuilder {
@@ -96,6 +97,19 @@ export class ExpressionBuilder {
       KeyConditionExpression: condition.expression.trim(),
       ExpressionAttributeNames: condition.names,
       ExpressionAttributeValues: condition.values,
+    };
+    return this.removeEmptyFieldsAndReturn(expression);
+  }
+
+  buildFilterExpression(filter: Filter) {
+    if (!filter.expression) {
+      return {};
+    }
+
+    const expression = {
+      FilterExpression: filter.expression.trim(),
+      ExpressionAttributeNames: filter.names,
+      ExpressionAttributeValues: filter.values,
     };
     return this.removeEmptyFieldsAndReturn(expression);
   }
