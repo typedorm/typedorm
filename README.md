@@ -35,6 +35,7 @@ Please submit an issue for any bugs or suggestions [here](https://github.com/typ
 - Additional higher level features like, ability to declare non key attribute as unique(beta)
 - Auto Generated values fro attributes
 - Auto Update values on update
+- Dynamic & Static default values for attributes
 - Complex update, key condition and condition expression all made easy to work with (Partial)
 - Typescript and javascript support
 
