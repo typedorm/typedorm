@@ -151,9 +151,16 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
 
     const attributesWithDefaultValues = attributes
-      .filter(attr => !!(attr as AttributeMetadata)?.default)
+      .filter(
+        attr =>
+          !!(
+            (attr as AttributeMetadata)?.default &&
+            typeof (attr as AttributeMetadata)?.default === 'function'
+          )
+      )
       .reduce((acc, attr) => {
-        acc[attr.name] = (attr as AttributeMetadata).default;
+        const defaultValueProvider: any = (attr as AttributeMetadata).default;
+        acc[attr.name] = defaultValueProvider(dynamoEntity);
         return acc;
       }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
 
