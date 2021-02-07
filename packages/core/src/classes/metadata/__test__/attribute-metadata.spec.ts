@@ -1,7 +1,6 @@
 import {User} from './../../../../__mocks__/user';
 import {table} from './../../../../__mocks__/table';
 import {AttributeMetadata} from '../attribute-metadata';
-import {AttributeMetadataUnsupportedDefaultValueError} from '@typedorm/common';
 
 test('attribute has required metadata', () => {
   const attMetadata = new AttributeMetadata({
@@ -115,7 +114,7 @@ test('default value of scalar type is properly assigned', () => {
     table,
     type: 'String',
     name: 'name',
-    default: 'some default value',
+    default: attrMetadata.default,
   });
 });
 
@@ -133,23 +132,6 @@ test('default value of scalar factory type is properly assigned', () => {
     table,
     type: 'Number',
     name: 'id',
-    default: 2,
+    default: attrMetadata.default,
   });
-});
-
-test('fails when type of default value is not supported one', () => {
-  const attrMetadata = () =>
-    new AttributeMetadata({
-      name: 'id',
-      entityClass: User,
-      table,
-      type: 'Number',
-      default: {
-        id: '2',
-      } as any,
-    });
-
-  expect(attrMetadata).toThrow(
-    typeof AttributeMetadataUnsupportedDefaultValueError
-  );
 });

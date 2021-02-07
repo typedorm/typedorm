@@ -1,3 +1,4 @@
+import {isScalarTypeProvider} from './../../helpers/is-scalar-type';
 import {
   AttributeOptionsUniqueType,
   CompositePrimaryKey,
@@ -8,7 +9,6 @@ import {
   Table,
   IsPrimaryKey,
   ScalarType,
-  AttributeMetadataUnsupportedDefaultValueError,
 } from '@typedorm/common';
 import {buildPrimaryKeySchema} from '../../helpers/build-primary-key-schema';
 import {DynamoEntitySchemaPrimaryKey} from './entity-metadata';
@@ -16,7 +16,6 @@ import {
   BaseAttributeMetadataOptions,
   BaseAttributeMetadata,
 } from './base-attribute-metadata';
-import {isScalarType} from '../../helpers/is-scalar-type';
 
 export interface AttributeMetadataOptions extends BaseAttributeMetadataOptions {
   table: Table;
@@ -27,7 +26,7 @@ export interface AttributeMetadataOptions extends BaseAttributeMetadataOptions {
 
 export class AttributeMetadata extends BaseAttributeMetadata {
   readonly unique?: DynamoEntitySchemaPrimaryKey;
-  readonly default?: ScalarType;
+  readonly default?: (entity: any) => ScalarType;
   readonly table: Table;
   readonly entityClass: EntityTarget<any>;
   constructor(options: AttributeMetadataOptions) {
@@ -35,37 +34,26 @@ export class AttributeMetadata extends BaseAttributeMetadata {
     super(options);
     this.entityClass = entityClass;
     this.table = table;
-    this.default = this.getDefaultValue(name, options.default);
+    this.default = this.getDefaultValueProvider(name, options.default);
 
     if (unique) {
       this.unique = this.buildUniqueAttributesPrimaryKey(unique);
     }
   }
 
-  private getDefaultValue(
+  private getDefaultValueProvider(
     attrName: string,
     defaultValue: AttributeMetadataOptions['default']
   ) {
-    let scalarDefaultValue: ScalarType | undefined = undefined;
     if (!defaultValue) {
       return;
     }
 
-    // if a factory function was provided get returned value
-    if (typeof defaultValue === 'function') {
-      scalarDefaultValue = defaultValue();
+    if (isScalarTypeProvider(defaultValue)) {
+      return defaultValue;
     } else {
-      scalarDefaultValue = defaultValue as ScalarType;
+      return () => defaultValue;
     }
-
-    if (isScalarType(scalarDefaultValue)) {
-      return scalarDefaultValue;
-    }
-
-    throw new AttributeMetadataUnsupportedDefaultValueError(
-      attrName,
-      defaultValue
-    );
   }
 
   private buildUniqueAttributesPrimaryKey(unique: AttributeOptionsUniqueType) {

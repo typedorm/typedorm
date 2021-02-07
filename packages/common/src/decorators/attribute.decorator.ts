@@ -8,7 +8,7 @@ import {
 
 export type AttributeOptionsUniqueType = boolean | PrimaryKey;
 
-export interface AttributeOptions {
+export interface AttributeOptions<Entity> {
   /**
    * Item will be managed using transaction to ensure it's consistency
    * When value of unique is of type boolean, entity name is used to auto generated unique prefix
@@ -25,7 +25,7 @@ export interface AttributeOptions {
   /**
    * Assign default value to attribute
    */
-  default?: ScalarType | (() => ScalarType);
+  default?: ScalarType | ((entity: Entity) => ScalarType);
   /**
    * Defines whether the attribute should be hidden from response returned to client
    * @default false
@@ -33,7 +33,9 @@ export interface AttributeOptions {
   hidden?: boolean;
 }
 
-export function Attribute(options?: AttributeOptions): PropertyDecorator {
+export function Attribute<Entity = any>(
+  options?: AttributeOptions<Entity>
+): PropertyDecorator {
   return (target, propertyKey): void => {
     let type = Reflect.getMetadata('design:type', target, propertyKey).name;
 

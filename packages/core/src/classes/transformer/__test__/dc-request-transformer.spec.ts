@@ -198,6 +198,64 @@ test('transforms put item request with default values ', () => {
   expect(overriddenPutItem.Item.status).toEqual('unavailable');
 });
 
+test('transforms put item request with dynamic default values ', () => {
+  resetTestConnection();
+
+  @Entity({
+    table,
+    name: 'person',
+    primaryKey: {
+      partitionKey: 'PER#{{id}}',
+      sortKey: 'PER#{{id}}',
+    },
+  })
+  class Person {
+    @Attribute()
+    id: string;
+
+    @Attribute()
+    firstName: string;
+
+    @Attribute()
+    lastName: string;
+
+    @Attribute<Person>({
+      default: person => `${person.firstName} ${person.lastName}`,
+    })
+    name: string;
+  }
+
+  const newConnection = createTestConnection({
+    entities: [Person],
+  });
+  const newTransformer = new DocumentClientRequestTransformer(newConnection);
+
+  const person = new Person();
+  person.id = '1';
+  person.firstName = 'Rushi';
+  person.lastName = 'Patel';
+
+  const putItem = newTransformer.toDynamoPutItem(person);
+  expect(putItem).toEqual({
+    ConditionExpression:
+      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+    ExpressionAttributeNames: {
+      '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
+    },
+    Item: {
+      PK: 'PER#1',
+      SK: 'PER#1',
+      __en: 'person',
+      id: '1',
+      name: 'Rushi Patel',
+      firstName: 'Rushi',
+      lastName: 'Patel',
+    },
+    TableName: 'test-table',
+  });
+});
+
 test('transforms put item request consisting unique attributes with provided primary key', () => {
   resetTestConnection();
 

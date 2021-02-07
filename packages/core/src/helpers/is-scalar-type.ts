@@ -6,3 +6,6 @@ export const isScalarType = (item: any): item is ScalarType =>
     typeof item === 'number' ||
     typeof item === 'boolean' ||
     Buffer.isBuffer(item));
+
+export const isScalarTypeProvider = (item: any): item is () => ScalarType =>
+  item && typeof item === 'function';
