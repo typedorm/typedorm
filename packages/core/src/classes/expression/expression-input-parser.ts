@@ -3,7 +3,7 @@ import {
   FilterType,
   InvalidExpressionInputError,
   NonKeyAttributes,
-  RequireAtLeastTwo,
+  RequireAtLeastOne,
   RequireOnlyOne,
   ScalarType,
 } from '@typedorm/common';
@@ -23,36 +23,43 @@ export type KeyConditionOptions = RequireOnlyOne<
     }
 >;
 
-type BaseFilterOptions = RequireOnlyOne<
-  {
-    [key in FilterType.SimpleOperator]: ScalarType;
-  } &
-    {
-      [key in FilterType.RangeOperator]: [ScalarType, ScalarType];
-    } &
-    {
-      [key in Extract<
-        FilterType.FunctionOperator,
-        'CONTAINS' | 'BEGINS_WITH'
-      >]: ScalarType;
-    } &
-    {
-      [key in Extract<
-        FilterType.FunctionOperator,
-        'ATTRIBUTE_TYPE'
-      >]: ATTRIBUTE_TYPE;
-    } &
-    {
-      [key in Extract<FilterType.FunctionOperator, 'SIZE'>]: RequireOnlyOne<
+type AttributeFilterOptions<PrimaryKey, Entity> =
+  // Require max 1 operator on non key attribute
+  | NonKeyAttributes<
+      PrimaryKey,
+      Entity,
+      RequireOnlyOne<
         {
           [key in FilterType.SimpleOperator]: ScalarType;
-        }
-      >;
-    }
->;
-
-type AttributeFilterOptions<PrimaryKey, Entity> =
-  | NonKeyAttributes<PrimaryKey, Entity, BaseFilterOptions>
+        } &
+          {
+            [key in FilterType.RangeOperator]: [ScalarType, ScalarType];
+          } &
+          {
+            [key in Extract<
+              FilterType.FunctionOperator,
+              'CONTAINS' | 'BEGINS_WITH'
+            >]: ScalarType;
+          } &
+          {
+            [key in Extract<
+              FilterType.FunctionOperator,
+              'ATTRIBUTE_TYPE'
+            >]: ATTRIBUTE_TYPE;
+          } &
+          {
+            [key in Extract<
+              FilterType.FunctionOperator,
+              'SIZE'
+            >]: RequireOnlyOne<
+              {
+                [key in FilterType.SimpleOperator]: ScalarType;
+              }
+            >;
+          }
+      >
+    >
+  // Require 'ATTRIBUTE_EXISTS' or 'ATTRIBUTE_NOT_EXISTS' on non key attribute
   | NonKeyAttributes<
       PrimaryKey,
       Entity,
@@ -62,18 +69,25 @@ type AttributeFilterOptions<PrimaryKey, Entity> =
       >
     >;
 
-export type FilterOptions<PrimaryKey, Entity> = RequireOnlyOne<
+type RecursiveFilterOptions<PrimaryKey, Entity> = {
+  // for `AND` and `OR` logical operators require at least one of defined options or other self
+  [key in Extract<FilterType.LogicalOperator, 'OR' | 'AND'>]: RequireAtLeastOne<
+    AttributeFilterOptions<PrimaryKey, Entity> &
+      RecursiveFilterOptions<PrimaryKey, Entity>
+  >;
+} &
+  // for `NOT` logical operators require one from defined options or other self
   {
-    [key in Exclude<FilterType.LogicalOperator, 'NOT'>]: RequireAtLeastTwo<
-      AttributeFilterOptions<PrimaryKey, Entity>
+    [key in Extract<FilterType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
+      AttributeFilterOptions<PrimaryKey, Entity> &
+        RecursiveFilterOptions<PrimaryKey, Entity>
     >;
   } &
-    {
-      [key in Extract<FilterType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
-        AttributeFilterOptions<PrimaryKey, Entity>
-      >;
-    } &
-    AttributeFilterOptions<PrimaryKey, Entity>
+  // require attribute filter
+  AttributeFilterOptions<PrimaryKey, Entity>;
+
+export type FilterOptions<PrimaryKey, Entity> = RequireOnlyOne<
+  RecursiveFilterOptions<PrimaryKey, Entity>
 >;
 
 /**
@@ -103,5 +117,7 @@ export class ExpressionInputParser {
 
   parseToFilter<PrimaryKey, Entity>(
     options: FilterOptions<PrimaryKey, Entity>
-  ) {}
+  ) {
+    //TODO: add filter impl
+  }
 }

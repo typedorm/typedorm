@@ -31,6 +31,9 @@ test('parses simple filter input', () => {
       EQ: 12,
     },
   });
+
+  // expected
+  // age = 12
 });
 
 test('parses filter with range operator', () => {
@@ -39,12 +42,18 @@ test('parses filter with range operator', () => {
       CONTAINS: 'tes',
     },
   });
+
+  // expected
+  // contains(name, 'tes')
 });
 
 test('parses filter with key only operator', () => {
   const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
     status: 'ATTRIBUTE_EXISTS',
   });
+
+  // expected
+  // attribute_exists(status)
 });
 
 test('parses filter with attribute type operator', () => {
@@ -53,6 +62,9 @@ test('parses filter with attribute type operator', () => {
       ATTRIBUTE_TYPE: ATTRIBUTE_TYPE.BOOLEAN,
     },
   });
+
+  // expected
+  // attribute_type(status, BOOL)
 });
 
 test('parses filter with size operator', () => {
@@ -63,6 +75,9 @@ test('parses filter with size operator', () => {
       },
     },
   });
+
+  // expected
+  // size(status) = 1
 });
 
 test('parses filter with single logical operator', () => {
@@ -76,6 +91,9 @@ test('parses filter with single logical operator', () => {
       },
     },
   });
+
+  // expected
+  // (age BETWEEN 1 AND 3) AND contains(name, 'tss')
 });
 
 test('parses filter with `NOT` logical operator', () => {
@@ -86,4 +104,33 @@ test('parses filter with `NOT` logical operator', () => {
       },
     },
   });
+
+  // expected
+  // NOT (begins_with(age, '1'))
+});
+
+test('parses filter with complex nested logical operators', () => {
+  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+    OR: {
+      AND: {
+        age: {
+          BETWEEN: [1, 4],
+        },
+        name: {
+          CONTAINS: '1',
+        },
+        NOT: {
+          status: {
+            ATTRIBUTE_TYPE: ATTRIBUTE_TYPE.BOOLEAN,
+          },
+        },
+      },
+      name: {
+        EQ: 'admin',
+      },
+    },
+  });
+
+  // expected
+  // ((age BETWEEN 1 AND 4) AND (contains(name, '1')) AND (NOT (attribute_type(status, BOOL)))) OR (name = 'admin')
 });
