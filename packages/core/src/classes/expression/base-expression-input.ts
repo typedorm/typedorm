@@ -1,4 +1,4 @@
-import {FindKeySimpleOperator, ScalarType} from '@typedorm/common';
+import {ScalarType, SimpleOperator} from '@typedorm/common';
 
 const lastCharSpaceMatcher = /\s$/;
 export enum MERGE_STRATEGY {
@@ -141,23 +141,27 @@ export abstract class BaseExpressionInput {
   }
 
   equals(key: string, value: ScalarType): this {
-    return this.addBaseOperatorCondition('EQ', key, value);
+    return this.addBaseOperator('EQ', key, value);
   }
 
   lessThan(key: string, value: ScalarType): this {
-    return this.addBaseOperatorCondition('LT', key, value);
+    return this.addBaseOperator('LT', key, value);
   }
 
   lessThanAndEqualTo(key: string, value: ScalarType): this {
-    return this.addBaseOperatorCondition('LE', key, value);
+    return this.addBaseOperator('LE', key, value);
   }
 
   greaterThan(key: string, value: ScalarType): this {
-    return this.addBaseOperatorCondition('GT', key, value);
+    return this.addBaseOperator('GT', key, value);
   }
 
   greaterThanAndEqualTo(key: string, value: ScalarType): this {
-    return this.addBaseOperatorCondition('GE', key, value);
+    return this.addBaseOperator('GE', key, value);
+  }
+
+  notEquals(key: string, value: ScalarType): this {
+    return this.addBaseOperator('NE', key, value);
   }
 
   between(key: string, value: [ScalarType, ScalarType]): this {
@@ -180,11 +184,7 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
-  addBaseOperatorCondition(
-    operator: FindKeySimpleOperator,
-    key: string,
-    value: any
-  ): this {
+  addBaseOperator(operator: SimpleOperator, key: string, value: any): this {
     const attrExpName = this.addExpressionName(key);
     const attrExpValue = this.addExpressionValue(key, value);
     this.appendToExpression(
@@ -193,13 +193,14 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
-  private getSymbolForOperator(operator: FindKeySimpleOperator): string {
+  private getSymbolForOperator(operator: SimpleOperator): string {
     const symbolMap = {
       EQ: '=',
       LE: '<=',
       LT: '<',
       GE: '>=',
       GT: '>',
+      NE: '<>',
     };
     return symbolMap[operator];
   }

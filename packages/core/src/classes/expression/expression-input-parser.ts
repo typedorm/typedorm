@@ -1,20 +1,21 @@
 import {
-  FindKeyListOperator,
-  FindKeyScalarOperator,
-  FindKeySimpleOperator,
   InvalidExpressionInputError,
   RequireOnlyOne,
   ScalarType,
 } from '@typedorm/common';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {KeyCondition} from './key-condition';
+import {Condition} from '@typedorm/common';
 
 export type KeyConditionOptions = RequireOnlyOne<
   {
-    [key in FindKeyScalarOperator]: ScalarType;
+    [key in Condition.SimpleOperator]: ScalarType;
   } &
     {
-      [key in FindKeyListOperator]: [ScalarType, ScalarType];
+      [key in Condition.FunctionOperator]: ScalarType;
+    } &
+    {
+      [key in Condition.RangeOperator]: [ScalarType, ScalarType];
     }
 >;
 
@@ -28,17 +29,18 @@ export class ExpressionInputParser {
     if (!options || isEmptyObject(options)) {
       throw new InvalidExpressionInputError(key, options);
     }
-
     const keyCondition = new KeyCondition();
+
     if (options.BETWEEN && options.BETWEEN.length) {
       keyCondition.between(key, options.BETWEEN);
     } else if (options.BEGINS_WITH) {
       keyCondition.beginsWith(key, options.BEGINS_WITH);
     } else {
-      const operator = Object.keys(options)[0] as FindKeySimpleOperator;
-      keyCondition.addBaseOperatorCondition(operator, key, options[operator]);
+      const operator = Object.keys(options)[0] as Condition.SimpleOperator;
+      keyCondition.addBaseOperator(operator, key, options[operator]);
     }
-
     return keyCondition;
   }
+
+  parseToFilter() {}
 }
