@@ -1,16 +1,11 @@
 import {
   EntityTarget,
-  FindKeyListOperator,
-  FindKeyScalarOperator,
-  FindKeySimpleOperator,
   IndexOptions,
   INDEX_TYPE,
   PrimaryKeyAttributes,
   QUERY_ORDER,
   Replace,
-  RequireOnlyOne,
   RETURN_VALUES,
-  ScalarType,
   Table,
   UpdateAttributes,
   TRANSFORM_TYPE,
@@ -28,6 +23,10 @@ import {AttributeMetadata} from '../metadata/attribute-metadata';
 import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {BaseTransformer} from './base-transformer';
 import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
+import {
+  ExpressionInputParser,
+  KeyConditionOptions,
+} from '../expression/expression-input-parser';
 
 export interface TransformerToDynamoQueryItemsOptions {
   /**
@@ -38,14 +37,7 @@ export interface TransformerToDynamoQueryItemsOptions {
    * Sort key condition
    * @default none - no sort key condition is applied
    */
-  keyCondition: RequireOnlyOne<
-    {
-      [key in FindKeyScalarOperator]: ScalarType;
-    } &
-      {
-        [key in FindKeyListOperator]: [ScalarType, ScalarType];
-      }
-  >;
+  keyCondition: KeyConditionOptions;
 
   /**
    * Max number of records to query
@@ -69,10 +61,12 @@ export interface ManagerToDynamoPutItemOptions {
 
 export class DocumentClientRequestTransformer extends BaseTransformer {
   private _expressionBuilder: ExpressionBuilder;
+  private _expressionInputParser: ExpressionInputParser;
 
   constructor(connection: Connection) {
     super(connection);
     this._expressionBuilder = new ExpressionBuilder();
+    this._expressionInputParser = new ExpressionInputParser();
   }
 
   toDynamoGetItem<PrimaryKey, Entity>(
@@ -542,22 +536,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     if (keyCondition && !isEmptyObject(keyCondition)) {
       // build sort key condition
-      const sortKeyCondition = new KeyCondition();
-      if (keyCondition.BETWEEN && keyCondition.BETWEEN.length) {
-        sortKeyCondition.between(parsedSortKey.name, keyCondition.BETWEEN);
-      } else if (keyCondition.BEGINS_WITH) {
-        sortKeyCondition.beginsWith(
-          parsedSortKey.name,
-          keyCondition.BEGINS_WITH
-        );
-      } else {
-        const operator = Object.keys(keyCondition)[0] as FindKeySimpleOperator;
-        sortKeyCondition.addBaseOperatorCondition(
-          operator,
-          parsedSortKey.name,
-          keyCondition[operator]
-        );
-      }
+
+      const sortKeyCondition = this._expressionInputParser.parseToKeyCondition(
+        parsedSortKey.name,
+        keyCondition
+      );
 
       // if condition resolution was successful, we can merge both partition and sort key conditions now
       const keyConditionExpression = this._expressionBuilder.buildKeyConditionExpression(
