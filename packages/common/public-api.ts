@@ -13,6 +13,7 @@ export * from './src/helpers/object-type';
 export * from './src/operator-types';
 export * from './src/helpers/primary-key-attributes-type';
 export * from './src/helpers/require-at-least-one-type';
+export * from './src/helpers/require-at-least-two-type';
 export * from './src/helpers/require-only-one-type';
 export * from './src/helpers/scalar-type';
 export * from './src/helpers/update-attributes-type';
