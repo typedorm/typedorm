@@ -1,4 +1,4 @@
-import {ScalarType, SimpleOperator} from '@typedorm/common';
+import {ATTRIBUTE_TYPE, ScalarType, SimpleOperator} from '@typedorm/common';
 
 const lastCharSpaceMatcher = /\s$/;
 export enum MERGE_STRATEGY {
@@ -98,9 +98,9 @@ export abstract class BaseExpressionInput {
     }
 
     if (strategy === MERGE_STRATEGY.OR) {
-      this.or().appendToExpression(expression);
+      this.or().appendToExpression(`(${expression})`);
     } else {
-      this.and().appendToExpression(expression);
+      this.and().appendToExpression(`(${expression})`);
     }
 
     Object.keys(names).forEach(nameKey => {
@@ -123,12 +123,29 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
+  mergeMany<T extends BaseExpressionInput>(
+    inputs: T[],
+    strategy: MERGE_STRATEGY
+  ) {
+    inputs.forEach(input => {
+      this.merge(input, strategy);
+    });
+    return this;
+  }
+
   and(): this {
+    this.expression = `(${this.expression})`;
     this.appendToExpression('AND');
     return this;
   }
 
+  not(): this {
+    this.expression = `NOT (${this.expression})`;
+    return this;
+  }
+
   or(): this {
+    this.expression = `(${this.expression})`;
     this.appendToExpression('OR');
     return this;
   }
@@ -136,7 +153,33 @@ export abstract class BaseExpressionInput {
   beginsWith(key: string, substring: ScalarType): this {
     const attrExpName = this.addExpressionName(key);
     const attrExpValue = this.addExpressionValue(key, substring);
-    this.appendToExpression(`begins_with(${attrExpName}, ${attrExpValue})`);
+    this.appendToExpression(`begins_with (${attrExpName}, ${attrExpValue})`);
+    return this;
+  }
+
+  contains(key: string, value: ScalarType): this {
+    const attrExpName = this.addExpressionName(key);
+    const attrExpValue = this.addExpressionValue(key, value);
+    this.appendToExpression(`contains (${attrExpName}, ${attrExpValue})`);
+    return this;
+  }
+
+  attributeType(key: string, type: ATTRIBUTE_TYPE): this {
+    const attrExpName = this.addExpressionName(key);
+    const attrExpValue = this.addExpressionValue(key, type);
+    this.appendToExpression(`attribute_type (${attrExpName}, ${attrExpValue})`);
+    return this;
+  }
+
+  attributeExists(attr: string): this {
+    const attrName = this.addExpressionName(attr);
+    this.appendToExpression(`attribute_exists (${attrName})`);
+    return this;
+  }
+
+  attributeNotExists(attr: string): this {
+    const attrName = this.addExpressionName(attr);
+    this.appendToExpression(`attribute_not_exists (${attrName})`);
     return this;
   }
 
@@ -180,6 +223,40 @@ export abstract class BaseExpressionInput {
 
     this.appendToExpression(
       `${attrExpName} BETWEEN ${attrExpValueStart} AND ${attrExpValueEnd}`
+    );
+    return this;
+  }
+
+  in(key: string, values: ScalarType[]): this {
+    if (values.length < 1) {
+      throw new Error(
+        'Incorrect value for IN operator, it requires array containing at lease one SCALAR type value.'
+      );
+    }
+
+    const attrExpName = this.addExpressionName(key);
+    const attrExpValue = values.reduce((acc, value, index) => {
+      const attrExpValueStart = this.addExpressionValue(
+        `${key}_${index}`,
+        value
+      );
+      acc += attrExpValueStart;
+      if (index !== values.length - 1) {
+        // if not last index append separator followed by space
+        acc += ', ';
+      }
+      return acc;
+    }, '');
+
+    this.appendToExpression(`${attrExpName} IN (${attrExpValue})`);
+    return this;
+  }
+
+  size(key: string): this {
+    const attrExpName = this.getExpNameKey(key);
+    this.expression = this.expression.replace(
+      attrExpName,
+      `size (${attrExpName})`
     );
     return this;
   }

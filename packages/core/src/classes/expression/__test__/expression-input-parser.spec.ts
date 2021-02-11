@@ -1,6 +1,7 @@
 import {ATTRIBUTE_TYPE} from '@typedorm/common';
 import {User, UserPrimaryKey} from '@typedorm/core/__mocks__/user';
 import {ExpressionInputParser} from '../expression-input-parser';
+import {Filter} from '../filter';
 import {KeyCondition} from '../key-condition';
 
 let expInputParser: ExpressionInputParser;
@@ -18,7 +19,7 @@ test('parses keyCondition input', () => {
 
   expect(parsedCondition).toBeInstanceOf(KeyCondition);
   expect(parsedCondition.expression).toEqual(
-    'begins_with(#KY_CE_SK, :KY_CE_SK)'
+    'begins_with (#KY_CE_SK, :KY_CE_SK)'
   );
 });
 
@@ -32,8 +33,8 @@ test('parses simple filter input', () => {
     },
   });
 
-  // expected
-  // age = 12
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual('#FE_age = :FE_age');
 });
 
 test('parses filter with range operator', () => {
@@ -43,8 +44,8 @@ test('parses filter with range operator', () => {
     },
   });
 
-  // expected
-  // contains(name, 'tes')
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual('contains (#FE_name, :FE_name)');
 });
 
 test('parses filter with key only operator', () => {
@@ -52,8 +53,8 @@ test('parses filter with key only operator', () => {
     status: 'ATTRIBUTE_EXISTS',
   });
 
-  // expected
-  // attribute_exists(status)
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual('attribute_exists (#FE_status)');
 });
 
 test('parses filter with attribute type operator', () => {
@@ -62,9 +63,11 @@ test('parses filter with attribute type operator', () => {
       ATTRIBUTE_TYPE: ATTRIBUTE_TYPE.BOOLEAN,
     },
   });
-
-  // expected
-  // attribute_type(status, BOOL)
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual(
+    'attribute_type (#FE_status, :FE_status)'
+  );
+  expect(parsedFilter?.values).toEqual({':FE_status': 'BOOL'});
 });
 
 test('parses filter with size operator', () => {
@@ -76,8 +79,8 @@ test('parses filter with size operator', () => {
     },
   });
 
-  // expected
-  // size(status) = 1
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual('size (#FE_status) = :FE_status');
 });
 
 test('parses filter with single logical operator', () => {
@@ -87,13 +90,21 @@ test('parses filter with single logical operator', () => {
         BETWEEN: [1, 3],
       },
       name: {
-        CONTAINS: 'tss',
+        CONTAINS: 'zuki',
       },
     },
   });
 
-  // expected
-  // (age BETWEEN 1 AND 3) AND contains(name, 'tss')
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual(
+    '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (contains (#FE_name, :FE_name))'
+  );
+  expect(parsedFilter?.names).toEqual({'#FE_age': 'age', '#FE_name': 'name'});
+  expect(parsedFilter?.values).toEqual({
+    ':FE_age_end': 3,
+    ':FE_age_start': 1,
+    ':FE_name': 'zuki',
+  });
 });
 
 test('parses filter with `NOT` logical operator', () => {
@@ -105,8 +116,10 @@ test('parses filter with `NOT` logical operator', () => {
     },
   });
 
-  // expected
-  // NOT (begins_with(age, '1'))
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual(
+    'NOT (begins_with (#FE_age, :FE_age))'
+  );
 });
 
 test('parses filter with complex nested logical operators', () => {
@@ -116,12 +129,9 @@ test('parses filter with complex nested logical operators', () => {
         age: {
           BETWEEN: [1, 4],
         },
-        name: {
-          CONTAINS: '1',
-        },
         NOT: {
           status: {
-            ATTRIBUTE_TYPE: ATTRIBUTE_TYPE.BOOLEAN,
+            ATTRIBUTE_TYPE: ATTRIBUTE_TYPE.STRING_SET,
           },
         },
       },
@@ -131,6 +141,19 @@ test('parses filter with complex nested logical operators', () => {
     },
   });
 
-  // expected
-  // ((age BETWEEN 1 AND 4) AND (contains(name, '1')) AND (NOT (attribute_type(status, BOOL)))) OR (name = 'admin')
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual(
+    '((#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (NOT (attribute_type (#FE_status, :FE_status)))) OR (#FE_name = :FE_name)'
+  );
+  expect(parsedFilter?.names).toEqual({
+    '#FE_age': 'age',
+    '#FE_name': 'name',
+    '#FE_status': 'status',
+  });
+  expect(parsedFilter?.values).toEqual({
+    ':FE_age_end': 4,
+    ':FE_age_start': 1,
+    ':FE_name': 'admin',
+    ':FE_status': 'SS',
+  });
 });

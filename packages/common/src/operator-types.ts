@@ -50,3 +50,8 @@ export type SimpleOperator =
   | KeyConditionType.SimpleOperator
   | ConditionType.SimpleOperator
   | FilterType.SimpleOperator;
+
+export type RangeOperator =
+  | KeyConditionType.RangeOperator
+  | ConditionType.RangeOperator
+  | FilterType.RangeOperator;
