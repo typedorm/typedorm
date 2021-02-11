@@ -16,14 +16,17 @@ describe('BaseExpressionInput', () => {
   it('should correctly chain conditions', () => {
     const condition = new TestCondition()
       .equals('name', 'Boi')
-      .and()
-      .lessThan('age', 18)
-      .or()
-      .between('score', [12, 100]);
+      .merge(
+        new TestCondition()
+          .lessThan('age', 18)
+          .or()
+          .between('score', [12, 100]),
+        MERGE_STRATEGY.AND
+      );
 
     expect(condition).toEqual({
       expression:
-        '#TC_name = :TC_name AND #TC_age < :TC_age OR #TC_score BETWEEN :TC_score_start AND :TC_score_end',
+        '(#TC_name = :TC_name) AND ((#TC_age < :TC_age) OR #TC_score BETWEEN :TC_score_start AND :TC_score_end)',
       _names: {
         '#TC_age': 'age',
         '#TC_name': 'name',
@@ -43,7 +46,7 @@ describe('BaseExpressionInput', () => {
       const secondCondition = new TestCondition().equals('b', 2);
       const newCondition = firstCondition.merge(secondCondition);
       expect(newCondition).toEqual({
-        expression: '#TC_a = :TC_a AND #TC_b = :TC_b',
+        expression: '(#TC_a = :TC_a) AND (#TC_b = :TC_b)',
         _names: {
           '#TC_a': 'a',
           '#TC_b': 'b',
@@ -63,7 +66,7 @@ describe('BaseExpressionInput', () => {
         MERGE_STRATEGY.OR
       );
       expect(newCondition).toEqual({
-        expression: '#TC_a = :TC_a OR #TC_b = :TC_b',
+        expression: '(#TC_a = :TC_a) OR (#TC_b = :TC_b)',
         _names: {
           '#TC_a': 'a',
           '#TC_b': 'b',

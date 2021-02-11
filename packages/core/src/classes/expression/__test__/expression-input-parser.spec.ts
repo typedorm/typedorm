@@ -19,7 +19,7 @@ test('parses keyCondition input', () => {
 
   expect(parsedCondition).toBeInstanceOf(KeyCondition);
   expect(parsedCondition.expression).toEqual(
-    'begins_with (#KY_CE_SK, :KY_CE_SK)'
+    'begins_with(#KY_CE_SK, :KY_CE_SK)'
   );
 });
 
@@ -45,7 +45,7 @@ test('parses filter with range operator', () => {
   });
 
   expect(parsedFilter).toBeInstanceOf(Filter);
-  expect(parsedFilter?.expression).toEqual('contains (#FE_name, :FE_name)');
+  expect(parsedFilter?.expression).toEqual('contains(#FE_name, :FE_name)');
 });
 
 test('parses filter with key only operator', () => {
@@ -54,7 +54,7 @@ test('parses filter with key only operator', () => {
   });
 
   expect(parsedFilter).toBeInstanceOf(Filter);
-  expect(parsedFilter?.expression).toEqual('attribute_exists (#FE_status)');
+  expect(parsedFilter?.expression).toEqual('attribute_exists(#FE_status)');
 });
 
 test('parses filter with attribute type operator', () => {
@@ -65,7 +65,7 @@ test('parses filter with attribute type operator', () => {
   });
   expect(parsedFilter).toBeInstanceOf(Filter);
   expect(parsedFilter?.expression).toEqual(
-    'attribute_type (#FE_status, :FE_status)'
+    'attribute_type(#FE_status, :FE_status)'
   );
   expect(parsedFilter?.values).toEqual({':FE_status': 'BOOL'});
 });
@@ -97,7 +97,7 @@ test('parses filter with single logical operator', () => {
 
   expect(parsedFilter).toBeInstanceOf(Filter);
   expect(parsedFilter?.expression).toEqual(
-    '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (contains (#FE_name, :FE_name))'
+    '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (contains(#FE_name, :FE_name))'
   );
   expect(parsedFilter?.names).toEqual({'#FE_age': 'age', '#FE_name': 'name'});
   expect(parsedFilter?.values).toEqual({
@@ -118,7 +118,7 @@ test('parses filter with `NOT` logical operator', () => {
 
   expect(parsedFilter).toBeInstanceOf(Filter);
   expect(parsedFilter?.expression).toEqual(
-    'NOT (begins_with (#FE_age, :FE_age))'
+    'NOT (begins_with(#FE_age, :FE_age))'
   );
 });
 
@@ -167,7 +167,7 @@ test('parses filter with complex nested logical operators', () => {
 
   expect(parsedFilter).toBeInstanceOf(Filter);
   expect(parsedFilter?.expression).toEqual(
-    '((#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (NOT (attribute_type (#FE_status, :FE_status)))) OR (#FE_name = :FE_name)'
+    '((#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (NOT (attribute_type(#FE_status, :FE_status)))) OR (#FE_name = :FE_name)'
   );
   expect(parsedFilter?.names).toEqual({
     '#FE_age': 'age',

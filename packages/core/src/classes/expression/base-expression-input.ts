@@ -165,6 +165,9 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
+  /** Use merge instead
+   * @deprecated
+   */
   and(): this {
     this.expression = `(${this.expression})`;
     this.appendToExpression('AND');
@@ -176,6 +179,9 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
+  /** Use merge instead
+   * @deprecated
+   */
   or(): this {
     this.expression = `(${this.expression})`;
     this.appendToExpression('OR');
@@ -185,33 +191,33 @@ export abstract class BaseExpressionInput {
   beginsWith(key: string, substring: ScalarType): this {
     const attrExpName = this.addExpressionName(key);
     const attrExpValue = this.addExpressionValue(key, substring);
-    this.appendToExpression(`begins_with (${attrExpName}, ${attrExpValue})`);
+    this.appendToExpression(`begins_with(${attrExpName}, ${attrExpValue})`);
     return this;
   }
 
   contains(key: string, value: ScalarType): this {
     const attrExpName = this.addExpressionName(key);
     const attrExpValue = this.addExpressionValue(key, value);
-    this.appendToExpression(`contains (${attrExpName}, ${attrExpValue})`);
+    this.appendToExpression(`contains(${attrExpName}, ${attrExpValue})`);
     return this;
   }
 
   attributeType(key: string, type: ATTRIBUTE_TYPE): this {
     const attrExpName = this.addExpressionName(key);
     const attrExpValue = this.addExpressionValue(key, type);
-    this.appendToExpression(`attribute_type (${attrExpName}, ${attrExpValue})`);
+    this.appendToExpression(`attribute_type(${attrExpName}, ${attrExpValue})`);
     return this;
   }
 
   attributeExists(attr: string): this {
     const attrName = this.addExpressionName(attr);
-    this.appendToExpression(`attribute_exists (${attrName})`);
+    this.appendToExpression(`attribute_exists(${attrName})`);
     return this;
   }
 
   attributeNotExists(attr: string): this {
     const attrName = this.addExpressionName(attr);
-    this.appendToExpression(`attribute_not_exists (${attrName})`);
+    this.appendToExpression(`attribute_not_exists(${attrName})`);
     return this;
   }
 

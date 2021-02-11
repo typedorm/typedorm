@@ -1,6 +1,7 @@
 import {Table} from '@typedorm/common';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {isObject} from '../../helpers/is-object';
+import {MERGE_STRATEGY} from './base-expression-input';
 import {Condition} from './condition';
 import {Filter} from './filter';
 import {KeyCondition} from './key-condition';
@@ -14,8 +15,10 @@ export class ExpressionBuilder {
     const uniqueRecordCondition = table.usesCompositeKey()
       ? new Condition()
           .attributeNotExist(table.partitionKey)
-          .and()
-          .attributeNotExist(table.sortKey)
+          .merge(
+            new Condition().attributeNotExist(table.sortKey),
+            MERGE_STRATEGY.AND
+          )
       : new Condition().attributeNotExist(table.partitionKey);
 
     return this.buildConditionExpression(uniqueRecordCondition);

@@ -97,7 +97,7 @@ test('performs write transactions for simple writes', async () => {
           },
           TableName: 'test-table',
           ConditionExpression:
-            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
           ExpressionAttributeNames: {
             '#CE_PK': 'PK',
             '#CE_SK': 'SK',
@@ -136,7 +136,7 @@ test('performs write transactions for simple writes', async () => {
           },
           TableName: 'test-table',
           ConditionExpression:
-            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
           ExpressionAttributeNames: {
             '#CE_PK': 'PK',
             '#CE_SK': 'SK',
@@ -212,7 +212,7 @@ test('performs write transactions for entities with unique attributes ', async (
       {
         Put: {
           ConditionExpression:
-            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
           ExpressionAttributeNames: {
             '#CE_PK': 'PK',
             '#CE_SK': 'SK',
@@ -298,7 +298,7 @@ test('performs write transactions for entities with non existing unique attribut
       {
         Put: {
           ConditionExpression:
-            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
           ExpressionAttributeNames: {
             '#CE_PK': 'PK',
             '#CE_SK': 'SK',

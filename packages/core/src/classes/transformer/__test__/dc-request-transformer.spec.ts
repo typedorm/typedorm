@@ -74,7 +74,7 @@ test('transforms put item requests', () => {
       status: 'active',
     },
     ConditionExpression:
-      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+      '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
       '#CE_SK': 'SK',
@@ -118,7 +118,7 @@ test('transforms put item request with unique attributes', () => {
     {
       Put: {
         ConditionExpression:
-          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
         ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
         Item: {
           PK: 'USER#1',
@@ -133,7 +133,7 @@ test('transforms put item request with unique attributes', () => {
     {
       Put: {
         ConditionExpression:
-          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
         ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
         Item: {
           PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
@@ -177,7 +177,7 @@ test('transforms put item request with default values ', () => {
   const putItem = newTransformer.toDynamoPutItem(product);
   expect(putItem).toEqual({
     ConditionExpression:
-      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+      '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
       '#CE_SK': 'SK',
@@ -294,7 +294,7 @@ test('transforms put item request consisting unique attributes with provided pri
     {
       Put: {
         ConditionExpression:
-          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
         ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
         Item: {
           PK: 'USER#1',
@@ -309,7 +309,7 @@ test('transforms put item request consisting unique attributes with provided pri
     {
       Put: {
         ConditionExpression:
-          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
         ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
         Item: {
           PK: 'CUSTOM#user@example.com',
@@ -397,7 +397,7 @@ test('transforms update item record with unique attributes', () => {
     {
       Put: {
         ConditionExpression:
-          'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
         ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
         Item: {
           PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
@@ -527,7 +527,7 @@ test('transforms complex query item request', () => {
       ':KY_CE_SK': 'USER#',
     },
     KeyConditionExpression:
-      '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 12,
     ScanIndexForward: false,
     TableName: 'test-table',
@@ -561,7 +561,7 @@ test('transforms index based query item request', () => {
     },
     IndexName: 'GSI1',
     KeyConditionExpression:
-      '#KY_CE_GSI1PK = :KY_CE_GSI1PK AND #KY_CE_GSI1SK BETWEEN :KY_CE_GSI1SK_start AND :KY_CE_GSI1SK_end',
+      '(#KY_CE_GSI1PK = :KY_CE_GSI1PK) AND (#KY_CE_GSI1SK BETWEEN :KY_CE_GSI1SK_start AND :KY_CE_GSI1SK_end)',
     ScanIndexForward: true,
   });
 });

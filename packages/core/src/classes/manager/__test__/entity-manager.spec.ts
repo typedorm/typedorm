@@ -64,7 +64,7 @@ test('creates entity', async () => {
     },
     TableName: 'test-table',
     ConditionExpression:
-      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+      '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
       '#CE_SK': 'SK',
@@ -102,7 +102,7 @@ test('creates entity and returns all attributes, including auto generated ones',
     },
     TableName: 'test-table',
     ConditionExpression:
-      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+      '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
       '#CE_SK': 'SK',
@@ -393,7 +393,7 @@ test('updates item with unique attributes and returns all updated attributes', a
       {
         Put: {
           ConditionExpression:
-            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
           ExpressionAttributeNames: {
             '#CE_PK': 'PK',
             '#CE_SK': 'SK',
@@ -583,7 +583,7 @@ test('finds items matching given query params', async () => {
       ':KY_CE_SK': 'USER#',
     },
     KeyConditionExpression:
-      '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
     ScanIndexForward: true,
     TableName: 'test-table',
@@ -639,7 +639,7 @@ test('finds items with alternate syntax', async () => {
       ':KY_CE_SK': 'USER#',
     },
     KeyConditionExpression:
-      '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
     ScanIndexForward: true,
     TableName: 'test-table',
@@ -712,7 +712,7 @@ test('finds item from given cursor position', async () => {
       ':KY_CE_SK': 'USER#',
     },
     KeyConditionExpression:
-      '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
     ScanIndexForward: true,
     TableName: 'test-table',
@@ -773,7 +773,7 @@ test('queries items until limit is met', async () => {
           ':KY_CE_SK': 'USER#',
         },
         KeyConditionExpression:
-          '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
         Limit: 2000,
         ScanIndexForward: true,
         TableName: 'test-table',
@@ -791,7 +791,7 @@ test('queries items until limit is met', async () => {
           ':KY_CE_SK': 'USER#',
         },
         KeyConditionExpression:
-          '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
         Limit: 2000,
         ScanIndexForward: true,
         TableName: 'test-table',
