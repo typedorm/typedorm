@@ -80,7 +80,7 @@ test('parses filter with size operator', () => {
   });
 
   expect(parsedFilter).toBeInstanceOf(Filter);
-  expect(parsedFilter?.expression).toEqual('size (#FE_status) = :FE_status');
+  expect(parsedFilter?.expression).toEqual('size(#FE_status) = :FE_status');
 });
 
 test('parses filter with single logical operator', () => {

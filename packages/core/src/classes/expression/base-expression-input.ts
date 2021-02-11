@@ -124,7 +124,15 @@ export abstract class BaseExpressionInput {
   ): this {
     const {expression, names, values} = condition;
 
-    // empty condition then return
+    // if base condition does not have any expression replace
+    if (!this.expression) {
+      this.expression = expression;
+      this.names = names;
+      this.values = values;
+      return this;
+    }
+
+    // if merging condition does not have anything to merge return
     if (!expression) {
       return this;
     }
@@ -174,9 +182,19 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
-  not(): this {
-    this.expression = `NOT (${this.expression})`;
-    return this;
+  not<T extends BaseExpressionInput>(condition?: T): this {
+    if (condition) {
+      this.expression = `NOT (${condition.expression})`;
+      this.names = condition.names;
+      this.values = condition.values;
+      return this;
+    } else {
+      if (!this.expression) {
+        return this;
+      }
+      this.expression = `NOT (${this.expression})`;
+      return this;
+    }
   }
 
   /** Use merge instead
@@ -294,7 +312,7 @@ export abstract class BaseExpressionInput {
     const attrExpName = this.getExpNameKey(key);
     this.expression = this.expression.replace(
       attrExpName,
-      `size (${attrExpName})`
+      `size(${attrExpName})`
     );
     return this;
   }
