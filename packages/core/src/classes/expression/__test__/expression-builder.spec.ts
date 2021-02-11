@@ -133,9 +133,14 @@ test('allows updating attribute with empty string', () => {
  * @group buildFilterExpression
  */
 test('builds filter expression', () => {
-  // FIXME:
-  const filter = new Filter();
+  const filter = new Filter().attributeNotExists('profile.deleted');
   const filterExpression = expressionBuilder.buildFilterExpression(filter);
 
-  expect(filterExpression).toEqual({});
+  expect(filterExpression).toEqual({
+    ExpressionAttributeNames: {
+      '#FE_profile': 'profile',
+      '#FE_profile_deleted': 'deleted',
+    },
+    FilterExpression: 'attribute_not_exists(#FE_profile.#FE_profile_deleted)',
+  });
 });
