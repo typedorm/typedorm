@@ -211,6 +211,16 @@ await entityManger.delete(Organisation, {
 });
 ```
 
+## Table of contents
+
+- [How it works](./docs/how-it-works.md)
+- [Step by step guide](./docs/guide.md)
+- [Entity inheritance](./docs/entity-inheritance.md)
+- [Working with multiple connections](./docs/multiple-connection.md)
+- [How to recipes](./docs/how-to-recipes.md)
+- [Debugging](./docs/debugging.md)
+- [API](./docs/api.md)
+
 ## More
 
 DynamoDB is different, different than most other no-sql databases, and therefore data in dynamodb should be stored the way dynamodb expects to get the most benefits out of it. While doing this development experience suffers and all data can become a huge mess very quickly, this is specially true with single-table-design patten. To resolve this, TypeDORM let's declaratively define schema and later takes control from there to provide best development experience possible.
@@ -218,8 +228,6 @@ DynamoDB is different, different than most other no-sql databases, and therefore
 To find out more about how the data looks like when it is stored in dynamo have a look at this detailed guide.
 
 ### [Step by step guide](./docs/guide.md)
-
-### [Index](./docs/index.md)
 
 ## Current Limitations
 
