@@ -5,7 +5,8 @@ branches:
   - name: beta
     prerelease: beta
 plugins:
-  - "@semantic-release/changelog"
+  - - '@semantic-release/changelog'
     - changelogFile: CHANGELOG.md
-  - "@semantic-release/git"
-    - assets: [CHANGELOG.md]
+  - - '@semantic-release/git'
+    - assets:
+        - CHANGELOG.md
