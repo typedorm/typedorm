@@ -122,6 +122,30 @@ test('parses filter with `NOT` logical operator', () => {
   );
 });
 
+test('parses nester object property', () => {
+  const parsedFilter = expInputParser.parseToFilter<
+    UserPrimaryKey,
+    User & {'profile.name.firstName': string}
+  >({
+    'profile.name.firstName': {
+      EQ: 'sam',
+    },
+  });
+
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual(
+    '#FE_profile.#FE_profile_name.#FE_profile_name_firstName = :FE_profile_name_firstName'
+  );
+  expect(parsedFilter?.names).toEqual({
+    '#FE_profile': 'profile',
+    '#FE_profile_name': 'name',
+    '#FE_profile_name_firstName': 'firstName',
+  });
+  expect(parsedFilter?.values).toEqual({
+    ':FE_profile_name_firstName': 'sam',
+  });
+});
+
 test('parses filter with complex nested logical operators', () => {
   const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
     OR: {

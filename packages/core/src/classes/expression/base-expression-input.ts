@@ -59,7 +59,34 @@ export abstract class BaseExpressionInput {
   }
 
   protected addExpressionName(name: string) {
-    const expressionPrefixedName = this.getExpNameKey(name);
+    // when trying to access nested prop i.e profile.name, replace . with appropriate expression safe string
+    const nestedKeys = name.split('.');
+    const topKey = nestedKeys.shift();
+
+    if (!topKey) {
+      throw new Error('Expression attribute name can not be empty');
+    }
+
+    const topLevelPropKey = this.innerAddExpressionName(topKey);
+    return nestedKeys.reduce(
+      (acc, keySeg) => {
+        const {prefix} = acc;
+
+        const currentSegPropKey = this.innerAddExpressionName(
+          `${prefix}_${keySeg}`,
+          keySeg
+        );
+
+        acc.prefix += `_${keySeg}`;
+        acc.encoded += `.${currentSegPropKey}`;
+        return acc;
+      },
+      {prefix: topKey, encoded: topLevelPropKey}
+    ).encoded;
+  }
+
+  private innerAddExpressionName(nameKey: string, nameValue?: string) {
+    const expressionPrefixedName = this.getExpNameKey(nameKey);
     if (this.names[expressionPrefixedName]) {
       throw new Error(
         `There is already an expression name with key ${expressionPrefixedName}.`
@@ -67,12 +94,17 @@ export abstract class BaseExpressionInput {
     }
     this.names = {
       ...this.names,
-      [expressionPrefixedName]: name,
+      [expressionPrefixedName]: nameValue ?? nameKey,
     };
     return expressionPrefixedName;
   }
 
   protected addExpressionValue(name: string, value: any) {
+    const expressionSafeName = name.replace(/\./g, '_');
+    return this.innerAddExpressionValue(expressionSafeName, value);
+  }
+
+  private innerAddExpressionValue(name: string, value: any) {
     const expressionPrefixedValue = this.getExpValueKey(name);
     if (this.values[expressionPrefixedValue]) {
       throw new Error(
