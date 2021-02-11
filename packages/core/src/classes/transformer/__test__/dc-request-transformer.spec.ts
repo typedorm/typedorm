@@ -503,6 +503,36 @@ test('transforms simple query item request', () => {
   });
 });
 
+test('transforms query item request with filter input', () => {
+  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      where: {
+        name: {
+          EQ: 'suzan',
+        },
+      },
+    }
+  );
+  expect(queryItem).toEqual({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#FE_name': 'name',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#1',
+      ':FE_name': 'suzan',
+    },
+    ScanIndexForward: true,
+    KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
+    FilterExpression: '#FE_name = :FE_name',
+    TableName: 'test-table',
+  });
+});
+
 test('transforms complex query item request', () => {
   const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
     User,

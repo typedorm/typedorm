@@ -18,6 +18,7 @@ import {getConstructorForInstance} from '../../helpers/get-constructor-for-insta
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {isWriteTransactionItemList} from '../transaction/type-guards';
 import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
+import {FilterOptions} from '../expression/filter-options-type';
 
 export interface EntityManagerUpdateOptions {
   /**
@@ -26,9 +27,16 @@ export interface EntityManagerUpdateOptions {
   nestedKeySeparator?: string;
 }
 
-export interface EntityManagerQueryOptions
+export interface EntityManagerQueryOptions<PrimaryKey, Entity>
   extends TransformerToDynamoQueryItemsOptions {
   cursor?: DynamoDB.DocumentClient.Key;
+
+  /**
+   * Specify filter to apply
+   * Avoid using this where possible, since filters in dynamodb applies after items
+   * are read
+   */
+  where?: FilterOptions<PrimaryKey, Entity>;
 }
 
 export class EntityManager {
@@ -313,7 +321,7 @@ export class EntityManager {
   async find<Entity, PartitionKey = Partial<EntityAttributes<Entity>> | string>(
     entityClass: EntityTarget<Entity>,
     partitionKey: PartitionKey,
-    queryOptions?: EntityManagerQueryOptions
+    queryOptions?: EntityManagerQueryOptions<PartitionKey, Entity>
   ): Promise<{
     items: DynamoDB.DocumentClient.ItemList;
     cursor?: DynamoDB.DocumentClient.Key | undefined;

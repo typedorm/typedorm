@@ -37,7 +37,7 @@ export interface TransformerToDynamoQueryItemsOptions {
    * Sort key condition
    * @default none - no sort key condition is applied
    */
-  keyCondition: KeyConditionOptions;
+  keyCondition?: KeyConditionOptions;
 
   /**
    * Max number of records to query
@@ -50,6 +50,8 @@ export interface TransformerToDynamoQueryItemsOptions {
    * @default ASC
    */
   orderBy?: QUERY_ORDER;
+
+  where?: any;
 }
 
 export interface ManagerToDynamoPutItemOptions {
@@ -489,14 +491,16 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       parsedPartitionKey.value
     );
 
+    const partitionKeyConditionExpression = this._expressionBuilder.buildKeyConditionExpression(
+      partitionKeyCondition
+    );
+
     // if no query options are present, resolve key condition expression
     if (!queryOptions || isEmptyObject(queryOptions)) {
       const transformedQueryItem = {
         TableName: table.name,
         IndexName: queryIndexName,
-        ...this._expressionBuilder.buildKeyConditionExpression(
-          partitionKeyCondition
-        ),
+        ...partitionKeyConditionExpression,
       };
 
       this.connection.logger.logTransform(
@@ -525,13 +529,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // at this point we have resolved partition key and table to query
-    const {keyCondition, limit, orderBy: order} = queryOptions;
+    const {keyCondition, limit, orderBy: order, where} = queryOptions;
 
     let queryInputParams = {
       TableName: table.name,
       IndexName: queryIndexName,
       Limit: limit,
       ScanIndexForward: !order || order === QUERY_ORDER.ASC,
+      ...partitionKeyConditionExpression,
     } as DynamoDB.DocumentClient.QueryInput;
 
     if (keyCondition && !isEmptyObject(keyCondition)) {
@@ -543,13 +548,55 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       );
 
       // if condition resolution was successful, we can merge both partition and sort key conditions now
-      const keyConditionExpression = this._expressionBuilder.buildKeyConditionExpression(
+      const {
+        KeyConditionExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+      } = this._expressionBuilder.buildKeyConditionExpression(
         partitionKeyCondition.merge(sortKeyCondition)
       );
 
       queryInputParams = {
         ...queryInputParams,
-        ...keyConditionExpression,
+        KeyConditionExpression,
+        ExpressionAttributeNames: {
+          ...queryInputParams.ExpressionAttributeNames,
+          ...ExpressionAttributeNames,
+        },
+        ExpressionAttributeValues: {
+          ...queryInputParams.ExpressionAttributeValues,
+          ...ExpressionAttributeValues,
+        },
+      };
+    }
+
+    // when filter conditions are given generate filter expression
+    if (where && !isEmptyObject(where)) {
+      const filter = this._expressionInputParser.parseToFilter(where);
+
+      if (!filter) {
+        throw `Failed to build filter expression for input: ${JSON.stringify(
+          where
+        )}`;
+      }
+
+      const {
+        FilterExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+      } = this._expressionBuilder.buildFilterExpression(filter);
+
+      queryInputParams = {
+        ...queryInputParams,
+        FilterExpression,
+        ExpressionAttributeNames: {
+          ...queryInputParams.ExpressionAttributeNames,
+          ...ExpressionAttributeNames,
+        },
+        ExpressionAttributeValues: {
+          ...queryInputParams.ExpressionAttributeValues,
+          ...ExpressionAttributeValues,
+        },
       };
     }
 

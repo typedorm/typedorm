@@ -91,7 +91,13 @@ export class ExpressionBuilder {
     return this.removeEmptyFieldsAndReturn(expression);
   }
 
-  buildKeyConditionExpression(condition: KeyCondition) {
+  buildKeyConditionExpression(
+    condition: KeyCondition
+  ): {
+    KeyConditionExpression?: string;
+    ExpressionAttributeNames?: Record<string, any>;
+    ExpressionAttributeValues?: Record<string, any>;
+  } {
     if (!condition.expression) {
       return {};
     }
@@ -104,7 +110,13 @@ export class ExpressionBuilder {
     return this.removeEmptyFieldsAndReturn(expression);
   }
 
-  buildFilterExpression(filter: Filter) {
+  buildFilterExpression(
+    filter: Filter
+  ): {
+    FilterExpression?: string;
+    ExpressionAttributeNames?: Record<string, any>;
+    ExpressionAttributeValues?: Record<string, any>;
+  } {
     if (!filter.expression) {
       return {};
     }
