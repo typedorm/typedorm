@@ -238,7 +238,7 @@ test('transforms put item request with dynamic default values ', () => {
   const putItem = newTransformer.toDynamoPutItem(person);
   expect(putItem).toEqual({
     ConditionExpression:
-      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+      '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
       '#CE_SK': 'SK',
