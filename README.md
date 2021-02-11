@@ -36,7 +36,8 @@ Please submit an issue for any bugs or suggestions [here](https://github.com/typ
 - Auto Generated values fro attributes
 - Auto Update values on update
 - Dynamic & Static default values for attributes
-- Complex update, key condition and condition expression all made easy to work with (Partial)
+- Complex update, key condition and condition expression all made easy to work with (Partial Support)
+- Powerful expression builder to auto generate expressions from input
 - Typescript and javascript support
 
 And many more to come.
