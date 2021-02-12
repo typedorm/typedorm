@@ -11,13 +11,18 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 
 ## Packages
 
-[![NPM Release](https://img.shields.io/npm/v/@typedorm/common?style=for-the-badge&label=@typedorm/common)](https://www.npmjs.com/package/@typedorm/common)
-[![NPM Release](https://img.shields.io/npm/v/@typedorm/core?style=for-the-badge&label=@typedorm/core)](https://www.npmjs.com/package/@typedorm/core)
-[![NPM Release](https://img.shields.io/npm/v/@typedorm/core?style=for-the-badge&label=@typedorm/testing)](https://www.npmjs.com/package/@typedorm/core)
+| Package           | Latest Stable                                                                                                                         | Recent Beta                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| @typedorm/common  | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   |
+| @typedorm/core    | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       |
+| @typedorm/testing | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) |
 
-## Stability
+## Branches
 
-![Stability](https://img.shields.io/badge/Stability-Unstable-orange?style=for-the-badge)
+| Branches | Stability                                                                                    |
+| -------- | -------------------------------------------------------------------------------------------- |
+| Main     | ![Stability](https://img.shields.io/badge/Stability-stable-blue?style=for-the-badge)         |
+| Beta     | ![Stability](https://img.shields.io/badge/Stability-experimental-orange?style=for-the-badge) |
 
 TypeDORM is currently in it's very early stage of development so breaking changes are likely. Consider this before using it in production.
 
