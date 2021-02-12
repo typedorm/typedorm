@@ -9,7 +9,7 @@ const BUILD_SCM_HASH = exec('git rev-parse HEAD');
 console.log(`BUILD_SCM_HASH ${BUILD_SCM_HASH}`);
 
 const BUILD_SCM_VERSION_RAW = exec(
-  'git describe --match "v[0-9].[0-9].[0-9]*" --abbrev=7 --tags HEAD'
+  'git describe --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=7 --tags HEAD'
 );
 
 if (!BUILD_SCM_VERSION_RAW) {
