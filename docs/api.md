@@ -264,6 +264,13 @@ find(
     // Order in which to perform query
     // @default ASC
     orderBy
+
+    // optional
+    // Filter returned items
+    // Any conditions listed here will apply after items have been read from dynamodb and
+    // therefore this should be avoided wherever possible, but can be helpful in some cases
+    // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
+    where
   }
 )
 ```

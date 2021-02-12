@@ -1,8 +1,10 @@
 import {Table} from '@typedorm/common';
-import {isEmptyObject} from '../helpers/is-empty-object';
-import {isObject} from '../helpers/is-object';
-import {Condition} from './condition/condition';
-import {KeyCondition} from './condition/key-condition';
+import {isEmptyObject} from '../../helpers/is-empty-object';
+import {isObject} from '../../helpers/is-object';
+import {MERGE_STRATEGY} from './base-expression-input';
+import {Condition} from './condition';
+import {Filter} from './filter';
+import {KeyCondition} from './key-condition';
 
 export class ExpressionBuilder {
   /**
@@ -13,8 +15,10 @@ export class ExpressionBuilder {
     const uniqueRecordCondition = table.usesCompositeKey()
       ? new Condition()
           .attributeNotExist(table.partitionKey)
-          .and()
-          .attributeNotExist(table.sortKey)
+          .merge(
+            new Condition().attributeNotExist(table.sortKey),
+            MERGE_STRATEGY.AND
+          )
       : new Condition().attributeNotExist(table.partitionKey);
 
     return this.buildConditionExpression(uniqueRecordCondition);
@@ -87,7 +91,13 @@ export class ExpressionBuilder {
     return this.removeEmptyFieldsAndReturn(expression);
   }
 
-  buildKeyConditionExpression(condition: KeyCondition) {
+  buildKeyConditionExpression(
+    condition: KeyCondition
+  ): {
+    KeyConditionExpression?: string;
+    ExpressionAttributeNames?: Record<string, any>;
+    ExpressionAttributeValues?: Record<string, any>;
+  } {
     if (!condition.expression) {
       return {};
     }
@@ -96,6 +106,25 @@ export class ExpressionBuilder {
       KeyConditionExpression: condition.expression.trim(),
       ExpressionAttributeNames: condition.names,
       ExpressionAttributeValues: condition.values,
+    };
+    return this.removeEmptyFieldsAndReturn(expression);
+  }
+
+  buildFilterExpression(
+    filter: Filter
+  ): {
+    FilterExpression?: string;
+    ExpressionAttributeNames?: Record<string, any>;
+    ExpressionAttributeValues?: Record<string, any>;
+  } {
+    if (!filter.expression) {
+      return {};
+    }
+
+    const expression = {
+      FilterExpression: filter.expression.trim(),
+      ExpressionAttributeNames: filter.names,
+      ExpressionAttributeValues: filter.values,
     };
     return this.removeEmptyFieldsAndReturn(expression);
   }

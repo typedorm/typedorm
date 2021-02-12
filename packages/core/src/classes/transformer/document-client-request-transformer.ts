@@ -1,16 +1,11 @@
 import {
   EntityTarget,
-  FindKeyListOperator,
-  FindKeyScalarOperator,
-  FindKeySimpleOperator,
   IndexOptions,
   INDEX_TYPE,
   PrimaryKeyAttributes,
   QUERY_ORDER,
   Replace,
-  RequireOnlyOne,
   RETURN_VALUES,
-  ScalarType,
   Table,
   UpdateAttributes,
   TRANSFORM_TYPE,
@@ -20,14 +15,18 @@ import {dropProp} from '../../helpers/drop-prop';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {parseKey} from '../../helpers/parse-key';
-import {KeyCondition} from '../condition/key-condition';
+import {KeyCondition} from '../expression/key-condition';
 import {Connection} from '../connection/connection';
-import {ExpressionBuilder} from '../expression-builder';
+import {ExpressionBuilder} from '../expression/expression-builder';
 import {EntityManagerUpdateOptions} from '../manager/entity-manager';
 import {AttributeMetadata} from '../metadata/attribute-metadata';
 import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {BaseTransformer} from './base-transformer';
 import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
+import {
+  ExpressionInputParser,
+  KeyConditionOptions,
+} from '../expression/expression-input-parser';
 
 export interface TransformerToDynamoQueryItemsOptions {
   /**
@@ -38,14 +37,7 @@ export interface TransformerToDynamoQueryItemsOptions {
    * Sort key condition
    * @default none - no sort key condition is applied
    */
-  keyCondition: RequireOnlyOne<
-    {
-      [key in FindKeyScalarOperator]: ScalarType;
-    } &
-      {
-        [key in FindKeyListOperator]: [ScalarType, ScalarType];
-      }
-  >;
+  keyCondition?: KeyConditionOptions;
 
   /**
    * Max number of records to query
@@ -58,6 +50,8 @@ export interface TransformerToDynamoQueryItemsOptions {
    * @default ASC
    */
   orderBy?: QUERY_ORDER;
+
+  where?: any;
 }
 
 export interface ManagerToDynamoPutItemOptions {
@@ -69,10 +63,12 @@ export interface ManagerToDynamoPutItemOptions {
 
 export class DocumentClientRequestTransformer extends BaseTransformer {
   private _expressionBuilder: ExpressionBuilder;
+  private _expressionInputParser: ExpressionInputParser;
 
   constructor(connection: Connection) {
     super(connection);
     this._expressionBuilder = new ExpressionBuilder();
+    this._expressionInputParser = new ExpressionInputParser();
   }
 
   toDynamoGetItem<PrimaryKey, Entity>(
@@ -495,14 +491,16 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       parsedPartitionKey.value
     );
 
+    const partitionKeyConditionExpression = this._expressionBuilder.buildKeyConditionExpression(
+      partitionKeyCondition
+    );
+
     // if no query options are present, resolve key condition expression
     if (!queryOptions || isEmptyObject(queryOptions)) {
       const transformedQueryItem = {
         TableName: table.name,
         IndexName: queryIndexName,
-        ...this._expressionBuilder.buildKeyConditionExpression(
-          partitionKeyCondition
-        ),
+        ...partitionKeyConditionExpression,
       };
 
       this.connection.logger.logTransform(
@@ -531,42 +529,74 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // at this point we have resolved partition key and table to query
-    const {keyCondition, limit, orderBy: order} = queryOptions;
+    const {keyCondition, limit, orderBy: order, where} = queryOptions;
 
     let queryInputParams = {
       TableName: table.name,
       IndexName: queryIndexName,
       Limit: limit,
       ScanIndexForward: !order || order === QUERY_ORDER.ASC,
+      ...partitionKeyConditionExpression,
     } as DynamoDB.DocumentClient.QueryInput;
 
     if (keyCondition && !isEmptyObject(keyCondition)) {
       // build sort key condition
-      const sortKeyCondition = new KeyCondition();
-      if (keyCondition.BETWEEN && keyCondition.BETWEEN.length) {
-        sortKeyCondition.between(parsedSortKey.name, keyCondition.BETWEEN);
-      } else if (keyCondition.BEGINS_WITH) {
-        sortKeyCondition.beginsWith(
-          parsedSortKey.name,
-          keyCondition.BEGINS_WITH
-        );
-      } else {
-        const operator = Object.keys(keyCondition)[0] as FindKeySimpleOperator;
-        sortKeyCondition.addBaseOperatorCondition(
-          operator,
-          parsedSortKey.name,
-          keyCondition[operator]
-        );
-      }
+
+      const sortKeyCondition = this._expressionInputParser.parseToKeyCondition(
+        parsedSortKey.name,
+        keyCondition
+      );
 
       // if condition resolution was successful, we can merge both partition and sort key conditions now
-      const keyConditionExpression = this._expressionBuilder.buildKeyConditionExpression(
+      const {
+        KeyConditionExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+      } = this._expressionBuilder.buildKeyConditionExpression(
         partitionKeyCondition.merge(sortKeyCondition)
       );
 
       queryInputParams = {
         ...queryInputParams,
-        ...keyConditionExpression,
+        KeyConditionExpression,
+        ExpressionAttributeNames: {
+          ...queryInputParams.ExpressionAttributeNames,
+          ...ExpressionAttributeNames,
+        },
+        ExpressionAttributeValues: {
+          ...queryInputParams.ExpressionAttributeValues,
+          ...ExpressionAttributeValues,
+        },
+      };
+    }
+
+    // when filter conditions are given generate filter expression
+    if (where && !isEmptyObject(where)) {
+      const filter = this._expressionInputParser.parseToFilter(where);
+
+      if (!filter) {
+        throw `Failed to build filter expression for input: ${JSON.stringify(
+          where
+        )}`;
+      }
+
+      const {
+        FilterExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+      } = this._expressionBuilder.buildFilterExpression(filter);
+
+      queryInputParams = {
+        ...queryInputParams,
+        FilterExpression,
+        ExpressionAttributeNames: {
+          ...queryInputParams.ExpressionAttributeNames,
+          ...ExpressionAttributeNames,
+        },
+        ExpressionAttributeValues: {
+          ...queryInputParams.ExpressionAttributeValues,
+          ...ExpressionAttributeValues,
+        },
       };
     }
 

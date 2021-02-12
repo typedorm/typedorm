@@ -64,7 +64,7 @@ test('creates entity', async () => {
     },
     TableName: 'test-table',
     ConditionExpression:
-      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+      '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
       '#CE_SK': 'SK',
@@ -102,7 +102,7 @@ test('creates entity and returns all attributes, including auto generated ones',
     },
     TableName: 'test-table',
     ConditionExpression:
-      'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+      '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
       '#CE_SK': 'SK',
@@ -393,7 +393,7 @@ test('updates item with unique attributes and returns all updated attributes', a
       {
         Put: {
           ConditionExpression:
-            'attribute_not_exists(#CE_PK) AND attribute_not_exists(#CE_SK)',
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
           ExpressionAttributeNames: {
             '#CE_PK': 'PK',
             '#CE_SK': 'SK',
@@ -583,7 +583,7 @@ test('finds items matching given query params', async () => {
       ':KY_CE_SK': 'USER#',
     },
     KeyConditionExpression:
-      '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
     ScanIndexForward: true,
     TableName: 'test-table',
@@ -599,6 +599,84 @@ test('finds items matching given query params', async () => {
         id: '2',
         name: 'Me',
         status: 'active',
+      },
+    ],
+  });
+});
+
+test('finds items matching given query params and options', async () => {
+  dcMock.query.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      Items: [
+        {
+          PK: 'USER#1',
+          SK: 'USER#1',
+          GSI1PK: 'USER#STATUS#active',
+          GSI1SK: 'USER#Me',
+          id: '1',
+          name: 'Me',
+          status: 'active',
+          age: 4,
+        },
+      ],
+    }),
+  });
+
+  const users = await manager.find<User, UserPrimaryKey>(
+    User,
+    {
+      id: 'aaaa',
+    },
+    {
+      keyCondition: {
+        BEGINS_WITH: 'USER#',
+      },
+      where: {
+        AND: {
+          age: {
+            BETWEEN: [1, 5],
+          },
+          name: {
+            EQ: 'Me',
+          },
+          status: 'ATTRIBUTE_EXISTS',
+        },
+      },
+      limit: 10,
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(1);
+  expect(dcMock.query).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#KY_CE_SK': 'SK',
+      '#FE_age': 'age',
+      '#FE_name': 'name',
+      '#FE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#aaaa',
+      ':KY_CE_SK': 'USER#',
+      ':FE_age_end': 5,
+      ':FE_age_start': 1,
+      ':FE_name': 'Me',
+    },
+    KeyConditionExpression:
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+    FilterExpression:
+      '((#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name)) AND (attribute_exists(#FE_status))',
+    Limit: 10,
+    ScanIndexForward: true,
+    TableName: 'test-table',
+  });
+  expect(users).toEqual({
+    items: [
+      {
+        id: '1',
+        name: 'Me',
+        status: 'active',
+        age: 4,
       },
     ],
   });
@@ -639,7 +717,7 @@ test('finds items with alternate syntax', async () => {
       ':KY_CE_SK': 'USER#',
     },
     KeyConditionExpression:
-      '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
     ScanIndexForward: true,
     TableName: 'test-table',
@@ -712,7 +790,7 @@ test('finds item from given cursor position', async () => {
       ':KY_CE_SK': 'USER#',
     },
     KeyConditionExpression:
-      '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
     ScanIndexForward: true,
     TableName: 'test-table',
@@ -773,7 +851,7 @@ test('queries items until limit is met', async () => {
           ':KY_CE_SK': 'USER#',
         },
         KeyConditionExpression:
-          '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
         Limit: 2000,
         ScanIndexForward: true,
         TableName: 'test-table',
@@ -791,7 +869,7 @@ test('queries items until limit is met', async () => {
           ':KY_CE_SK': 'USER#',
         },
         KeyConditionExpression:
-          '#KY_CE_PK = :KY_CE_PK AND begins_with(#KY_CE_SK, :KY_CE_SK)',
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
         Limit: 2000,
         ScanIndexForward: true,
         TableName: 'test-table',

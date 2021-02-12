@@ -3,8 +3,8 @@ import {Container} from './src/classes/container';
 import {ConnectionManager} from './src/classes/connection/connection-manager';
 
 // classes
-export * from './src/classes/condition/condition';
-export * from './src/classes/condition/key-condition';
+export * from './src/classes/expression/condition';
+export * from './src/classes/expression/key-condition';
 export * from './src/classes/connection/connection-options';
 export * from './src/classes/transaction/write-transaction';
 export * from './src/classes/manager/entity-manager';

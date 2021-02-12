@@ -1,5 +1,6 @@
-import {Condition} from '../condition/condition';
+import {Condition} from '../condition';
 import {ExpressionBuilder} from '../expression-builder';
+import {Filter} from '../filter';
 
 const expressionBuilder = new ExpressionBuilder();
 
@@ -125,5 +126,21 @@ test('allows updating attribute with empty string', () => {
     ExpressionAttributeValues: {
       ':val0': '',
     },
+  });
+});
+
+/**
+ * @group buildFilterExpression
+ */
+test('builds filter expression', () => {
+  const filter = new Filter().attributeNotExists('profile.deleted');
+  const filterExpression = expressionBuilder.buildFilterExpression(filter);
+
+  expect(filterExpression).toEqual({
+    ExpressionAttributeNames: {
+      '#FE_profile': 'profile',
+      '#FE_profile_deleted': 'deleted',
+    },
+    FilterExpression: 'attribute_not_exists(#FE_profile.#FE_profile_deleted)',
   });
 });
