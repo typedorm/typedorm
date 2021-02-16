@@ -185,7 +185,7 @@ test('merges conditions when merging condition is empty', () => {
  * @group mergeMany
  */
 
-test('merges many conditions', () => {
+test('merges many conditions with AND operator', () => {
   const merged = new TestCondition()
     .lessThan('age', 12)
     .mergeMany(
@@ -210,7 +210,36 @@ test('merges many conditions', () => {
       ':TC_status': 'active',
     },
     expression:
-      '(((#TC_age < :TC_age) AND (#TC_name = :TC_name)) AND (#TC_status = :TC_status)) AND (#TC_score > :TC_score)',
+      '(#TC_age < :TC_age) AND (#TC_name = :TC_name) AND (#TC_status = :TC_status) AND (#TC_score > :TC_score)',
+  });
+});
+
+test('merges many conditions with OR operator', () => {
+  const merged = new TestCondition()
+    .lessThan('age', 12)
+    .mergeMany(
+      [
+        new TestCondition().equals('name', 'sid'),
+        new TestCondition().equals('status', 'active'),
+        new TestCondition().greaterThan('score', 120),
+      ],
+      MERGE_STRATEGY.OR
+    );
+  expect(merged).toEqual({
+    _names: {
+      '#TC_age': 'age',
+      '#TC_name': 'name',
+      '#TC_score': 'score',
+      '#TC_status': 'status',
+    },
+    _values: {
+      ':TC_age': 12,
+      ':TC_name': 'sid',
+      ':TC_score': 120,
+      ':TC_status': 'active',
+    },
+    expression:
+      '(#TC_age < :TC_age) OR (#TC_name = :TC_name) OR (#TC_status = :TC_status) OR (#TC_score > :TC_score)',
   });
 });
 

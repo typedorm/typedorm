@@ -167,9 +167,38 @@ export abstract class BaseExpressionInput {
     inputs: T[],
     strategy: MERGE_STRATEGY
   ) {
-    inputs.forEach(input => {
-      this.merge(input, strategy);
+    // check if base expression has any value
+    if (this.expression) {
+      this.expression = `(${this.expression})`;
+      this.appendToExpression(strategy);
+    }
+
+    inputs.forEach((input, index) => {
+      this.appendToExpression(`(${input.expression})`);
+
+      if (index !== inputs.length - 1) {
+        this.appendToExpression(strategy);
+      }
+
+      Object.keys(input.names).forEach(nameKey => {
+        if (this.names[nameKey]) {
+          throw new Error(
+            `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
+          );
+        }
+      });
+      Object.keys(input.values).forEach(valueKey => {
+        if (this.names[valueKey]) {
+          throw new Error(
+            `Failed to merge expression attribute values, there are multiple attributes values with key "${valueKey}"`
+          );
+        }
+      });
+
+      this.names = {...this.names, ...input.names};
+      this.values = {...this.values, ...input.values};
     });
+
     return this;
   }
 

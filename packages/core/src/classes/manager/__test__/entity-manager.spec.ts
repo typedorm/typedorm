@@ -665,7 +665,7 @@ test('finds items matching given query params and options', async () => {
     KeyConditionExpression:
       '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     FilterExpression:
-      '((#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name)) AND (attribute_exists(#FE_status))',
+      '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
     Limit: 10,
     ScanIndexForward: true,
     TableName: 'test-table',
