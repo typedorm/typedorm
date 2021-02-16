@@ -3,8 +3,7 @@ import {
   InvalidBatchWriteItemError,
   TRANSFORM_BATCH_TYPE,
 } from '@typedorm/common';
-import {DocumentClient, WriteRequests} from 'aws-sdk/clients/dynamodb';
-import {createChunks} from '../../helpers/create-chunks';
+import {DocumentClient, WriteRequest} from 'aws-sdk/clients/dynamodb';
 import {isBatchAddCreateItem, isBatchAddDeleteItem} from '../batch/type-guards';
 import {WiteBatchItem, WriteBatch} from '../batch/write-batch';
 import {Connection} from '../connection/connection';
@@ -15,12 +14,23 @@ import {
 } from './is-lazy-transaction-write-item-list-loader';
 import {LowOrderTransformers} from './low-order-transformers';
 
+export type WriteRequestWithMeta = {
+  tableName: string;
+  writeRequest: WriteRequest;
+};
+
 export class DocumentClientBatchTransformer extends LowOrderTransformers {
   constructor(connection: Connection) {
     super(connection);
   }
 
-  toDynamoWriteBatchItems(writeBatch: WriteBatch) {
+  toDynamoWriteBatchItems(
+    writeBatch: WriteBatch
+  ): {
+    batchWriteRequestMapItems: DocumentClient.BatchWriteItemRequestMap[];
+    transactionListItems: DocumentClient.TransactWriteItemList[];
+    lazyTransactionWriteItemListLoaderItems: LazyTransactionWriteItemListLoader[];
+  } {
     const {items} = writeBatch;
     this.connection.logger.logTransformBatch(
       TRANSFORM_BATCH_TYPE.BATCH_WRITE,
@@ -34,14 +44,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       transactionListItems,
     } = this.parseBatchWriteItem(items);
 
-    // if batch write requests contains more than one items, we spread them with multiple
-    const chunkedBatchRequestItems = createChunks(
-      simpleBatchRequestItems,
-      BATCH_WRITE_ITEMS_LIMIT
-    );
-
     const transformed = {
-      batchWriteRequestListItems: chunkedBatchRequestItems,
+      batchWriteRequestMapItems: this.getBatchWriteItemsPerTable(
+        simpleBatchRequestItems
+      ),
       transactionListItems,
       lazyTransactionWriteItemListLoaderItems,
     };
@@ -69,10 +75,12 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
           const dynamoPutItem = this.toDynamoPutItem(batchItem.create.item);
           if (!isWriteTransactionItemList(dynamoPutItem)) {
             acc.simpleBatchRequestItems.push({
-              PutRequest: {
-                // drop all other options inherited from transformer, since batch operations has limited capability
-                Item: dynamoPutItem.Item,
+              writeRequest: {
+                PutRequest: {
+                  Item: dynamoPutItem.Item,
+                },
               },
+              tableName: dynamoPutItem.TableName,
             });
           } else {
             acc.transactionListItems.push(dynamoPutItem);
@@ -86,10 +94,12 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
 
           if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
             acc.simpleBatchRequestItems.push({
-              DeleteRequest: {
-                // drop all extra props received from transformer
-                Key: itemToRemove.Key,
+              writeRequest: {
+                DeleteRequest: {
+                  Key: itemToRemove.Key,
+                },
               },
+              tableName: itemToRemove.TableName,
             });
           } else {
             acc.lazyTransactionWriteItemListLoaderItems.push(itemToRemove);
@@ -100,10 +110,54 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
         return acc;
       },
       {
-        simpleBatchRequestItems: [] as WriteRequests,
+        simpleBatchRequestItems: [] as WriteRequestWithMeta[],
         transactionListItems: [] as DocumentClient.TransactWriteItemList[],
         lazyTransactionWriteItemListLoaderItems: [] as LazyTransactionWriteItemListLoader[],
       }
     );
+  }
+
+  private getBatchWriteItemsPerTable(
+    allRequestItems: WriteRequestWithMeta[]
+  ): DocumentClient.BatchWriteItemRequestMap[] {
+    const requestsSortedByTable = allRequestItems.reduce((acc, requestItem) => {
+      if (!acc[requestItem.tableName]) {
+        acc[requestItem.tableName] = [requestItem.writeRequest];
+      } else {
+        acc[requestItem.tableName].push(requestItem.writeRequest);
+      }
+      return acc;
+    }, {} as DocumentClient.BatchWriteItemRequestMap);
+
+    let currentFillingIndex = 0;
+    let totalItemsAtCurrentFillingIndex = 0;
+    const multiBatchItems = Object.entries(requestsSortedByTable).reduce(
+      (acc, [tableName, perTableWriteItems]) => {
+        // separate requests into multiple batch items, if there are more than allowed items to process in batch
+        while (perTableWriteItems.length) {
+          if (!acc[currentFillingIndex]) {
+            acc[currentFillingIndex] = {};
+          }
+
+          if (!acc[currentFillingIndex][tableName]) {
+            acc[currentFillingIndex][tableName] = [];
+          }
+
+          acc[currentFillingIndex][tableName].push(perTableWriteItems.shift()!);
+          ++totalItemsAtCurrentFillingIndex;
+
+          // batch write request has limit of 25 items per batch, so once we hit that limit,
+          // append remaining item as new batch request
+          if (totalItemsAtCurrentFillingIndex === BATCH_WRITE_ITEMS_LIMIT) {
+            ++currentFillingIndex;
+            totalItemsAtCurrentFillingIndex = 0;
+          }
+        }
+        return acc;
+      },
+      [] as DocumentClient.BatchWriteItemRequestMap[]
+    );
+
+    return multiBatchItems;
   }
 }

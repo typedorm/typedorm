@@ -1,18 +1,23 @@
 import {WriteBatch} from '../batch/write-batch';
 import {Connection} from '../connection/connection';
+import {DocumentClientBatchTransformer} from '../transformer/document-client-batch-transformer';
 
 export class BatchManager {
-  constructor(private connection: Connection) {}
+  private _dcBatchTransformer: DocumentClientBatchTransformer;
+  constructor(private connection: Connection) {
+    this._dcBatchTransformer = new DocumentClientBatchTransformer(connection);
+  }
 
   async write(batch: WriteBatch) {
-    // separate transaction items and normal items
-
     const {
-      simpleRequestItems,
+      batchWriteRequestMapItems,
+      lazyTransactionWriteItemListLoaderItems,
       transactionListItems,
-      lazyTransactionListItems,
-    } = batch.items;
+    } = this._dcBatchTransformer.toDynamoWriteBatchItems(batch);
 
-    // this.connection.documentClient.batchWrite
+    // TODO: run all batch and non batch operations
+    this.connection.documentClient.batchWrite({
+      RequestItems: {},
+    });
   }
 }
