@@ -78,12 +78,9 @@ export class Connection {
       this.isConnected = true;
       return this;
     } catch (err) {
-      if (err instanceof MissingRequiredTableConfig) {
-        throw err;
-      }
       // Failed to connect to connection, clear self from connection manager
       this.destroySelf(this.name);
-      return;
+      throw err;
     }
   }
 
@@ -140,7 +137,7 @@ export class Connection {
     const metadata = this._entityMetadatas.get(entityClass.name);
     if (!metadata) {
       throw new Error(
-        `No such entity named "${entityClass.name}" is known to TypeDrm, make sure it is declared at the connection creation time.`
+        `No such entity named "${entityClass.name}" is known to TypeDORM, make sure it is declared at the connection creation time.`
       );
     }
     return metadata;
