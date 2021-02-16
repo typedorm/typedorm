@@ -1,5 +1,6 @@
 import {applyMixins} from '../../helpers/apply-mixins';
 import {Connection} from '../connection/connection';
+import {BaseTransformer} from './base-transformer';
 import {DocumentClientRequestTransformer} from './document-client-request-transformer';
 import {EntityTransformer} from './entity-transformer';
 
@@ -13,6 +14,7 @@ export class LowOrderTransformers {
 
 // dynamically extend both low order transformers
 applyMixins(LowOrderTransformers, [
+  BaseTransformer,
   EntityTransformer,
   DocumentClientRequestTransformer,
 ]);

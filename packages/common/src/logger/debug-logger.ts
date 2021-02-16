@@ -10,9 +10,15 @@ export enum TRANSFORM_TYPE {
   RESPONSE = 'RESPONSE',
 }
 
+export enum TRANSFORM_BATCH_TYPE {
+  BATCH_WRITE = 'BATCH_WRITE',
+}
+
 export class DebugLogger {
   // log
   private debugTransformLog = debug('typedorm:transform:log');
+  // batch transform logger
+  private debugTransformBatchLog = debug('typedorm:transform:batch:log');
   constructor() {}
 
   logTransform(
@@ -34,6 +40,31 @@ export class DebugLogger {
               chalk.white(this.ensurePrintable(primaryKey)),
             ]
           : []),
+        ...(body
+          ? [
+              chalk.blueBright('\nBody: '),
+              chalk.white(this.ensurePrintable(body)),
+            ]
+          : []),
+        ...(options
+          ? [
+              chalk.blueBright('\nOptions: '),
+              chalk.white(this.ensurePrintable(options)),
+            ]
+          : [])
+      );
+    }
+  }
+
+  logTransformBatch(
+    operation: TRANSFORM_BATCH_TYPE,
+    prefix: string,
+    body?: any,
+    options?: any
+  ) {
+    if (this.debugTransformBatchLog.enabled) {
+      this.debugTransformBatchLog(
+        `${chalk.green(operation)} ${chalk.magenta(prefix)}: `,
         ...(body
           ? [
               chalk.blueBright('\nBody: '),

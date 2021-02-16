@@ -12,3 +12,8 @@ export const DYNAMO_ATTRIBUTE_PREFIX = 'DRM_GEN';
  * Default Limit that is applied when query conditions do not include any explicit limits
  */
 export const DYNAMO_QUERY_ITEMS_IMPLICIT_LIMIT = 3000;
+
+/**
+ * Current batch write items limit set by dynamodb
+ */
+export const BATCH_WRITE_ITEMS_LIMIT = 25;
