@@ -1,7 +1,7 @@
 {
   "name": "@typedorm/monorepo",
   "version": "0.0.0-development",
-  "description": "TypeDRM - Fully Typed ORM for DynamoDB",
+  "description": "TypeDORM - Fully Typed ORM for DynamoDB",
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -25,6 +25,7 @@
     "debug": "^4.3.1",
     "fast-glob": "^3.2.4",
     "ksuid": "^2.0.0",
+    "p-limit": "^3.1.0",
     "reflect-metadata": "^0.1.13",
     "uuid": "^8.3.1"
   },

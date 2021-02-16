@@ -10,7 +10,8 @@ setup_ts_build(
         "@npm//uuid",
         "@npm//ksuid",
         "@npm//fast-glob",
-        "@npm//@types/uuid"
+        "@npm//@types/uuid",
+        "@npm//p-limit"
     ],
     visibility = ["//packages:__subpackages__"]
 

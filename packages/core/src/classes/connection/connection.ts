@@ -4,7 +4,6 @@ import {
   Replace,
   Table,
   DebugLogger,
-  MissingRequiredTableConfig,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
