@@ -44,10 +44,15 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       transactionListItems,
     } = this.parseBatchWriteItem(items);
 
+    // organize all requests in "tableName - requestItem" format
+    const sorted = this.getRequestsSortedByTable(simpleBatchRequestItems);
+
+    // divide sorted requests in multiple batch items requests, as there are max
+    // 25 items are allowed in a single batch operation
+    const batchWriteRequestItems = this.mapTableItemsToBatchItems(sorted);
+
     const transformed = {
-      batchWriteRequestMapItems: this.getBatchWriteItemsPerTable(
-        simpleBatchRequestItems
-      ),
+      batchWriteRequestMapItems: batchWriteRequestItems,
       transactionListItems,
       lazyTransactionWriteItemListLoaderItems,
     };
@@ -59,6 +64,40 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     );
 
     return transformed;
+  }
+
+  mapTableItemsToBatchItems(
+    requestsSortedByTable: DocumentClient.BatchWriteItemRequestMap
+  ) {
+    let currentFillingIndex = 0;
+    let totalItemsAtCurrentFillingIndex = 0;
+    const multiBatchItems = Object.entries(requestsSortedByTable).reduce(
+      (acc, [tableName, perTableWriteItems]) => {
+        // separate requests into multiple batch items, if there are more than allowed items to process in batch
+        while (perTableWriteItems.length) {
+          if (!acc[currentFillingIndex]) {
+            acc[currentFillingIndex] = {};
+          }
+
+          if (!acc[currentFillingIndex][tableName]) {
+            acc[currentFillingIndex][tableName] = [];
+          }
+
+          acc[currentFillingIndex][tableName].push(perTableWriteItems.shift()!);
+          ++totalItemsAtCurrentFillingIndex;
+
+          // batch write request has limit of 25 items per batch, so once we hit that limit,
+          // append remaining item as new batch request
+          if (totalItemsAtCurrentFillingIndex === BATCH_WRITE_ITEMS_LIMIT) {
+            ++currentFillingIndex;
+            totalItemsAtCurrentFillingIndex = 0;
+          }
+        }
+        return acc;
+      },
+      [] as DocumentClient.BatchWriteItemRequestMap[]
+    );
+    return multiBatchItems;
   }
 
   /**
@@ -117,10 +156,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     );
   }
 
-  private getBatchWriteItemsPerTable(
+  private getRequestsSortedByTable(
     allRequestItems: WriteRequestWithMeta[]
-  ): DocumentClient.BatchWriteItemRequestMap[] {
-    const requestsSortedByTable = allRequestItems.reduce((acc, requestItem) => {
+  ): DocumentClient.BatchWriteItemRequestMap {
+    return allRequestItems.reduce((acc, requestItem) => {
       if (!acc[requestItem.tableName]) {
         acc[requestItem.tableName] = [requestItem.writeRequest];
       } else {
@@ -128,36 +167,5 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       }
       return acc;
     }, {} as DocumentClient.BatchWriteItemRequestMap);
-
-    let currentFillingIndex = 0;
-    let totalItemsAtCurrentFillingIndex = 0;
-    const multiBatchItems = Object.entries(requestsSortedByTable).reduce(
-      (acc, [tableName, perTableWriteItems]) => {
-        // separate requests into multiple batch items, if there are more than allowed items to process in batch
-        while (perTableWriteItems.length) {
-          if (!acc[currentFillingIndex]) {
-            acc[currentFillingIndex] = {};
-          }
-
-          if (!acc[currentFillingIndex][tableName]) {
-            acc[currentFillingIndex][tableName] = [];
-          }
-
-          acc[currentFillingIndex][tableName].push(perTableWriteItems.shift()!);
-          ++totalItemsAtCurrentFillingIndex;
-
-          // batch write request has limit of 25 items per batch, so once we hit that limit,
-          // append remaining item as new batch request
-          if (totalItemsAtCurrentFillingIndex === BATCH_WRITE_ITEMS_LIMIT) {
-            ++currentFillingIndex;
-            totalItemsAtCurrentFillingIndex = 0;
-          }
-        }
-        return acc;
-      },
-      [] as DocumentClient.BatchWriteItemRequestMap[]
-    );
-
-    return multiBatchItems;
   }
 }
