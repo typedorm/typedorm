@@ -132,7 +132,7 @@ export class BatchManager {
 
     return {
       unprocessedItems: allUnprocessedItems,
-      failedItems: this._errorQueue,
+      failedItems: this._errorQueue.map(item => item.requestInput),
     };
   }
 
@@ -204,13 +204,14 @@ export class BatchManager {
     );
   }
 
-  private toLimited<T>(anyPromiseFactory: () => Promise<T>, itemRequest: any) {
-    return this.limit(() => {
+  private toLimited<T>(anyPromiseFactory: () => Promise<T>, requestItem: any) {
+    return this.limit(async () => {
       try {
-        return anyPromiseFactory();
+        const response = await anyPromiseFactory();
+        return response;
       } catch (err) {
         this._errorQueue.push({
-          requestInput: itemRequest,
+          requestInput: requestItem,
           error: err,
         });
         // when any error is thrown while promises are running, return it
