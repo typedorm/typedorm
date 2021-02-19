@@ -83,41 +83,24 @@ test('transforms into batch write items', () => {
       {
         'test-table': [
           {
-            rawInput: {
-              create: {
-                item: user1,
-              },
-            },
-            transformedInput: {
-              PutRequest: {
-                Item: {
-                  GSI1PK: 'USER#STATUS#inactive',
-                  GSI1SK: 'USER#user 1',
-                  PK: 'USER#1',
-                  SK: 'USER#1',
-                  __en: 'user',
-                  id: '1',
-                  name: 'user 1',
-                  status: 'inactive',
-                },
+            PutRequest: {
+              Item: {
+                GSI1PK: 'USER#STATUS#inactive',
+                GSI1SK: 'USER#user 1',
+                PK: 'USER#1',
+                SK: 'USER#1',
+                __en: 'user',
+                id: '1',
+                name: 'user 1',
+                status: 'inactive',
               },
             },
           },
           {
-            rawInput: {
-              delete: {
-                item: Organisation,
-                primaryKey: {
-                  id: 'ORG_ID_1',
-                },
-              },
-            },
-            transformedInput: {
-              DeleteRequest: {
-                Key: {
-                  PK: 'ORG#ORG_ID_1',
-                  SK: 'ORG#ORG_ID_1',
-                },
+            DeleteRequest: {
+              Key: {
+                PK: 'ORG#ORG_ID_1',
+                SK: 'ORG#ORG_ID_1',
               },
             },
           },
