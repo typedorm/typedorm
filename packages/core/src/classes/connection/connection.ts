@@ -4,6 +4,7 @@ import {
   Replace,
   Table,
   DebugLogger,
+  getEntityDefinition,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
@@ -140,6 +141,17 @@ export class Connection {
       );
     }
     return metadata;
+  }
+
+  getEntityByPhysicalName(name: string) {
+    const entitySpec = getEntityDefinition(name);
+
+    if (!entitySpec) {
+      throw new Error(
+        `No such entity with physical name (__en) "${name}" was found, if this continues please file an issue on github`
+      );
+    }
+    return this.getEntityByTarget(entitySpec.target);
   }
 
   getAutoUpdateAttributes<Entity>(entityClass: EntityTarget<Entity>) {

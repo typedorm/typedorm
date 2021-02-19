@@ -309,3 +309,68 @@ test('returns all affected indexes for complex attributes', () => {
     GSI2SK: 'ORG#Updated name#TEAM_COUNT#12',
   });
 });
+
+/**
+ * @group fromDynamoKeyToAttributes
+ */
+test('reverse transforms key schema to attributes', () => {
+  const attributes = transformer.fromDynamoKeyToAttributes(User, {
+    PK: 'USER#12',
+    SK: 'USER#12',
+  });
+
+  expect(attributes).toEqual({
+    id: '12',
+  });
+});
+
+test('safely fails to transform key for unknown entity ', () => {
+  const attributes = transformer.fromDynamoKeyToAttributes(User, {
+    PK: 'OTHERsUSER#12',
+    SK: 'OTHER_USER#12',
+  });
+
+  expect(attributes).toEqual({});
+});
+
+test('reverse transforms key schema to attributes with proper value types', () => {
+  resetTestConnection();
+
+  @Entity({
+    name: 'other-user',
+    primaryKey: {
+      partitionKey: 'USER#{{id}}#active#{{active}}',
+      sortKey: 'USER#{{id}}',
+    },
+    table,
+  })
+  class ComplexUser {
+    @Attribute()
+    id: number;
+
+    @Attribute()
+    name: string;
+
+    @Attribute()
+    age: number;
+
+    @Attribute()
+    active: boolean;
+  }
+
+  const connection = createTestConnection({
+    entities: [ComplexUser],
+  });
+
+  transformer = new EntityTransformer(connection);
+
+  const attributes = transformer.fromDynamoKeyToAttributes(ComplexUser, {
+    PK: 'USER#12#active#true',
+    SK: 'USER#12',
+  });
+
+  expect(attributes).toEqual({
+    id: 12,
+    active: true,
+  });
+});

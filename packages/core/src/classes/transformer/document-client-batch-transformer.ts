@@ -1,5 +1,6 @@
 import {
   BATCH_WRITE_ITEMS_LIMIT,
+  INTERNAL_ENTITY_ATTRIBUTE,
   InvalidBatchWriteItemError,
   TRANSFORM_BATCH_TYPE,
 } from '@typedorm/common';
@@ -79,6 +80,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     return transformed;
   }
 
+  // TODO: add more test coverage tor batch items reverse transform
   mapTableItemsToBatchItems(
     requestsSortedByTable: DocumentClient.BatchWriteItemRequestMap
   ) {
@@ -113,13 +115,43 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     return multiBatchItems;
   }
 
-  // TODO: // add batch item to raw input entity name parser
-  // toRawBatchInputItem(transformedItem: DocumentClient.WriteRequest) {
-  //   if (transformedItem.PutRequest) {
-  //     const entityClass = this.connection.getEnt
-  //     return this.fromDynamoEntity()
-  //   }
-  // }
+  toRawBatchInputItem(
+    transformedItem: DocumentClient.WriteRequest
+  ): WiteBatchItem<any, any> {
+    if (transformedItem.PutRequest) {
+      const dynamoItem = transformedItem.PutRequest.Item;
+      const entityMetadata = this.connection.getEntityByPhysicalName(
+        dynamoItem[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME]
+      );
+      const originalEntity = this.fromDynamoEntity(
+        entityMetadata.target,
+        dynamoItem
+      );
+      return {
+        create: {
+          item: originalEntity,
+        },
+      };
+    } else if (transformedItem.DeleteRequest) {
+      const dynamoKey = transformedItem.DeleteRequest.Key;
+      const entityMetadata = this.connection.getEntityByPhysicalName(
+        dynamoKey[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME]
+      );
+      return {
+        delete: {
+          item: entityMetadata.target,
+          primaryKey: this.fromDynamoKeyToAttributes(
+            entityMetadata.target,
+            dynamoKey
+          ),
+        },
+      };
+    } else {
+      throw new Error(
+        `Invalid batch item type ${JSON.stringify(transformedItem)}`
+      );
+    }
+  }
 
   /**
    * Parse each item in the request to be in one of the following collections

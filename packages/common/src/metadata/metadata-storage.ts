@@ -61,6 +61,11 @@ export class MetadataStorage {
     this._attributes = new Map();
   }
 
+  /**
+   * Get entity metadata by entity physical name
+   * Physical name refers to value set to "name" property on @Entity
+   * @param name entity physical name
+   */
   getEntityByName(name: string) {
     return this.entities.find(en => en.name === name);
   }
