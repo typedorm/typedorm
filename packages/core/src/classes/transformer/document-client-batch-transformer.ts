@@ -19,6 +19,15 @@ export type WriteRequestWithMeta = {
   writeRequest: WriteRequest;
 };
 
+export type BatchWriteItemTransform<Transformed> = {
+  rawInput: any;
+  transformedInput: Transformed;
+};
+
+export type BatchWriteItemRequestMapTransform<Transformed> = {
+  [key: string]: BatchWriteItemTransform<Transformed>[];
+};
+
 export class DocumentClientBatchTransformer extends LowOrderTransformers {
   constructor(connection: Connection) {
     super(connection);
@@ -28,8 +37,12 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     writeBatch: WriteBatch
   ): {
     batchWriteRequestMapItems: DocumentClient.BatchWriteItemRequestMap[];
-    transactionListItems: DocumentClient.TransactWriteItemList[];
-    lazyTransactionWriteItemListLoaderItems: LazyTransactionWriteItemListLoader[];
+    transactionListItems: BatchWriteItemTransform<
+      DocumentClient.TransactWriteItemList
+    >[];
+    lazyTransactionWriteItemListLoaderItems: BatchWriteItemTransform<
+      LazyTransactionWriteItemListLoader
+    >[];
   } {
     const {items} = writeBatch;
     this.connection.logger.logTransformBatch(
@@ -100,6 +113,14 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     return multiBatchItems;
   }
 
+  // TODO: // add batch item to raw input entity name parser
+  // toRawBatchInputItem(transformedItem: DocumentClient.WriteRequest) {
+  //   if (transformedItem.PutRequest) {
+  //     const entityClass = this.connection.getEnt
+  //     return this.fromDynamoEntity()
+  //   }
+  // }
+
   /**
    * Parse each item in the request to be in one of the following collections
    * - simpleBatchRequestItems: simple items that can be processed in batch (i.e no uniques)
@@ -109,6 +130,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   private parseBatchWriteItem(batchItems: WiteBatchItem<any, any>[]) {
     return batchItems.reduce(
       (acc, batchItem) => {
+        // is create
         if (isBatchAddCreateItem(batchItem)) {
           // transform put item
           const dynamoPutItem = this.toDynamoPutItem(batchItem.create.item);
@@ -122,15 +144,18 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
               tableName: dynamoPutItem.TableName,
             });
           } else {
-            acc.transactionListItems.push(dynamoPutItem);
+            acc.transactionListItems.push({
+              rawInput: batchItem,
+              transformedInput: dynamoPutItem,
+            });
           }
+          // is delete
         } else if (isBatchAddDeleteItem(batchItem)) {
           const {
             delete: {item, primaryKey},
           } = batchItem;
           // transform delete item
           const itemToRemove = this.toDynamoDeleteItem(item, primaryKey);
-
           if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
             acc.simpleBatchRequestItems.push({
               writeRequest: {
@@ -141,7 +166,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
               tableName: itemToRemove.TableName,
             });
           } else {
-            acc.lazyTransactionWriteItemListLoaderItems.push(itemToRemove);
+            acc.lazyTransactionWriteItemListLoaderItems.push({
+              rawInput: batchItem,
+              transformedInput: itemToRemove,
+            });
           }
         } else {
           throw new InvalidBatchWriteItemError(batchItem);
@@ -150,21 +178,23 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       },
       {
         simpleBatchRequestItems: [] as WriteRequestWithMeta[],
-        transactionListItems: [] as DocumentClient.TransactWriteItemList[],
-        lazyTransactionWriteItemListLoaderItems: [] as LazyTransactionWriteItemListLoader[],
+        transactionListItems: [] as BatchWriteItemTransform<
+          DocumentClient.TransactWriteItemList
+        >[],
+        lazyTransactionWriteItemListLoaderItems: [] as BatchWriteItemTransform<
+          LazyTransactionWriteItemListLoader
+        >[],
       }
     );
   }
 
-  private getRequestsSortedByTable(
-    allRequestItems: WriteRequestWithMeta[]
-  ): DocumentClient.BatchWriteItemRequestMap {
-    return allRequestItems.reduce((acc, requestItem) => {
-      if (!acc[requestItem.tableName]) {
-        acc[requestItem.tableName] = [requestItem.writeRequest];
-      } else {
-        acc[requestItem.tableName].push(requestItem.writeRequest);
+  private getRequestsSortedByTable(allRequestItems: WriteRequestWithMeta[]) {
+    return allRequestItems.reduce((acc, requestItemWithMeta) => {
+      if (!acc[requestItemWithMeta.tableName]) {
+        acc[requestItemWithMeta.tableName] = [];
       }
+
+      acc[requestItemWithMeta.tableName].push(requestItemWithMeta.writeRequest);
       return acc;
     }, {} as DocumentClient.BatchWriteItemRequestMap);
   }

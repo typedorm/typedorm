@@ -83,24 +83,41 @@ test('transforms into batch write items', () => {
       {
         'test-table': [
           {
-            PutRequest: {
-              Item: {
-                GSI1PK: 'USER#STATUS#inactive',
-                GSI1SK: 'USER#user 1',
-                PK: 'USER#1',
-                SK: 'USER#1',
-                __en: 'user',
-                id: '1',
-                name: 'user 1',
-                status: 'inactive',
+            rawInput: {
+              create: {
+                item: user1,
+              },
+            },
+            transformedInput: {
+              PutRequest: {
+                Item: {
+                  GSI1PK: 'USER#STATUS#inactive',
+                  GSI1SK: 'USER#user 1',
+                  PK: 'USER#1',
+                  SK: 'USER#1',
+                  __en: 'user',
+                  id: '1',
+                  name: 'user 1',
+                  status: 'inactive',
+                },
               },
             },
           },
           {
-            DeleteRequest: {
-              Key: {
-                PK: 'ORG#ORG_ID_1',
-                SK: 'ORG#ORG_ID_1',
+            rawInput: {
+              delete: {
+                item: Organisation,
+                primaryKey: {
+                  id: 'ORG_ID_1',
+                },
+              },
+            },
+            transformedInput: {
+              DeleteRequest: {
+                Key: {
+                  PK: 'ORG#ORG_ID_1',
+                  SK: 'ORG#ORG_ID_1',
+                },
               },
             },
           },
@@ -110,54 +127,71 @@ test('transforms into batch write items', () => {
     lazyTransactionWriteItemListLoaderItems: [
       // items that needs to be lazily resolved by managers
       {
-        entityClass: UserUniqueEmail,
-        lazyLoadTransactionWriteItems: expect.any(Function),
-        primaryKeyAttributes: {
-          id: '3',
+        rawInput: {
+          delete: {
+            item: UserUniqueEmail,
+            primaryKey: {
+              id: '3',
+            },
+          },
+        },
+        transformedInput: {
+          entityClass: UserUniqueEmail,
+          lazyLoadTransactionWriteItems: expect.any(Function),
+          primaryKeyAttributes: {
+            id: '3',
+          },
         },
       },
     ],
     transactionListItems: [
       // list of transactItems input, that must be processed over the transaction api
-      [
-        {
-          Put: {
-            ConditionExpression:
-              '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
-            ExpressionAttributeNames: {
-              '#CE_PK': 'PK',
-              '#CE_SK': 'SK',
-            },
-            Item: {
-              GSI1PK: 'USER#STATUS#active',
-              GSI1SK: 'USER#user 2',
-              PK: 'USER#2',
-              SK: 'USER#2',
-              __en: 'user',
-              email: 'user@test.com',
-              id: '2',
-              name: 'user 2',
-              status: 'active',
-            },
-            TableName: 'test-table',
+      {
+        rawInput: {
+          create: {
+            item: user2,
           },
         },
-        {
-          Put: {
-            ConditionExpression:
-              '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
-            ExpressionAttributeNames: {
-              '#CE_PK': 'PK',
-              '#CE_SK': 'SK',
+        transformedInput: [
+          {
+            Put: {
+              ConditionExpression:
+                '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+              ExpressionAttributeNames: {
+                '#CE_PK': 'PK',
+                '#CE_SK': 'SK',
+              },
+              Item: {
+                GSI1PK: 'USER#STATUS#active',
+                GSI1SK: 'USER#user 2',
+                PK: 'USER#2',
+                SK: 'USER#2',
+                __en: 'user',
+                email: 'user@test.com',
+                id: '2',
+                name: 'user 2',
+                status: 'active',
+              },
+              TableName: 'test-table',
             },
-            Item: {
-              PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@test.com',
-              SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@test.com',
-            },
-            TableName: 'test-table',
           },
-        },
-      ],
+          {
+            Put: {
+              ConditionExpression:
+                '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+              ExpressionAttributeNames: {
+                '#CE_PK': 'PK',
+                '#CE_SK': 'SK',
+              },
+              Item: {
+                PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@test.com',
+                SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@test.com',
+              },
+              TableName: 'test-table',
+            },
+          },
+        ],
+      },
     ],
   });
 });
