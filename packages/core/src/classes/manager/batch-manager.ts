@@ -34,42 +34,44 @@ export class BatchManager {
     } = this._dcBatchTransformer.toDynamoWriteBatchItems(batch);
 
     // get transaction write items limits
-    const transactionRequests = transactionListItems.map(transactionList => {
-      const writeTransaction = new WriteTransaction(
-        this.connection,
-        transactionList
-      );
+    const transactionRequests = transactionListItems.map(
+      ({rawInput, transformedInput}) => {
+        const writeTransaction = new WriteTransaction(
+          this.connection,
+          transformedInput
+        );
 
-      // make all promises in pLimitable so their concurrency can be controlled properly
-      return this.toLimited(
-        () => this.connection.transactionManger.write(writeTransaction),
-        // return original item when failed to process
-        transactionList
-      );
-    });
+        // make all promises in pLimitable so their concurrency can be controlled properly
+        return this.toLimited(
+          () => this.connection.transactionManger.write(writeTransaction),
+          // return original item when failed to process
+          rawInput
+        );
+      }
+    );
 
     // get all the lazy loaded promises
     // these are basically all the delete requests that uses unique keys
     const lazyTransactionRequests = lazyTransactionWriteItemListLoaderItems.map(
-      lazyLoadItemList => {
+      ({rawInput, transformedInput}) => {
         return this.toLimited(
           async () => {
             const existingItem = await this.connection.entityManager.findOne(
-              lazyLoadItemList.entityClass,
-              lazyLoadItemList.primaryKeyAttributes
+              transformedInput.entityClass,
+              transformedInput.primaryKeyAttributes
             );
 
             if (!existingItem) {
               throw new Error(
                 `Failed to batch write item ${
-                  lazyLoadItemList.entityClass.name
+                  transformedInput.entityClass.name
                 }. Could not find entity with primary key "${JSON.stringify(
-                  lazyLoadItemList.primaryKeyAttributes
+                  transformedInput.primaryKeyAttributes
                 )}"`
               );
             }
 
-            const deleteTransactionItemList = lazyLoadItemList.lazyLoadTransactionWriteItems(
+            const deleteTransactionItemList = transformedInput.lazyLoadTransactionWriteItems(
               existingItem
             );
 
@@ -82,7 +84,7 @@ export class BatchManager {
           },
 
           // default item to return if failed to process
-          lazyLoadItemList
+          rawInput
         );
       }
     );
