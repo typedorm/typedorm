@@ -31,6 +31,9 @@ export class BatchManager {
       batchWriteRequestMapItems,
       lazyTransactionWriteItemListLoaderItems,
       transactionListItems,
+
+      //TODO: use metadata to resolve processed items with actual input
+      metadata,
     } = this._dcBatchTransformer.toDynamoWriteBatchItems(batch);
 
     // get transaction write items limits

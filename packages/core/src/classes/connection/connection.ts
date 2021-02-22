@@ -7,6 +7,7 @@ import {
   getEntityDefinition,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
+import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {EntityManager} from '../manager/entity-manager';
 import {TransactionManager} from '../manager/transaction-manager';

@@ -5,6 +5,8 @@ import {
   TRANSFORM_BATCH_TYPE,
 } from '@typedorm/common';
 import {DocumentClient, WriteRequest} from 'aws-sdk/clients/dynamodb';
+import {v4} from 'uuid';
+import {getHashedIdForInput} from '../../helpers/get-hashed-id-for-input';
 import {isBatchAddCreateItem, isBatchAddDeleteItem} from '../batch/type-guards';
 import {WiteBatchItem, WriteBatch} from '../batch/write-batch';
 import {Connection} from '../connection/connection';
@@ -44,6 +46,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     lazyTransactionWriteItemListLoaderItems: BatchWriteItemTransform<
       LazyTransactionWriteItemListLoader
     >[];
+    metadata: {
+      namespaceId: string;
+      itemTransformHashMap: Map<string, WiteBatchItem<any, any>>;
+    };
   } {
     const {items} = writeBatch;
     this.connection.logger.logTransformBatch(
@@ -56,6 +62,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       lazyTransactionWriteItemListLoaderItems,
       simpleBatchRequestItems,
       transactionListItems,
+      metadata,
     } = this.parseBatchWriteItem(items);
 
     // organize all requests in "tableName - requestItem" format
@@ -69,6 +76,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       batchWriteRequestMapItems: batchWriteRequestItems,
       transactionListItems,
       lazyTransactionWriteItemListLoaderItems,
+      metadata,
     };
 
     this.connection.logger.logTransformBatch(
@@ -80,7 +88,6 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     return transformed;
   }
 
-  // TODO: add more test coverage tor batch items reverse transform
   mapTableItemsToBatchItems(
     requestsSortedByTable: DocumentClient.BatchWriteItemRequestMap
   ) {
@@ -115,42 +122,45 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     return multiBatchItems;
   }
 
+  /**
+   * Converts batch item input to pre transformed item input
+   */
   toRawBatchInputItem(
-    transformedItem: DocumentClient.WriteRequest
-  ): WiteBatchItem<any, any> {
-    if (transformedItem.PutRequest) {
-      const dynamoItem = transformedItem.PutRequest.Item;
-      const entityMetadata = this.connection.getEntityByPhysicalName(
-        dynamoItem[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME]
-      );
-      const originalEntity = this.fromDynamoEntity(
-        entityMetadata.target,
-        dynamoItem
-      );
-      return {
-        create: {
-          item: originalEntity,
-        },
-      };
-    } else if (transformedItem.DeleteRequest) {
-      const dynamoKey = transformedItem.DeleteRequest.Key;
-      const entityMetadata = this.connection.getEntityByPhysicalName(
-        dynamoKey[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME]
-      );
-      return {
-        delete: {
-          item: entityMetadata.target,
-          primaryKey: this.fromDynamoKeyToAttributes(
-            entityMetadata.target,
-            dynamoKey
-          ),
-        },
-      };
-    } else {
-      throw new Error(
-        `Invalid batch item type ${JSON.stringify(transformedItem)}`
-      );
+    transformedItems: DocumentClient.WriteRequests,
+    {
+      namespaceId,
+      itemTransformHashMap,
+    }: {
+      namespaceId: string;
+      itemTransformHashMap: Map<string, WiteBatchItem<any, any>>;
     }
+  ): WiteBatchItem<any, any>[] {
+    return transformedItems.map(transformedItem => {
+      if (transformedItem.PutRequest) {
+        const dynamoItem = transformedItem.PutRequest.Item;
+        const entityMetadata = this.connection.getEntityByPhysicalName(
+          dynamoItem[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME]
+        );
+        const originalEntity = this.fromDynamoEntity(
+          entityMetadata.target,
+          dynamoItem
+        );
+        return {
+          create: {
+            item: originalEntity,
+          },
+        };
+      } else if (transformedItem.DeleteRequest) {
+        const originalItem = itemTransformHashMap.get(
+          getHashedIdForInput(namespaceId, transformedItem)
+        );
+        return originalItem!;
+      } else {
+        throw new Error(
+          `Invalid batch item type ${JSON.stringify(transformedItem)}`
+        );
+      }
+    });
   }
 
   /**
@@ -160,6 +170,9 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
    * - LazyTransactionWriteItemListLoaderItems: items that are must be processed in transaction but also requires other requests to be made first (i.e delete of unique items)
    */
   private parseBatchWriteItem(batchItems: WiteBatchItem<any, any>[]) {
+    const namespaceId = v4();
+    const itemTransformHashMap = new Map<string, WiteBatchItem<any, any>>();
+
     return batchItems.reduce(
       (acc, batchItem) => {
         // is create
@@ -167,14 +180,15 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
           // transform put item
           const dynamoPutItem = this.toDynamoPutItem(batchItem.create.item);
           if (!isWriteTransactionItemList(dynamoPutItem)) {
-            acc.simpleBatchRequestItems.push({
+            const transformedItem = {
               writeRequest: {
                 PutRequest: {
                   Item: dynamoPutItem.Item,
                 },
               },
               tableName: dynamoPutItem.TableName,
-            });
+            };
+            acc.simpleBatchRequestItems.push(transformedItem);
           } else {
             acc.transactionListItems.push({
               rawInput: batchItem,
@@ -189,14 +203,20 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
           // transform delete item
           const itemToRemove = this.toDynamoDeleteItem(item, primaryKey);
           if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
-            acc.simpleBatchRequestItems.push({
-              writeRequest: {
-                DeleteRequest: {
-                  Key: itemToRemove.Key,
-                },
+            const transformedItemRequest = {
+              DeleteRequest: {
+                Key: itemToRemove.Key,
               },
+            };
+            acc.simpleBatchRequestItems.push({
+              writeRequest: transformedItemRequest,
               tableName: itemToRemove.TableName,
             });
+            // store transformed and original items as hash key/value
+            itemTransformHashMap.set(
+              getHashedIdForInput(namespaceId, transformedItemRequest),
+              batchItem
+            );
           } else {
             acc.lazyTransactionWriteItemListLoaderItems.push({
               rawInput: batchItem,
@@ -216,6 +236,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
         lazyTransactionWriteItemListLoaderItems: [] as BatchWriteItemTransform<
           LazyTransactionWriteItemListLoader
         >[],
+        metadata: {
+          namespaceId,
+          itemTransformHashMap,
+        },
       }
     );
   }

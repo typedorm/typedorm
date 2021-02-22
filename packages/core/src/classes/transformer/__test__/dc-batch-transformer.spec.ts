@@ -8,6 +8,12 @@ import {WriteBatch} from '../../batch/write-batch';
 import {Connection} from '../../connection/connection';
 import {DocumentClientBatchTransformer} from '../document-client-batch-transformer';
 
+jest.mock('uuid', () => ({
+  v4: jest.fn().mockReturnValue('66a7b3d6-323a-49b0-a12d-c99afff5005a'),
+  validate: jest.fn().mockReturnValue(true),
+  v5: jest.requireActual('uuid').v5,
+}));
+
 let connection: Connection;
 let dcBatchTransformer: DocumentClientBatchTransformer;
 beforeEach(() => {
@@ -263,4 +269,83 @@ test('transforms requests of items with multiple tables', () => {
   expect(batchWriteRequestMapItems[0][table.name].length).toEqual(16);
   expect(batchWriteRequestMapItems[0][oldUserTable.name].length).toEqual(9);
   expect(batchWriteRequestMapItems[1][oldUserTable.name].length).toEqual(7);
+});
+
+/**
+ * @group toRawBatchInputItem
+ */
+test('reverse transforms batch item input in initial input', () => {
+  // create mock item transform hash
+  const user = new User();
+  user.id = '1111-1111';
+  user.status = 'active';
+  user.name = 'User 1';
+  const writeBatch = new WriteBatch().add([
+    {
+      create: {
+        item: user,
+      },
+    },
+    {
+      delete: {
+        item: User,
+        primaryKey: {
+          id: '1111-1111',
+        },
+      },
+    },
+  ]);
+  const {metadata} = dcBatchTransformer.toDynamoWriteBatchItems(writeBatch);
+
+  const original = dcBatchTransformer.toRawBatchInputItem(
+    [
+      {
+        DeleteRequest: {
+          Key: {
+            PK: 'USER#1111-1111',
+            SK: 'USER#1111-1111',
+          },
+        },
+      },
+      {
+        PutRequest: {
+          Item: {
+            GSI1PK: 'USER#STATUS#inactive',
+            GSI1SK: 'USER#user 1',
+            PK: 'USER#1',
+            SK: 'USER#1',
+            __en: 'user',
+            id: '1',
+            name: 'user 1',
+            status: 'inactive',
+          },
+        },
+      },
+    ],
+    {
+      itemTransformHashMap: metadata.itemTransformHashMap,
+      namespaceId: metadata.namespaceId,
+    }
+  );
+
+  // TODO: update create transforms to be stored in local map
+  expect(original).toEqual([
+    {
+      delete: {
+        item: User,
+        primaryKey: {
+          id: '1111-1111',
+        },
+      },
+    },
+    {
+      create: {
+        item: {
+          id: '1',
+          name: 'user 1',
+          status: 'inactive',
+        },
+      },
+    },
+  ]);
 });
