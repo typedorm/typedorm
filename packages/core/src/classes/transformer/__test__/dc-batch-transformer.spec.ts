@@ -274,7 +274,7 @@ test('transforms requests of items with multiple tables', () => {
 /**
  * @group toRawBatchInputItem
  */
-test('reverse transforms batch item input in initial input', () => {
+test.only('reverse transforms batch item input in initial input', () => {
   // create mock item transform hash
   const user = new User();
   user.id = '1111-1111';
@@ -310,14 +310,14 @@ test('reverse transforms batch item input in initial input', () => {
       {
         PutRequest: {
           Item: {
-            GSI1PK: 'USER#STATUS#inactive',
-            GSI1SK: 'USER#user 1',
-            PK: 'USER#1',
-            SK: 'USER#1',
             __en: 'user',
-            id: '1',
-            name: 'user 1',
-            status: 'inactive',
+            GSI1PK: 'USER#STATUS#active',
+            GSI1SK: 'USER#user 1',
+            id: '1111-1111',
+            name: 'User 1',
+            PK: 'USER#1111-1111',
+            SK: 'USER#1111-1111',
+            status: 'active',
           },
         },
       },
