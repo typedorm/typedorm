@@ -136,30 +136,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     }
   ): WiteBatchItem<any, any>[] {
     return transformedItems.map(transformedItem => {
-      if (transformedItem.PutRequest) {
-        const dynamoItem = transformedItem.PutRequest.Item;
-        const entityMetadata = this.connection.getEntityByPhysicalName(
-          dynamoItem[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME]
-        );
-        const originalEntity = this.fromDynamoEntity(
-          entityMetadata.target,
-          dynamoItem
-        );
-        return {
-          create: {
-            item: originalEntity,
-          },
-        };
-      } else if (transformedItem.DeleteRequest) {
-        const originalItem = itemTransformHashMap.get(
-          getHashedIdForInput(namespaceId, transformedItem)
-        );
-        return originalItem!;
-      } else {
-        throw new Error(
-          `Invalid batch item type ${JSON.stringify(transformedItem)}`
-        );
-      }
+      const originalItem = itemTransformHashMap.get(
+        getHashedIdForInput(namespaceId, transformedItem)
+      );
+      return originalItem!;
     });
   }
 
@@ -180,15 +160,21 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
           // transform put item
           const dynamoPutItem = this.toDynamoPutItem(batchItem.create.item);
           if (!isWriteTransactionItemList(dynamoPutItem)) {
-            const transformedItem = {
-              writeRequest: {
-                PutRequest: {
-                  Item: dynamoPutItem.Item,
-                },
+            const transformedWriteRequest = {
+              PutRequest: {
+                Item: dynamoPutItem.Item,
               },
-              tableName: dynamoPutItem.TableName,
             };
-            acc.simpleBatchRequestItems.push(transformedItem);
+            acc.simpleBatchRequestItems.push({
+              writeRequest: transformedWriteRequest,
+              tableName: dynamoPutItem.TableName,
+            });
+            // store transformed and original items as hash key/value
+
+            itemTransformHashMap.set(
+              getHashedIdForInput(namespaceId, transformedWriteRequest),
+              batchItem
+            );
           } else {
             acc.transactionListItems.push({
               rawInput: batchItem,

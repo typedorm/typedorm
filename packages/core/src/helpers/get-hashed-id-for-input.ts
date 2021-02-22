@@ -7,11 +7,20 @@ import {validate, v5} from 'uuid';
  * @returns string
  *
  */
-export function getHashedIdForInput(namespaceId: string, dataToHash: Object) {
+export function getHashedIdForInput<T>(namespaceId: string, dataToHash: T) {
   if (!validate(namespaceId)) {
     throw new Error('Workspace id must be an uuid');
   }
 
-  const stringifiedData = JSON.stringify(dataToHash);
+  // since JSON.stringify doesn't guarantee order, we first sort them before creating hash of it
+  const sortedObj = Object.keys(dataToHash)
+    .sort()
+    .reduce((acc: any, key) => {
+      acc[key] = (dataToHash as any)[key];
+      return acc;
+    }, {} as T);
+
+  // TODO: sort nested objects
+  const stringifiedData = JSON.stringify(sortedObj);
   return v5(stringifiedData, namespaceId);
 }
