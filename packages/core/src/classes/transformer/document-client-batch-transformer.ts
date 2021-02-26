@@ -1,6 +1,5 @@
 import {
   BATCH_WRITE_ITEMS_LIMIT,
-  INTERNAL_ENTITY_ATTRIBUTE,
   InvalidBatchWriteItemError,
   TRANSFORM_BATCH_TYPE,
 } from '@typedorm/common';
@@ -123,6 +122,27 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   }
 
   /**
+   * Converts batch request input to batch inpu tlist
+   */
+  toBatchInputList(
+    requestMap: DocumentClient.BatchWriteItemRequestMap,
+    {
+      namespaceId,
+      itemTransformHashMap,
+    }: {
+      namespaceId: string;
+      itemTransformHashMap: Map<string, WiteBatchItem<any, any>>;
+    }
+  ) {
+    return Object.entries(requestMap).flatMap(([, writeRequests]) => {
+      return this.toRawBatchInputItem(writeRequests, {
+        namespaceId,
+        itemTransformHashMap,
+      });
+    });
+  }
+
+  /**
    * Converts batch item input to pre transformed item input
    */
   toRawBatchInputItem(
@@ -136,9 +156,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     }
   ): WiteBatchItem<any, any>[] {
     return transformedItems.map(transformedItem => {
-      const originalItem = itemTransformHashMap.get(
-        getHashedIdForInput(namespaceId, transformedItem)
-      );
+      const hashId = getHashedIdForInput(namespaceId, transformedItem);
+      const originalItem = itemTransformHashMap.get(hashId);
       return originalItem!;
     });
   }
@@ -171,10 +190,11 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
             });
             // store transformed and original items as hash key/value
 
-            itemTransformHashMap.set(
-              getHashedIdForInput(namespaceId, transformedWriteRequest),
-              batchItem
+            const itemHashId = getHashedIdForInput(
+              namespaceId,
+              transformedWriteRequest
             );
+            itemTransformHashMap.set(itemHashId, batchItem);
           } else {
             acc.transactionListItems.push({
               rawInput: batchItem,
@@ -199,10 +219,11 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
               tableName: itemToRemove.TableName,
             });
             // store transformed and original items as hash key/value
-            itemTransformHashMap.set(
-              getHashedIdForInput(namespaceId, transformedItemRequest),
-              batchItem
+            const itemHashId = getHashedIdForInput(
+              namespaceId,
+              transformedItemRequest
             );
+            itemTransformHashMap.set(itemHashId, batchItem);
           } else {
             acc.lazyTransactionWriteItemListLoaderItems.push({
               rawInput: batchItem,

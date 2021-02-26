@@ -82,7 +82,7 @@ test('transforms into batch write items', () => {
 
   const transformed = dcBatchTransformer.toDynamoWriteBatchItems(writeBatch);
 
-  expect(transformed).toEqual({
+  expect(transformed).toMatchObject({
     // items that can be processed as batch items
     // each item in the list represents new bath requests
     batchWriteRequestMapItems: [
@@ -183,6 +183,11 @@ test('transforms into batch write items', () => {
       },
     ],
   });
+
+  expect(transformed.metadata).toMatchObject({
+    itemTransformHashMap: expect.any(Map),
+    namespaceId: '66a7b3d6-323a-49b0-a12d-c99afff5005a',
+  });
 });
 
 test('transforms requests into multiple batch requests when there are more than allowed items to write', () => {
@@ -274,7 +279,7 @@ test('transforms requests of items with multiple tables', () => {
 /**
  * @group toRawBatchInputItem
  */
-test.only('reverse transforms batch item input in initial input', () => {
+test('reverse transforms batch item input in initial input', () => {
   // create mock item transform hash
   const user = new User();
   user.id = '1111-1111';
@@ -312,7 +317,7 @@ test.only('reverse transforms batch item input in initial input', () => {
           Item: {
             __en: 'user',
             GSI1PK: 'USER#STATUS#active',
-            GSI1SK: 'USER#user 1',
+            GSI1SK: 'USER#User 1',
             id: '1111-1111',
             name: 'User 1',
             PK: 'USER#1111-1111',
@@ -328,7 +333,6 @@ test.only('reverse transforms batch item input in initial input', () => {
     }
   );
 
-  // TODO: update create transforms to be stored in local map
   expect(original).toEqual([
     {
       delete: {
@@ -341,9 +345,9 @@ test.only('reverse transforms batch item input in initial input', () => {
     {
       create: {
         item: {
-          id: '1',
-          name: 'user 1',
-          status: 'inactive',
+          id: '1111-1111',
+          name: 'User 1',
+          status: 'active',
         },
       },
     },

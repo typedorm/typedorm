@@ -1,4 +1,5 @@
 import {validate, v5} from 'uuid';
+import {deepSortObject} from './deep-sort-object';
 
 /**
  * Generates unique id from SHA1 hashed data and given namespaceId
@@ -13,14 +14,8 @@ export function getHashedIdForInput<T>(namespaceId: string, dataToHash: T) {
   }
 
   // since JSON.stringify doesn't guarantee order, we first sort them before creating hash of it
-  const sortedObj = Object.keys(dataToHash)
-    .sort()
-    .reduce((acc: any, key) => {
-      acc[key] = (dataToHash as any)[key];
-      return acc;
-    }, {} as T);
+  const sortedObj = deepSortObject(dataToHash);
 
-  // TODO: sort nested objects
   const stringifiedData = JSON.stringify(sortedObj);
   return v5(stringifiedData, namespaceId);
 }

@@ -31,8 +31,6 @@ export class BatchManager {
       batchWriteRequestMapItems,
       lazyTransactionWriteItemListLoaderItems,
       transactionListItems,
-
-      //TODO: use metadata to resolve processed items with actual input
       metadata,
     } = this._dcBatchTransformer.toDynamoWriteBatchItems(batch);
 
@@ -94,6 +92,10 @@ export class BatchManager {
 
     // get all batch toLimited promises
     const batchRequests = batchWriteRequestMapItems.map(batchRequestMap => {
+      const originalInputItems = this._dcBatchTransformer.toBatchInputList(
+        batchRequestMap,
+        metadata
+      );
       return this.toLimited(
         async () =>
           this.connection.documentClient
@@ -101,7 +103,7 @@ export class BatchManager {
               RequestItems: {...batchRequestMap},
             })
             .promise(),
-        batchRequestMap
+        originalInputItems
       );
     });
 
@@ -129,14 +131,21 @@ export class BatchManager {
     );
 
     // filter or drop any empty values
-    const allUnprocessedItems = [
+    const filteredUnprocessedItemsList = [
       ...unprocessedItems
         .map((item: any) => item?.UnprocessedItems)
-        .filter(item => item && !isEmptyObject(item)),
+        .filter(item => item && !isEmptyObject(item))
+        .flatMap(
+          (unprocessedItemInput: DocumentClient.BatchWriteItemRequestMap) =>
+            this._dcBatchTransformer.toBatchInputList(
+              unprocessedItemInput,
+              metadata
+            )
+        ),
     ];
 
     return {
-      unprocessedItems: allUnprocessedItems,
+      unprocessedItems: filteredUnprocessedItemsList,
       failedItems: this._errorQueue.map(item => item.requestInput),
     };
   }
