@@ -146,57 +146,168 @@ test('processes batch write requests that contains mix of unique and lazy load i
 });
 
 test('processes batch write requests where some of the items failed to put', async () => {
-  // mock document client with data
-  randomlyRejectDataMock();
+  documentClientMock.batchWrite
+    .mockImplementationOnce(({RequestItems}) => ({
+      promise: () => {
+        const tableName = Object.keys(RequestItems)[0];
+        return {
+          UnprocessedItems: {
+            [tableName]: (RequestItems[tableName] as any[]).slice(1),
+          },
+        };
+      },
+    }))
+    .mockImplementationOnce(({RequestItems}) => ({
+      promise: () => {
+        const tableName = Object.keys(RequestItems)[0];
+        return {
+          UnprocessedItems: {
+            [tableName]: (RequestItems[tableName] as any[]).slice(6),
+          },
+        };
+      },
+    }))
+    .mockImplementationOnce(() => ({
+      promise: () => {
+        throw new Error();
+      },
+    }));
 
-  entityManager.findOne.mockImplementation(() => {
-    // 4 of the requests will receive this error
-    throw new Error('Item not found  or whatever');
-  });
-
-  transactionManager.write.mockImplementation(() => {
-    return {};
-  });
-
-  const largeBatchOfUsers = mockTransactionAndBatchData(20);
+  const largeBatchOfUsers = mockSimpleBatchData(10);
 
   const writeBatch = new WriteBatch().add(largeBatchOfUsers);
 
   const result = await manager.write(writeBatch);
   expect(originalPromiseAll).toHaveBeenCalledTimes(3);
   expect(documentClientMock.batchWrite).toHaveBeenCalledTimes(3);
-  expect(entityManager.findOne).toHaveBeenCalled();
-  expect(transactionManager.write).toHaveBeenCalled();
 
   expect(result).toEqual({
     failedItems: [
       {
-        delete: {
-          item: UserUniqueEmail,
-          primaryKey: {
-            id: 12,
+        create: {
+          item: {
+            id: '8',
+            name: 'User 8',
+            status: 'active',
           },
         },
       },
       {
         delete: {
-          item: UserUniqueEmail,
+          item: User,
           primaryKey: {
-            id: 15,
+            id: '3',
           },
         },
       },
       {
-        delete: {
-          item: UserUniqueEmail,
-          primaryKey: {
-            id: 18,
+        create: {
+          item: {
+            id: '10',
+            name: 'User 10',
+            status: 'active',
           },
         },
       },
     ],
     unprocessedItems: [],
   });
+});
+
+test('processes batch write requests where some of the items could not be processed properly', async () => {
+  let counter = 0;
+  documentClientMock.batchWrite.mockImplementation(({RequestItems}) => ({
+    promise: () => {
+      ++counter;
+      const tableName = Object.keys(RequestItems)[0];
+      return {
+        UnprocessedItems: {
+          [tableName]: (RequestItems[tableName] as any[]).slice(
+            // when on last counter return less items, makes it easy ti test
+            counter === 10 ? 9 : 1
+          ),
+        },
+      };
+    },
+  }));
+
+  transactionManager.write.mockImplementation(() => {
+    throw new Error();
+  });
+
+  // mock input data
+  const uniqueEmailUser = new UserUniqueEmail();
+  uniqueEmailUser.id = '11-22';
+  uniqueEmailUser.status = 'active';
+  uniqueEmailUser.name = 'User 11-2';
+  uniqueEmailUser.email = 'user11-22.example.com';
+
+  const largeBatchOfUsers = [
+    ...mockSimpleBatchData(20),
+    {
+      create: {
+        item: uniqueEmailUser,
+      },
+    },
+  ];
+
+  const writeBatch = new WriteBatch().add(largeBatchOfUsers);
+
+  const result = await manager.write(writeBatch);
+  expect(originalPromiseAll).toHaveBeenCalledTimes(11);
+  expect(documentClientMock.batchWrite).toHaveBeenCalledTimes(11);
+
+  expect(result).toEqual({
+    failedItems: [
+      {
+        create: {
+          item: {
+            email: 'user11-22.example.com',
+            id: '11-22',
+            name: 'User 11-2',
+            status: 'active',
+          },
+        },
+      },
+    ],
+    unprocessedItems: [
+      {
+        create: {
+          item: {
+            id: '20',
+            name: 'User 20',
+            status: 'active',
+          },
+        },
+      },
+    ],
+  });
+  // increase timeout, since there can be some delays due to backoff retries
+}, 20000);
+
+test('uses user defined retry attempts when provided', async () => {
+  documentClientMock.batchWrite.mockImplementation(({RequestItems}) => ({
+    promise: () => {
+      const tableName = Object.keys(RequestItems)[0];
+      return {
+        UnprocessedItems: {
+          [tableName]: RequestItems[tableName] as any[],
+        },
+      };
+    },
+  }));
+
+  const largeBatchOfUsers = mockSimpleBatchData(10);
+
+  const writeBatch = new WriteBatch().add(largeBatchOfUsers);
+
+  await manager.write(writeBatch, {
+    maxRetryAttempts: 2,
+  });
+  expect(originalPromiseAll).toHaveBeenCalledTimes(3);
+  expect(documentClientMock.batchWrite).toHaveBeenCalledTimes(3); // 2 retries + 1 original request
+
+  // increase timeout, since there can be some delays due to backoff retries
 });
 
 //////////////////////////////////////////////////////////////
