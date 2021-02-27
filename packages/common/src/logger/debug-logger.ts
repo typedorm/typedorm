@@ -10,6 +10,12 @@ export enum TRANSFORM_TYPE {
   RESPONSE = 'RESPONSE',
 }
 
+export enum MANAGER_NAME {
+  ENTITY_MANAGER = 'ENTITY MANAGER',
+  TRANSACTION_MANAGER = 'TRANSACTION MANAGER',
+  BATCH_MANAGER = 'BATCH MANAGER',
+}
+
 export enum TRANSFORM_BATCH_TYPE {
   BATCH_WRITE = 'BATCH_WRITE',
 }
@@ -19,7 +25,8 @@ export class DebugLogger {
   private debugTransformLog = debug('typedorm:transform:log');
   // batch transform logger
   private debugTransformBatchLog = debug('typedorm:transform:batch:log');
-  constructor() {}
+  // info logger
+  private debugInfoLog = debug('typedorm:info:log');
 
   logTransform(
     operation: TRANSFORM_TYPE,
@@ -33,7 +40,7 @@ export class DebugLogger {
       this.debugTransformLog(
         `${chalk.green(operation)} ${chalk.blue(entityName)} ${chalk.magenta(
           prefix
-        )}: `,
+        )}:`,
         ...(primaryKey
           ? [
               chalk.blueBright('\nPrimary key: '),
@@ -64,7 +71,7 @@ export class DebugLogger {
   ) {
     if (this.debugTransformBatchLog.enabled) {
       this.debugTransformBatchLog(
-        `${chalk.green(operation)} ${chalk.magenta(prefix)}: `,
+        `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
         ...(body
           ? [
               chalk.blueBright('\nBody: '),
@@ -77,6 +84,15 @@ export class DebugLogger {
               chalk.white(this.ensurePrintable(options)),
             ]
           : [])
+      );
+    }
+  }
+
+  logInfo(scope: MANAGER_NAME, log: string) {
+    if (this.debugInfoLog.enabled) {
+      this.debugInfoLog(
+        `${chalk.green(scope)}:`,
+        chalk.white(this.ensurePrintable(log))
       );
     }
   }

@@ -5,6 +5,7 @@ import pLimit from 'p-limit';
 import {
   BATCH_WRITE_CONCURRENCY_LIMIT,
   BATCH_WRITE_MAX_ALLOWED_ATTEMPTS,
+  MANAGER_NAME,
 } from '@typedorm/common';
 import {WriteTransaction} from '../transaction/write-transaction';
 import {
@@ -13,9 +14,41 @@ import {
 } from 'aws-sdk/clients/dynamodb';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 
+export enum REQUEST_TYPE {
+  TRANSACT_WRITE = 'TRANSACT_WRITE',
+  BATCH_WRITE = 'BATCH_WRITE',
+}
+
+/**
+ * Batch manager write options
+ */
+export interface BatchManageWriteOptions {
+  /**
+   * Max number of retries to perform before returning to client
+   * @default BATCH_WRITE_MAX_ALLOWED_ATTEMPTS
+   */
+  maxRetryAttempts?: number;
+
+  /**
+   * Max number of requests to run in parallel
+   * @default BATCH_WRITE_CONCURRENCY_LIMIT
+   */
+  requestsConcurrencyLimit?: number;
+
+  /**
+   * Exponential backoff multiplication factor to apply on back off algorithm
+   * @default 1
+   */
+  backoffMultiplicationFactor?: number;
+}
+
 export class BatchManager {
   private _dcBatchTransformer: DocumentClientBatchTransformer;
-  private _errorQueue: {requestInput: any; error: Error}[];
+  private _errorQueue: {
+    requestInput: any;
+    error: Error;
+    requestType: REQUEST_TYPE;
+  }[];
   private limit = pLimit(BATCH_WRITE_CONCURRENCY_LIMIT);
 
   constructor(private connection: Connection) {
@@ -23,9 +56,20 @@ export class BatchManager {
     this._errorQueue = [];
   }
 
-  async write(batch: WriteBatch) {
-    // attempts counter
-    let totalAttempts = 0;
+  /**
+   * Writes all given items to dynamodb using either batch or transaction api.
+   * _Note_: Transaction api is always used when item being written is using a unique attribute
+   * @param batch
+   */
+  async write(batch: WriteBatch, options?: BatchManageWriteOptions) {
+    if (options?.requestsConcurrencyLimit) {
+      this.limit = pLimit(options?.requestsConcurrencyLimit);
+    }
+
+    this.connection.logger.logInfo(
+      MANAGER_NAME.BATCH_MANAGER,
+      `Running a batch write request for ${batch.items.length} items`
+    );
 
     const {
       batchWriteRequestMapItems,
@@ -34,7 +78,7 @@ export class BatchManager {
       metadata,
     } = this._dcBatchTransformer.toDynamoWriteBatchItems(batch);
 
-    // get transaction write items limits
+    // 1.1. get transaction write items limits
     const transactionRequests = transactionListItems.map(
       ({rawInput, transformedInput}) => {
         const writeTransaction = new WriteTransaction(
@@ -46,12 +90,13 @@ export class BatchManager {
         return this.toLimited(
           () => this.connection.transactionManger.write(writeTransaction),
           // return original item when failed to process
-          rawInput
+          rawInput,
+          REQUEST_TYPE.TRANSACT_WRITE
         );
       }
     );
 
-    // get all the lazy loaded promises
+    // 1.2. get all the lazy loaded promises
     // these are basically all the delete requests that uses unique keys
     const lazyTransactionRequests = lazyTransactionWriteItemListLoaderItems.map(
       ({rawInput, transformedInput}) => {
@@ -85,12 +130,13 @@ export class BatchManager {
           },
 
           // default item to return if failed to process
-          rawInput
+          rawInput,
+          REQUEST_TYPE.TRANSACT_WRITE
         );
       }
     );
 
-    // get all batch toLimited promises
+    // 1.3. get all batch toLimited promises
     const batchRequests = batchWriteRequestMapItems.map(batchRequestMap => {
       const originalInputItems = this._dcBatchTransformer.toBatchInputList(
         batchRequestMap,
@@ -103,7 +149,8 @@ export class BatchManager {
               RequestItems: {...batchRequestMap},
             })
             .promise(),
-        originalInputItems
+        originalInputItems,
+        REQUEST_TYPE.BATCH_WRITE
       );
     });
 
@@ -115,23 +162,26 @@ export class BatchManager {
       | Promise<DocumentClient.TransactWriteItemsOutput>[]
       | Promise<DocumentClient.BatchWriteItemOutput>[];
 
+    // 2. wait for all promises to finish
     const responses = await Promise.all(allRequests);
 
+    // 3. run retry attempts
     // filter all unprocessed Items
     const unProcessedListItems = responses.filter(
       (response: DocumentClient.BatchWriteItemOutput) =>
         response.UnprocessedItems && !isEmptyObject(response.UnprocessedItems)
     );
-
     // process all unprocessed items recursively until all are either done
     // or reached the retry limit
     const unprocessedItems = await this.recursiveHandleUnprocessedBatchItems(
       unProcessedListItems,
-      ++totalAttempts
+      0, // initially set the attempts counter to 0,
+      options
     );
 
+    // 4.1. reverse parse all failed inputs to original user inputs
     // filter or drop any empty values
-    const filteredUnprocessedItemsList = [
+    const unProcessedItemsOriginalInput = [
       ...unprocessedItems
         .map((item: any) => item?.UnprocessedItems)
         .filter(item => item && !isEmptyObject(item))
@@ -144,15 +194,38 @@ export class BatchManager {
         ),
     ];
 
+    // 4.2. reverse parse all unprocessed inputs to original user inputs
+    // parse failed items to original input
+    const failedItemsOriginalInput = this._errorQueue.flatMap(item => {
+      if (item.requestType === REQUEST_TYPE.BATCH_WRITE) {
+        return this._dcBatchTransformer.toBatchInputList(
+          item.requestInput,
+          metadata
+        );
+      } else if (item.requestType === REQUEST_TYPE.TRANSACT_WRITE) {
+        return item.requestInput;
+      } else {
+        throw new Error(
+          'Unsupported request type, if this continues please file an issue on github'
+        );
+      }
+    });
+
+    // 5. return unProcessable or failed items to user
     return {
-      unprocessedItems: filteredUnprocessedItemsList,
-      failedItems: this._errorQueue.map(item => item.requestInput),
+      unprocessedItems: unProcessedItemsOriginalInput,
+      failedItems: failedItemsOriginalInput,
     };
   }
 
+  /**
+   * Recursively parse batch requests until either all items are in or has reached retry limit
+   * @param batchWriteItemOutputItems
+   */
   private async recursiveHandleUnprocessedBatchItems(
     batchWriteItemOutputItems: DocumentClient.BatchWriteItemOutput[],
-    totalAttemptsSoFar: number
+    totalAttemptsSoFar: number,
+    options?: BatchManageWriteOptions
   ): Promise<DocumentClient.BatchWriteItemOutput[]> {
     const unProcessedListItems = batchWriteItemOutputItems.filter(
       (response: DocumentClient.BatchWriteItemOutput) =>
@@ -165,8 +238,13 @@ export class BatchManager {
     }
 
     // abort when reached max attempts count
-    if (totalAttemptsSoFar === BATCH_WRITE_MAX_ALLOWED_ATTEMPTS) {
-      console.log(
+    // if no retry attempts are given, use default attempts limit
+    if (
+      totalAttemptsSoFar ===
+      (options?.maxRetryAttempts ?? BATCH_WRITE_MAX_ALLOWED_ATTEMPTS)
+    ) {
+      this.connection.logger.logInfo(
+        MANAGER_NAME.BATCH_MANAGER,
         `Reached max allowed attempts ${totalAttemptsSoFar}, aborting...`
       );
       return batchWriteItemOutputItems;
@@ -205,7 +283,8 @@ export class BatchManager {
               RequestItems: {...batchRequestMap},
             })
             .promise(),
-        batchRequestMap
+        batchRequestMap,
+        REQUEST_TYPE.BATCH_WRITE
       );
     });
 
@@ -214,11 +293,22 @@ export class BatchManager {
     )) as DocumentClient.BatchWriteItemOutput[];
     return this.recursiveHandleUnprocessedBatchItems(
       batchRequestsResponses,
-      ++totalAttemptsSoFar
+      ++totalAttemptsSoFar,
+      options
     );
   }
 
-  private toLimited<T>(anyPromiseFactory: () => Promise<T>, requestItem: any) {
+  /**
+   * Returns promise that is Promise.all safe and also can be managed by p-limit
+   * @param anyPromiseFactory
+   * @param requestItem // request item input
+   * @param requestType // request type
+   */
+  private toLimited<T>(
+    anyPromiseFactory: () => Promise<T>,
+    requestItem: any,
+    requestType: REQUEST_TYPE
+  ) {
     return this.limit(async () => {
       try {
         const response = await anyPromiseFactory();
@@ -227,6 +317,7 @@ export class BatchManager {
         this._errorQueue.push({
           requestInput: requestItem,
           error: err,
+          requestType,
         });
         // when any error is thrown while promises are running, return it
         // instead of throwing it to have other requests run as is without
@@ -236,10 +327,18 @@ export class BatchManager {
     });
   }
 
-  private waitForExponentialBackoff(attempts: number) {
+  private waitForExponentialBackoff(
+    attempts: number,
+    multiplicationFactor = 1
+  ) {
+    multiplicationFactor = multiplicationFactor < 1 ? 1 : multiplicationFactor;
     return new Promise(resolve => {
-      const backoffTime = this.exponentialBackoff(attempts);
-      console.log(
+      const backoffTime = this.exponentialBackoff(
+        attempts,
+        multiplicationFactor
+      );
+      this.connection.logger.logInfo(
+        MANAGER_NAME.BATCH_MANAGER,
         `${attempts} attempts so far, sleeping ${backoffTime}ms before retrying...`
       );
       setTimeout(resolve, backoffTime);
@@ -249,7 +348,9 @@ export class BatchManager {
   /**
    * @param attempts
    */
-  private exponentialBackoff(attempts: number) {
-    return Math.floor(Math.random() * 10 * Math.pow(2, attempts));
+  private exponentialBackoff(attempts: number, multiplicationFactor: number) {
+    return Math.floor(
+      Math.random() * 10 * Math.pow(2, attempts || 1) * multiplicationFactor
+    );
   }
 }
