@@ -41,7 +41,7 @@ export class WriteBatch extends Batch {
 
   addDeleteItem<Entity, PrimaryKey = Partial<Entity>>(
     item: EntityTarget<Entity>,
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>
+    primaryKey: PrimaryKey
   ) {
     this.items.push({
       delete: {
