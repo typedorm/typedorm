@@ -18,6 +18,7 @@ export enum MANAGER_NAME {
 
 export enum TRANSFORM_BATCH_TYPE {
   BATCH_WRITE = 'BATCH_WRITE',
+  BATCH_READ = 'BATCH_READ',
 }
 
 export class DebugLogger {

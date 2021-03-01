@@ -138,7 +138,7 @@ export class BatchManager {
 
     // 1.3. get all batch toLimited promises
     const batchRequests = batchWriteRequestMapItems.map(batchRequestMap => {
-      const originalInputItems = this._dcBatchTransformer.toBatchInputList(
+      const originalInputItems = this._dcBatchTransformer.toWriteBatchInputList(
         batchRequestMap,
         metadata
       );
@@ -187,7 +187,7 @@ export class BatchManager {
         .filter(item => item && !isEmptyObject(item))
         .flatMap(
           (unprocessedItemInput: DocumentClient.BatchWriteItemRequestMap) =>
-            this._dcBatchTransformer.toBatchInputList(
+            this._dcBatchTransformer.toWriteBatchInputList(
               unprocessedItemInput,
               metadata
             )
@@ -198,7 +198,7 @@ export class BatchManager {
     // parse failed items to original input
     const failedItemsOriginalInput = this._errorQueue.flatMap(item => {
       if (item.requestType === REQUEST_TYPE.BATCH_WRITE) {
-        return this._dcBatchTransformer.toBatchInputList(
+        return this._dcBatchTransformer.toWriteBatchInputList(
           item.requestInput,
           metadata
         );
@@ -270,7 +270,7 @@ export class BatchManager {
       {} as BatchWriteItemRequestMap
     );
 
-    const batchRequestsItems = this._dcBatchTransformer.mapTableItemsToBatchItems(
+    const batchRequestsItems = this._dcBatchTransformer.mapTableWriteItemsToBatchWriteItems(
       sortedUnprocessedItems
     );
 

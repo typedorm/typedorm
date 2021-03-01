@@ -55,9 +55,6 @@ test('creates a batch from bulk input', () => {
       primaryKey: {
         id: '1',
       },
-      options: {
-        consistentRead: true,
-      },
     },
   ]);
 
@@ -70,9 +67,6 @@ test('creates a batch from bulk input', () => {
     },
     {
       item: Organisation,
-      options: {
-        consistentRead: true,
-      },
       primaryKey: {
         id: '1',
       },
