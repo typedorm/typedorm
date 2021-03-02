@@ -24,10 +24,6 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 | Main     | ![Stability](https://img.shields.io/badge/Stability-stable-blue?style=for-the-badge)         |
 | Beta     | ![Stability](https://img.shields.io/badge/Stability-experimental-orange?style=for-the-badge) |
 
-TypeDORM is currently in it's very early stage of development so breaking changes are likely. Consider this before using it in production.
-
-Please submit an issue for any bugs or suggestions [here](https://github.com/typedorm/typedorm/issues), or you can reach out to me on twitter [@whimzy_live](https://mobile.twitter.com/whimzy_live).
-
 ## Features
 
 - DataMapper development pattern
@@ -238,3 +234,11 @@ To find out more about how the data looks like when it is stored in dynamo have 
 
 - To keep things simple TypeDORM, at the moment WILL NOT create/update table configuration and must be done separately.
 - There is very minimal support for providing different arguments to queries, and will be resolved soon.
+
+## Sponsors
+
+[![Nextfaze](./docs/assets/nextfaze-logo.jpg)](https://www.nextfaze.com/)
+
+## Contributions
+
+Please submit an issue for any bugs or ideas [here](https://github.com/typedorm/typedorm/issues), or you can reach out to me on twitter [@whimzy_live](https://mobile.twitter.com/whimzy_live).
