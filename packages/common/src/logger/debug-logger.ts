@@ -28,6 +28,8 @@ export class DebugLogger {
   private debugTransformBatchLog = debug('typedorm:transform:batch:log');
   // info logger
   private debugInfoLog = debug('typedorm:info:log');
+  private debugWarnLog = debug('typedorm:warn:log');
+  private debugErrorLog = debug('typedorm:error:log');
 
   logTransform(
     operation: TRANSFORM_TYPE,
@@ -94,6 +96,24 @@ export class DebugLogger {
       this.debugInfoLog(
         `${chalk.green(scope)}:`,
         chalk.white(this.ensurePrintable(log))
+      );
+    }
+  }
+
+  logWarn(scope: MANAGER_NAME, log: string) {
+    if (this.debugWarnLog.enabled) {
+      this.debugWarnLog(
+        `${chalk.green(scope)}:`,
+        chalk.yellow(this.ensurePrintable(log))
+      );
+    }
+  }
+
+  logError(scope: MANAGER_NAME, log: any) {
+    if (this.debugErrorLog.enabled) {
+      this.debugErrorLog(
+        `${chalk.green(scope)}:`,
+        chalk.red(this.ensurePrintable(log))
       );
     }
   }
