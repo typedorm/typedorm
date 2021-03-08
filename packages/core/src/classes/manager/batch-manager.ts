@@ -302,9 +302,9 @@ export class BatchManager {
 
     // 5. return all items
     return {
-      items: transformedItems,
-      unprocessedItems: unprocessedTransformedItems,
-      failedItems: failedTransformedItems,
+      items: transformedItems ?? [],
+      unprocessedItems: unprocessedTransformedItems ?? [],
+      failedItems: failedTransformedItems ?? [],
     };
   }
 
@@ -409,11 +409,10 @@ export class BatchManager {
         (response: DocumentClient.BatchGetItemOutput) => response.Responses!
       );
     if (batchReadResponses.length) {
-      responsesStore.push(
-        ...batchReadResponses.flatMap(batchGetResponse =>
-          this.mapBatchGetResponseToItemList(batchGetResponse)
-        )
+      const mappedResponsesItemList = batchReadResponses.flatMap(
+        batchGetResponse => this.mapBatchGetResponseToItemList(batchGetResponse)
       );
+      responsesStore.push(...mappedResponsesItemList);
     }
 
     // recursively process all unprocessed items
@@ -461,7 +460,7 @@ export class BatchManager {
                 Keys: [],
               };
             }
-            acc[tableName].Keys.push(unprocessedRequests.Keys);
+            acc[tableName].Keys.push(...unprocessedRequests.Keys);
           }
         );
         return acc;
@@ -501,7 +500,7 @@ export class BatchManager {
   }
 
   private mapBatchGetResponseToItemList(batchGetResponse: BatchGetResponseMap) {
-    return Object.entries(batchGetResponse).map(
+    return Object.entries(batchGetResponse).flatMap(
       ([, batchResponse]) => batchResponse
     );
   }

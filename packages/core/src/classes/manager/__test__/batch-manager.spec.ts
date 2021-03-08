@@ -7,6 +7,7 @@ import {Connection} from '../../connection/connection';
 import {BatchManager} from '../batch-manager';
 import {EntityManager} from '../entity-manager';
 import {TransactionManager} from '../transaction-manager';
+import {ReadBatch} from '../../batch/read-batch';
 
 let connection: Connection;
 let manager: BatchManager;
@@ -24,6 +25,7 @@ let transactionManager: Replace<
 >;
 const documentClientMock = {
   batchWrite: jest.fn(),
+  batchGet: jest.fn(),
 };
 let originalPromiseAll: jasmine.Spy;
 
@@ -36,7 +38,7 @@ beforeEach(() => {
   manager = new BatchManager(connection);
   entityManager = connection.entityManager as any;
   transactionManager = connection.transactionManger as any;
-  entityManager;
+
   entityManager.findOne = jest.fn();
   transactionManager.write = jest.fn();
   originalPromiseAll = spyOn(Promise, 'all').and.callThrough();
@@ -46,6 +48,9 @@ afterEach(() => {
   resetTestConnection();
 });
 
+/**
+ * @group write
+ */
 test('processes empty batch write request', async () => {
   const writeBatch = new WriteBatch();
 
@@ -65,7 +70,7 @@ test('processes batch write request with simple request items', async () => {
     promise: () => ({UnprocessedItems: {}}),
   });
 
-  const largeBatchOfUsers = mockSimpleBatchData(60);
+  const largeBatchOfUsers = mockSimpleBatchWriteData(60);
   const writeBatch = new WriteBatch().add(largeBatchOfUsers);
 
   const result = await manager.write(writeBatch);
@@ -99,7 +104,7 @@ test('processes batch write request and retries as needed', async () => {
     },
   }));
 
-  const largeBatchOfUsers = mockSimpleBatchData(120);
+  const largeBatchOfUsers = mockSimpleBatchWriteData(120);
 
   const writeBatch = new WriteBatch().add(largeBatchOfUsers);
 
@@ -173,7 +178,7 @@ test('processes batch write requests where some of the items failed to put', asy
       },
     }));
 
-  const largeBatchOfUsers = mockSimpleBatchData(10);
+  const largeBatchOfUsers = mockSimpleBatchWriteData(10);
 
   const writeBatch = new WriteBatch().add(largeBatchOfUsers);
 
@@ -243,7 +248,7 @@ test('processes batch write requests where some of the items could not be proces
   uniqueEmailUser.email = 'user11-22.example.com';
 
   const largeBatchOfUsers = [
-    ...mockSimpleBatchData(20),
+    ...mockSimpleBatchWriteData(20),
     {
       create: {
         item: uniqueEmailUser,
@@ -285,7 +290,7 @@ test('processes batch write requests where some of the items could not be proces
   // increase timeout, since there can be some delays due to backoff retries
 }, 20000);
 
-test('uses user defined retry attempts when provided', async () => {
+test('uses user defined retry attempts for write batch requests', async () => {
   documentClientMock.batchWrite.mockImplementation(({RequestItems}) => ({
     promise: () => {
       const tableName = Object.keys(RequestItems)[0];
@@ -297,7 +302,7 @@ test('uses user defined retry attempts when provided', async () => {
     },
   }));
 
-  const largeBatchOfUsers = mockSimpleBatchData(10);
+  const largeBatchOfUsers = mockSimpleBatchWriteData(10);
 
   const writeBatch = new WriteBatch().add(largeBatchOfUsers);
 
@@ -310,10 +315,386 @@ test('uses user defined retry attempts when provided', async () => {
   // increase timeout, since there can be some delays due to backoff retries
 });
 
-//////////////////////////////////////////////////////////////
-/////////////////////// mock helpers /////////////////////////
-//////////////////////////////////////////////////////////////
-function mockSimpleBatchData(items: number) {
+/**
+ * @group read
+ */
+
+test('processes empty batch read request', async () => {
+  const readBatch = new ReadBatch();
+  const result = await manager.read(readBatch);
+
+  expect(originalPromiseAll).toHaveBeenCalledTimes(1);
+  expect(originalPromiseAll).toHaveBeenCalledWith([]);
+  expect(documentClientMock.batchGet).toHaveBeenCalledTimes(0);
+
+  expect(result).toEqual({failedItems: [], items: [], unprocessedItems: []});
+});
+
+test('processes simple batch read request', async () => {
+  // mock response
+  documentClientMock.batchGet.mockReturnValue({
+    promise: () => ({
+      Responses: {
+        'simple-table': [
+          {
+            id: 1,
+            name: 'test',
+            __en: 'user',
+            PK: 'USER#1',
+            SK: 'USER#1',
+            status: 'active',
+          },
+          {
+            id: 2,
+            name: 'test',
+            __en: 'user',
+            PK: 'USER#2',
+            SK: 'USER#2',
+            status: 'active',
+          },
+        ],
+      },
+    }),
+  });
+
+  const readTestBatch = new ReadBatch().add([
+    {
+      item: User,
+      primaryKey: {
+        id: 1,
+      },
+    },
+    {
+      item: User,
+      primaryKey: {
+        id: 2,
+      },
+    },
+  ]);
+  const response = await manager.read(readTestBatch);
+
+  expect(originalPromiseAll).toHaveBeenCalledTimes(1);
+  expect(originalPromiseAll).toHaveBeenCalledWith([expect.any(Promise)]);
+  expect(response).toEqual({
+    failedItems: [],
+    items: [
+      {
+        id: 1,
+        name: 'test',
+        status: 'active',
+      },
+      {
+        id: 2,
+        name: 'test',
+        status: 'active',
+      },
+    ],
+    unprocessedItems: [],
+  });
+});
+
+test('processes batch read request with multiple calls', async () => {
+  // mock document client to return random unprocessed items
+  // when unprocessed items are returned, TypeDORM should auto retry until,
+  // either max attempts is reached or all items have resolved
+  let counter = 0;
+  documentClientMock.batchGet.mockImplementation(() => ({
+    promise: () => {
+      counter++;
+
+      // return success items for even requests
+      if (counter % 2 === 0) {
+        return {
+          Responses: {
+            'simple-table': [
+              {
+                id: 1,
+                name: 'test',
+                __en: 'user',
+                PK: 'USER#1',
+                SK: 'USER#1',
+                status: 'active',
+              },
+            ],
+            'test-table': [
+              {
+                id: 2,
+                name: 'test',
+                __en: 'user',
+                PK: 'USER#2',
+                SK: 'USER#2',
+                status: 'active',
+              },
+            ],
+          },
+        };
+      }
+
+      return {
+        Responses: {
+          'simple-table': [
+            {
+              id: 4,
+              name: 'test',
+              __en: 'user',
+              PK: 'USER#4',
+              SK: 'USER#4',
+              status: 'active',
+            },
+          ],
+        },
+        UnprocessedKeys: {
+          'simple-table': {Keys: [{PK: 'USER#3', SK: 'USER#3'}]},
+        },
+      };
+    },
+  }));
+
+  const readBatch = new ReadBatch().add(mockSimpleBatchReadData(117));
+  const response = await manager.read(readBatch);
+
+  expect(originalPromiseAll).toHaveBeenCalledTimes(3);
+  expect(response).toEqual({
+    failedItems: [],
+    items: [
+      {
+        id: 4,
+        name: 'test',
+        status: 'active',
+      },
+      {
+        id: 1,
+        name: 'test',
+        status: 'active',
+      },
+      {
+        id: 2,
+        name: 'test',
+        status: 'active',
+      },
+      {
+        id: 4,
+        name: 'test',
+        status: 'active',
+      },
+      {
+        id: 1,
+        name: 'test',
+        status: 'active',
+      },
+      {
+        id: 2,
+        name: 'test',
+        status: 'active',
+      },
+    ],
+    unprocessedItems: [],
+  });
+  // increase time to allow retries to finish with backoff
+}, 10000);
+
+test('processes batch read request when some items failed to get', async () => {
+  // mock document client to return error for some items,
+
+  documentClientMock.batchGet
+    .mockImplementationOnce(({RequestItems}) => ({
+      promise: () => {
+        const tableName = Object.keys(RequestItems)[0];
+        const itemForCurrTable = RequestItems[tableName];
+        return {
+          Responses: {
+            [tableName]: {
+              id: 0,
+              name: 'test',
+              __en: 'user',
+              PK: 'USER#0',
+              SK: 'USER#0',
+              status: 'active',
+            },
+          },
+          UnprocessedKeys: {
+            [tableName]: {Keys: itemForCurrTable.Keys.slice(1)},
+          },
+        };
+      },
+    }))
+    .mockImplementationOnce(({RequestItems}) => ({
+      promise: () => {
+        const tableName = Object.keys(RequestItems)[0];
+        const itemForCurrTable = RequestItems[tableName];
+
+        return {
+          Responses: {
+            [tableName]: [
+              {
+                id: 1,
+                name: 'test',
+                __en: 'user',
+                PK: 'USER#1',
+                SK: 'USER#1',
+                status: 'inactive',
+              },
+              {
+                id: 2,
+                name: 'test',
+                __en: 'user',
+                PK: 'USER#2',
+                SK: 'USER#2',
+                status: 'inactive',
+              },
+            ],
+          },
+          UnprocessedKeys: {
+            [tableName]: {Keys: itemForCurrTable.Keys.slice(2)},
+          },
+        };
+      },
+    }))
+    // thrown an error after third api to mock document client's throttling behavior
+    .mockImplementationOnce(() => ({
+      promise: () => {
+        throw new Error();
+      },
+    }));
+
+  // create mock batch
+  const readBatch = new ReadBatch().add(mockSimpleBatchReadData(6));
+  const response = await manager.read(readBatch);
+
+  expect(documentClientMock.batchGet).toHaveReturnedTimes(3);
+  expect(originalPromiseAll).toHaveBeenCalledTimes(3);
+  expect(response).toEqual({
+    failedItems: [
+      {
+        item: User,
+        primaryKey: {
+          id: '3',
+        },
+      },
+      {
+        item: User,
+        primaryKey: {
+          id: '4',
+        },
+      },
+      {
+        item: User,
+        primaryKey: {
+          id: '5',
+        },
+      },
+    ],
+    items: [
+      {
+        id: 0,
+        name: 'test',
+        status: 'active',
+      },
+      {
+        id: 1,
+        name: 'test',
+        status: 'inactive',
+      },
+      {
+        id: 2,
+        name: 'test',
+        status: 'inactive',
+      },
+    ],
+    unprocessedItems: [],
+  });
+}, 10000);
+
+test('processes batch read request and returns unprocessed items back to user', async () => {
+  // mock document client to behave like one with very low read throughput,
+  let index = -1;
+  documentClientMock.batchGet.mockImplementation(({RequestItems}) => ({
+    promise: () => {
+      const tableName = Object.keys(RequestItems)[0];
+      const itemForCurrTable = RequestItems[tableName];
+      index++;
+      return {
+        Responses: {
+          [tableName]: {
+            id: index,
+            name: 'test',
+            __en: 'user',
+            PK: `USER#${index}`,
+            SK: `USER#${index}`,
+            status: 'active',
+          },
+        },
+        UnprocessedKeys: {
+          // only process one item return others back
+          [tableName]: {Keys: itemForCurrTable.Keys.slice(1)},
+        },
+      };
+    },
+  }));
+
+  // create mock batch
+  const readBatch = new ReadBatch().add(mockSimpleBatchReadData(13));
+  const response = await manager.read(readBatch);
+
+  expect(documentClientMock.batchGet).toHaveReturnedTimes(11);
+  expect(originalPromiseAll).toHaveBeenCalledTimes(11);
+
+  // Our mocked read batch api returns one item for each request,
+  // util max read retry limit is reached, hence we get 1 initial + 10 items from retries
+  expect(response.items.length).toEqual(11);
+  expect(response.failedItems.length).toBeFalsy();
+  expect(response.unprocessedItems).toEqual([
+    {
+      item: User,
+      primaryKey: {
+        id: '11',
+      },
+    },
+    {
+      item: User,
+      primaryKey: {
+        id: '12',
+      },
+    },
+  ]);
+}, 20000);
+
+test('uses user defined retry attempts for read batch request', async () => {
+  // mock document client to behave like one with very low read throughput,
+
+  documentClientMock.batchGet.mockImplementation(({RequestItems}) => ({
+    promise: () => {
+      const tableName = Object.keys(RequestItems)[0];
+      const itemForCurrTable = RequestItems[tableName];
+      return {
+        UnprocessedKeys: {
+          // does not process any request
+          [tableName]: itemForCurrTable,
+        },
+      };
+    },
+  }));
+
+  // create mock batch
+  const readBatch = new ReadBatch().add(mockSimpleBatchReadData(80));
+  const response = await manager.read(readBatch, {
+    maxRetryAttempts: 3,
+  });
+
+  expect(documentClientMock.batchGet).toHaveReturnedTimes(4);
+  expect(originalPromiseAll).toHaveBeenCalledTimes(4);
+  // no item is processed
+  expect(response.unprocessedItems.length).toEqual(80);
+}, 10000);
+
+/**
+ *
+ *
+ * MOCK HELPERS  used within this test suite
+ *
+ *
+ */
+function mockSimpleBatchWriteData(items: number) {
   let largeBatchOfUsers = Array(items).fill({});
 
   largeBatchOfUsers = largeBatchOfUsers.map((empty, index) => {
@@ -342,6 +723,16 @@ function mockSimpleBatchData(items: number) {
   });
 
   return largeBatchOfUsers;
+}
+
+function mockSimpleBatchReadData(count: number) {
+  const largeBatchOfUsers = Array(count).fill({});
+  return largeBatchOfUsers.map((empty, index) => ({
+    item: User,
+    primaryKey: {
+      id: index.toString(),
+    },
+  }));
 }
 
 function mockTransactionAndBatchData(items: number) {
