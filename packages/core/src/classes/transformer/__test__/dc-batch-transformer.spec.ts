@@ -4,6 +4,7 @@ import {table} from '@typedorm/core/__mocks__/table';
 import {User} from '@typedorm/core/__mocks__/user';
 import {UserUniqueEmail} from '@typedorm/core/__mocks__/user-unique-email';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
+import {ReadBatch} from '../../batch/read-batch';
 import {WriteBatch} from '../../batch/write-batch';
 import {Connection} from '../../connection/connection';
 import {DocumentClientBatchTransformer} from '../document-client-batch-transformer';
@@ -277,7 +278,7 @@ test('transforms requests of items with multiple tables', () => {
 });
 
 /**
- * @group toRawBatchInputItem
+ * @group toWriteBatchInputList
  */
 test('reverse transforms batch item input in initial input', () => {
   // create mock item transform hash
@@ -302,31 +303,33 @@ test('reverse transforms batch item input in initial input', () => {
   ]);
   const {metadata} = dcBatchTransformer.toDynamoWriteBatchItems(writeBatch);
 
-  const original = dcBatchTransformer.toRawBatchInputItem(
-    [
-      {
-        DeleteRequest: {
-          Key: {
-            PK: 'USER#1111-1111',
-            SK: 'USER#1111-1111',
+  const original = dcBatchTransformer.toWriteBatchInputList(
+    {
+      'test-table': [
+        {
+          DeleteRequest: {
+            Key: {
+              PK: 'USER#1111-1111',
+              SK: 'USER#1111-1111',
+            },
           },
         },
-      },
-      {
-        PutRequest: {
-          Item: {
-            __en: 'user',
-            GSI1PK: 'USER#STATUS#active',
-            GSI1SK: 'USER#User 1',
-            id: '1111-1111',
-            name: 'User 1',
-            PK: 'USER#1111-1111',
-            SK: 'USER#1111-1111',
-            status: 'active',
+        {
+          PutRequest: {
+            Item: {
+              __en: 'user',
+              GSI1PK: 'USER#STATUS#active',
+              GSI1SK: 'USER#User 1',
+              id: '1111-1111',
+              name: 'User 1',
+              PK: 'USER#1111-1111',
+              SK: 'USER#1111-1111',
+              status: 'active',
+            },
           },
         },
-      },
-    ],
+      ],
+    },
     {
       itemTransformHashMap: metadata.itemTransformHashMap,
       namespaceId: metadata.namespaceId,
@@ -352,4 +355,178 @@ test('reverse transforms batch item input in initial input', () => {
       },
     },
   ]);
+});
+
+/**
+ * @group toDynamoReadBatchItems
+ */
+
+test('transforms simple batch read items', () => {
+  const transformed = dcBatchTransformer.toDynamoReadBatchItems(
+    new ReadBatch().add([
+      {
+        item: User,
+        primaryKey: {
+          id: '1',
+        },
+      },
+      {
+        item: User,
+        primaryKey: {
+          id: '2',
+        },
+      },
+    ])
+  );
+
+  expect(transformed.batchRequestItemsList).toEqual([
+    {
+      'test-table': {
+        Keys: [
+          {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          {
+            PK: 'USER#2',
+            SK: 'USER#2',
+          },
+        ],
+      },
+    },
+  ]);
+
+  expect(transformed.metadata).toEqual({
+    itemTransformHashMap: expect.any(Map),
+    namespaceId: '66a7b3d6-323a-49b0-a12d-c99afff5005a',
+  });
+});
+
+test('transforms requests into multiple batch requests when there are more than allowed items to read', () => {
+  let largeBatchOfItems = Array(120).fill({});
+
+  largeBatchOfItems = largeBatchOfItems.map((empty, index) => {
+    return {
+      item: User,
+      primaryKey: {
+        id: index.toString(),
+      },
+    };
+  });
+  const readBatch = new ReadBatch().add(largeBatchOfItems);
+
+  const transformed = dcBatchTransformer.toDynamoReadBatchItems(readBatch);
+  expect(transformed.batchRequestItemsList.length).toEqual(2);
+  expect(transformed.batchRequestItemsList[0][table.name].Keys.length).toEqual(
+    100
+  );
+  expect(transformed.batchRequestItemsList[1][table.name].Keys.length).toEqual(
+    20
+  );
+});
+
+test('transforms batch requests of items with multiple tables', () => {
+  resetTestConnection();
+
+  const oldUserTable = new Table({
+    name: 'old-user-table',
+    partitionKey: 'PK',
+  });
+
+  @Entity({
+    name: 'old-user',
+    primaryKey: {
+      partitionKey: 'OLD_USER#{{id}}',
+    },
+    table: oldUserTable,
+  })
+  class OldUser {
+    @Attribute()
+    id: string;
+  }
+
+  connection = createTestConnection({
+    entities: [User, OldUser],
+    table,
+  });
+  dcBatchTransformer = new DocumentClientBatchTransformer(connection);
+
+  let largeBatchOfMixedUsers = Array(132).fill({});
+
+  largeBatchOfMixedUsers = largeBatchOfMixedUsers.map((empty, index) => {
+    const user = {
+      item: User,
+      primaryKey: {
+        id: index.toString(),
+      },
+    };
+    const oldUser = {
+      item: OldUser,
+      primaryKey: {
+        id: index.toString(),
+      },
+    };
+
+    return index % 2 === 0 ? user : oldUser;
+  });
+
+  const readBatch = new ReadBatch().add(largeBatchOfMixedUsers);
+
+  const transformed = dcBatchTransformer.toDynamoReadBatchItems(readBatch);
+  expect(transformed.batchRequestItemsList).toMatchSnapshot();
+  expect(transformed.batchRequestItemsList.length).toEqual(2);
+  expect(transformed.batchRequestItemsList[0][table.name].Keys.length).toEqual(
+    66
+  );
+  expect(
+    transformed.batchRequestItemsList[0][oldUserTable.name].Keys.length
+  ).toEqual(34);
+  expect(
+    transformed.batchRequestItemsList[1][oldUserTable.name].Keys.length
+  ).toEqual(32);
+});
+
+/**
+ * @group toReadBatchInputList
+ */
+test('reverse transforms read batch item request', () => {
+  const originalInput = [
+    {
+      item: User,
+      primaryKey: {
+        id: '1',
+      },
+    },
+    {
+      item: User,
+      primaryKey: {
+        id: '2',
+      },
+    },
+  ];
+  const readBatch = new ReadBatch().add(originalInput);
+  const {metadata} = dcBatchTransformer.toDynamoReadBatchItems(readBatch);
+
+  const transformedOriginal = dcBatchTransformer.toReadBatchInputList(
+    {
+      'test-table': {
+        Keys: [
+          {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          {
+            PK: 'USER#2',
+            SK: 'USER#2',
+          },
+        ],
+      },
+    },
+    {
+      itemTransformHashMap: metadata.itemTransformHashMap,
+      namespaceId: metadata.namespaceId,
+    }
+  );
+
+  expect(transformedOriginal).toEqual(originalInput);
 });

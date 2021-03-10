@@ -14,18 +14,18 @@ export interface WriteBatchDelete<Entity, PrimaryKey> {
   };
 }
 
-export type WiteBatchItem<Entity, PrimaryKey> =
+export type WriteBatchItem<Entity, PrimaryKey> =
   | WriteBatchCreate<Entity>
   | WriteBatchDelete<Entity, PrimaryKey>;
 
 export class WriteBatch extends Batch {
-  protected _items: WiteBatchItem<any, any>[];
+  protected _items: WriteBatchItem<any, any>[];
   constructor() {
     super();
     this._items = [];
   }
 
-  add(batchItems: WiteBatchItem<any, any>[]): this {
+  add(batchItems: WriteBatchItem<any, any>[]): this {
     this.items.push(...batchItems);
     return this;
   }
@@ -41,7 +41,7 @@ export class WriteBatch extends Batch {
 
   addDeleteItem<Entity, PrimaryKey = Partial<Entity>>(
     item: EntityTarget<Entity>,
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>
+    primaryKey: PrimaryKey
   ) {
     this.items.push({
       delete: {
