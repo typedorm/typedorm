@@ -65,7 +65,7 @@ export class BatchManager {
 
   constructor(private connection: Connection) {
     this._dcBatchTransformer = new DocumentClientBatchTransformer(connection);
-    this._errorQueue = [];
+    this.resetErrorQueue();
   }
 
   /**
@@ -74,6 +74,8 @@ export class BatchManager {
    * @param batch
    */
   async write(batch: WriteBatch, options?: BatchManagerWriteOptions) {
+    this.resetErrorQueue();
+
     if (options?.requestsConcurrencyLimit) {
       this.limit = pLimit(options?.requestsConcurrencyLimit);
     }
@@ -224,6 +226,8 @@ export class BatchManager {
    * _Note_: Returned items are not guaranteed to be in the same sequence as requested
    */
   async read(batch: ReadBatch, options?: BatchManagerReadOptions) {
+    this.resetErrorQueue();
+
     if (options?.requestsConcurrencyLimit) {
       this.limit = pLimit(options?.requestsConcurrencyLimit);
     }
@@ -497,6 +501,10 @@ export class BatchManager {
       // responses store containing responses from all requests
       responsesStore
     );
+  }
+
+  private resetErrorQueue() {
+    this._errorQueue = [];
   }
 
   private mapBatchGetResponseToItemList(batchGetResponse: BatchGetResponseMap) {

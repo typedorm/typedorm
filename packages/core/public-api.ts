@@ -2,12 +2,19 @@ import {ConnectionOptions} from './src/classes/connection/connection-options';
 import {Container} from './src/classes/container';
 import {ConnectionManager} from './src/classes/connection/connection-manager';
 
-// classes
+// options
+export * from './src/classes/connection/connection-options';
+
+// models
 export * from './src/classes/expression/condition';
 export * from './src/classes/expression/key-condition';
-export * from './src/classes/connection/connection-options';
 export * from './src/classes/transaction/write-transaction';
+export * from './src/classes/batch/write-batch';
+export * from './src/classes/batch/read-batch';
+
+// managers
 export * from './src/classes/manager/entity-manager';
+export * from './src/classes/manager/batch-manager';
 export * from './src/classes/manager/transaction-manager';
 
 // public method exports
@@ -40,6 +47,10 @@ export function getEntityManager(connectionName?: string) {
 
 export function getTransactionManger(connectionName?: string) {
   return connectionManger().get(connectionName).transactionManger;
+}
+
+export function getBatchManager(connectionName?: string) {
+  return connectionManger().get(connectionName).batchManager;
 }
 
 // private methods
