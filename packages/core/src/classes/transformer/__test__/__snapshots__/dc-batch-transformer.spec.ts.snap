@@ -1,0 +1,484 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`transforms batch requests of items with multiple tables 1`] = `
+Array [
+  Object {
+    "old-user-table": Object {
+      "Keys": Array [
+        Object {
+          "PK": "OLD_USER#1",
+        },
+        Object {
+          "PK": "OLD_USER#3",
+        },
+        Object {
+          "PK": "OLD_USER#5",
+        },
+        Object {
+          "PK": "OLD_USER#7",
+        },
+        Object {
+          "PK": "OLD_USER#9",
+        },
+        Object {
+          "PK": "OLD_USER#11",
+        },
+        Object {
+          "PK": "OLD_USER#13",
+        },
+        Object {
+          "PK": "OLD_USER#15",
+        },
+        Object {
+          "PK": "OLD_USER#17",
+        },
+        Object {
+          "PK": "OLD_USER#19",
+        },
+        Object {
+          "PK": "OLD_USER#21",
+        },
+        Object {
+          "PK": "OLD_USER#23",
+        },
+        Object {
+          "PK": "OLD_USER#25",
+        },
+        Object {
+          "PK": "OLD_USER#27",
+        },
+        Object {
+          "PK": "OLD_USER#29",
+        },
+        Object {
+          "PK": "OLD_USER#31",
+        },
+        Object {
+          "PK": "OLD_USER#33",
+        },
+        Object {
+          "PK": "OLD_USER#35",
+        },
+        Object {
+          "PK": "OLD_USER#37",
+        },
+        Object {
+          "PK": "OLD_USER#39",
+        },
+        Object {
+          "PK": "OLD_USER#41",
+        },
+        Object {
+          "PK": "OLD_USER#43",
+        },
+        Object {
+          "PK": "OLD_USER#45",
+        },
+        Object {
+          "PK": "OLD_USER#47",
+        },
+        Object {
+          "PK": "OLD_USER#49",
+        },
+        Object {
+          "PK": "OLD_USER#51",
+        },
+        Object {
+          "PK": "OLD_USER#53",
+        },
+        Object {
+          "PK": "OLD_USER#55",
+        },
+        Object {
+          "PK": "OLD_USER#57",
+        },
+        Object {
+          "PK": "OLD_USER#59",
+        },
+        Object {
+          "PK": "OLD_USER#61",
+        },
+        Object {
+          "PK": "OLD_USER#63",
+        },
+        Object {
+          "PK": "OLD_USER#65",
+        },
+        Object {
+          "PK": "OLD_USER#67",
+        },
+      ],
+    },
+    "test-table": Object {
+      "Keys": Array [
+        Object {
+          "PK": "USER#0",
+          "SK": "USER#0",
+        },
+        Object {
+          "PK": "USER#2",
+          "SK": "USER#2",
+        },
+        Object {
+          "PK": "USER#4",
+          "SK": "USER#4",
+        },
+        Object {
+          "PK": "USER#6",
+          "SK": "USER#6",
+        },
+        Object {
+          "PK": "USER#8",
+          "SK": "USER#8",
+        },
+        Object {
+          "PK": "USER#10",
+          "SK": "USER#10",
+        },
+        Object {
+          "PK": "USER#12",
+          "SK": "USER#12",
+        },
+        Object {
+          "PK": "USER#14",
+          "SK": "USER#14",
+        },
+        Object {
+          "PK": "USER#16",
+          "SK": "USER#16",
+        },
+        Object {
+          "PK": "USER#18",
+          "SK": "USER#18",
+        },
+        Object {
+          "PK": "USER#20",
+          "SK": "USER#20",
+        },
+        Object {
+          "PK": "USER#22",
+          "SK": "USER#22",
+        },
+        Object {
+          "PK": "USER#24",
+          "SK": "USER#24",
+        },
+        Object {
+          "PK": "USER#26",
+          "SK": "USER#26",
+        },
+        Object {
+          "PK": "USER#28",
+          "SK": "USER#28",
+        },
+        Object {
+          "PK": "USER#30",
+          "SK": "USER#30",
+        },
+        Object {
+          "PK": "USER#32",
+          "SK": "USER#32",
+        },
+        Object {
+          "PK": "USER#34",
+          "SK": "USER#34",
+        },
+        Object {
+          "PK": "USER#36",
+          "SK": "USER#36",
+        },
+        Object {
+          "PK": "USER#38",
+          "SK": "USER#38",
+        },
+        Object {
+          "PK": "USER#40",
+          "SK": "USER#40",
+        },
+        Object {
+          "PK": "USER#42",
+          "SK": "USER#42",
+        },
+        Object {
+          "PK": "USER#44",
+          "SK": "USER#44",
+        },
+        Object {
+          "PK": "USER#46",
+          "SK": "USER#46",
+        },
+        Object {
+          "PK": "USER#48",
+          "SK": "USER#48",
+        },
+        Object {
+          "PK": "USER#50",
+          "SK": "USER#50",
+        },
+        Object {
+          "PK": "USER#52",
+          "SK": "USER#52",
+        },
+        Object {
+          "PK": "USER#54",
+          "SK": "USER#54",
+        },
+        Object {
+          "PK": "USER#56",
+          "SK": "USER#56",
+        },
+        Object {
+          "PK": "USER#58",
+          "SK": "USER#58",
+        },
+        Object {
+          "PK": "USER#60",
+          "SK": "USER#60",
+        },
+        Object {
+          "PK": "USER#62",
+          "SK": "USER#62",
+        },
+        Object {
+          "PK": "USER#64",
+          "SK": "USER#64",
+        },
+        Object {
+          "PK": "USER#66",
+          "SK": "USER#66",
+        },
+        Object {
+          "PK": "USER#68",
+          "SK": "USER#68",
+        },
+        Object {
+          "PK": "USER#70",
+          "SK": "USER#70",
+        },
+        Object {
+          "PK": "USER#72",
+          "SK": "USER#72",
+        },
+        Object {
+          "PK": "USER#74",
+          "SK": "USER#74",
+        },
+        Object {
+          "PK": "USER#76",
+          "SK": "USER#76",
+        },
+        Object {
+          "PK": "USER#78",
+          "SK": "USER#78",
+        },
+        Object {
+          "PK": "USER#80",
+          "SK": "USER#80",
+        },
+        Object {
+          "PK": "USER#82",
+          "SK": "USER#82",
+        },
+        Object {
+          "PK": "USER#84",
+          "SK": "USER#84",
+        },
+        Object {
+          "PK": "USER#86",
+          "SK": "USER#86",
+        },
+        Object {
+          "PK": "USER#88",
+          "SK": "USER#88",
+        },
+        Object {
+          "PK": "USER#90",
+          "SK": "USER#90",
+        },
+        Object {
+          "PK": "USER#92",
+          "SK": "USER#92",
+        },
+        Object {
+          "PK": "USER#94",
+          "SK": "USER#94",
+        },
+        Object {
+          "PK": "USER#96",
+          "SK": "USER#96",
+        },
+        Object {
+          "PK": "USER#98",
+          "SK": "USER#98",
+        },
+        Object {
+          "PK": "USER#100",
+          "SK": "USER#100",
+        },
+        Object {
+          "PK": "USER#102",
+          "SK": "USER#102",
+        },
+        Object {
+          "PK": "USER#104",
+          "SK": "USER#104",
+        },
+        Object {
+          "PK": "USER#106",
+          "SK": "USER#106",
+        },
+        Object {
+          "PK": "USER#108",
+          "SK": "USER#108",
+        },
+        Object {
+          "PK": "USER#110",
+          "SK": "USER#110",
+        },
+        Object {
+          "PK": "USER#112",
+          "SK": "USER#112",
+        },
+        Object {
+          "PK": "USER#114",
+          "SK": "USER#114",
+        },
+        Object {
+          "PK": "USER#116",
+          "SK": "USER#116",
+        },
+        Object {
+          "PK": "USER#118",
+          "SK": "USER#118",
+        },
+        Object {
+          "PK": "USER#120",
+          "SK": "USER#120",
+        },
+        Object {
+          "PK": "USER#122",
+          "SK": "USER#122",
+        },
+        Object {
+          "PK": "USER#124",
+          "SK": "USER#124",
+        },
+        Object {
+          "PK": "USER#126",
+          "SK": "USER#126",
+        },
+        Object {
+          "PK": "USER#128",
+          "SK": "USER#128",
+        },
+        Object {
+          "PK": "USER#130",
+          "SK": "USER#130",
+        },
+      ],
+    },
+  },
+  Object {
+    "old-user-table": Object {
+      "Keys": Array [
+        Object {
+          "PK": "OLD_USER#69",
+        },
+        Object {
+          "PK": "OLD_USER#71",
+        },
+        Object {
+          "PK": "OLD_USER#73",
+        },
+        Object {
+          "PK": "OLD_USER#75",
+        },
+        Object {
+          "PK": "OLD_USER#77",
+        },
+        Object {
+          "PK": "OLD_USER#79",
+        },
+        Object {
+          "PK": "OLD_USER#81",
+        },
+        Object {
+          "PK": "OLD_USER#83",
+        },
+        Object {
+          "PK": "OLD_USER#85",
+        },
+        Object {
+          "PK": "OLD_USER#87",
+        },
+        Object {
+          "PK": "OLD_USER#89",
+        },
+        Object {
+          "PK": "OLD_USER#91",
+        },
+        Object {
+          "PK": "OLD_USER#93",
+        },
+        Object {
+          "PK": "OLD_USER#95",
+        },
+        Object {
+          "PK": "OLD_USER#97",
+        },
+        Object {
+          "PK": "OLD_USER#99",
+        },
+        Object {
+          "PK": "OLD_USER#101",
+        },
+        Object {
+          "PK": "OLD_USER#103",
+        },
+        Object {
+          "PK": "OLD_USER#105",
+        },
+        Object {
+          "PK": "OLD_USER#107",
+        },
+        Object {
+          "PK": "OLD_USER#109",
+        },
+        Object {
+          "PK": "OLD_USER#111",
+        },
+        Object {
+          "PK": "OLD_USER#113",
+        },
+        Object {
+          "PK": "OLD_USER#115",
+        },
+        Object {
+          "PK": "OLD_USER#117",
+        },
+        Object {
+          "PK": "OLD_USER#119",
+        },
+        Object {
+          "PK": "OLD_USER#121",
+        },
+        Object {
+          "PK": "OLD_USER#123",
+        },
+        Object {
+          "PK": "OLD_USER#125",
+        },
+        Object {
+          "PK": "OLD_USER#127",
+        },
+        Object {
+          "PK": "OLD_USER#129",
+        },
+        Object {
+          "PK": "OLD_USER#131",
+        },
+      ],
+    },
+  },
+]
+`;

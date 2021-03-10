@@ -130,9 +130,7 @@ test('Auto removes connection when failed to connect', () => {
     throw new Error('Failed to build metadata');
   });
 
-  createdConnection.connect();
+  const connectionCreator = () => createdConnection.connect();
 
-  expect(() => connectionManager.get()).toThrow(
-    'No such connection with name "default" exists'
-  );
+  expect(connectionCreator).toThrow('Failed to build metadata');
 });

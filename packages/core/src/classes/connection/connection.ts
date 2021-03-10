@@ -4,10 +4,11 @@ import {
   Replace,
   Table,
   DebugLogger,
-  MissingRequiredTableConfig,
+  getEntityDefinition,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
+import {BatchManager} from '../manager/batch-manager';
 import {EntityManager} from '../manager/entity-manager';
 import {TransactionManager} from '../manager/transaction-manager';
 import {AttributeMetadata} from '../metadata/attribute-metadata';
@@ -24,6 +25,7 @@ export class Connection {
   readonly table: Table;
   readonly entityManager: EntityManager;
   readonly transactionManger: TransactionManager;
+  readonly batchManager: BatchManager;
   readonly defaultConfig: {queryItemsImplicitLimit: number};
   readonly documentClient: DynamoDB.DocumentClient;
   readonly logger: DebugLogger;
@@ -41,6 +43,7 @@ export class Connection {
     }
     this.name = name;
     this.entityManager = new EntityManager(this);
+    this.batchManager = new BatchManager(this);
     this.transactionManger = new TransactionManager(this);
     this.defaultConfig = {
       queryItemsImplicitLimit:
@@ -78,12 +81,9 @@ export class Connection {
       this.isConnected = true;
       return this;
     } catch (err) {
-      if (err instanceof MissingRequiredTableConfig) {
-        throw err;
-      }
       // Failed to connect to connection, clear self from connection manager
       this.destroySelf(this.name);
-      return;
+      throw err;
     }
   }
 
@@ -140,10 +140,21 @@ export class Connection {
     const metadata = this._entityMetadatas.get(entityClass.name);
     if (!metadata) {
       throw new Error(
-        `No such entity named "${entityClass.name}" is known to TypeDrm, make sure it is declared at the connection creation time.`
+        `No such entity named "${entityClass.name}" is known to TypeDORM, make sure it is declared at the connection creation time.`
       );
     }
     return metadata;
+  }
+
+  getEntityByPhysicalName(name: string) {
+    const entitySpec = getEntityDefinition(name);
+
+    if (!entitySpec) {
+      throw new Error(
+        `No such entity with physical name (__en) "${name}" was found, if this continues please file an issue on github`
+      );
+    }
+    return this.getEntityByTarget(entitySpec.target);
   }
 
   getAutoUpdateAttributes<Entity>(entityClass: EntityTarget<Entity>) {
