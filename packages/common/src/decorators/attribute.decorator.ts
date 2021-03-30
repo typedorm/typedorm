@@ -5,6 +5,7 @@ import {
   AttributeRawMetadataOptions,
   PrimaryKey,
 } from '../metadata/metadata-storage';
+import {MissingReflectMetadataError} from '../error';
 
 export type AttributeOptionsUniqueType = boolean | PrimaryKey;
 
@@ -37,7 +38,17 @@ export function Attribute<Entity = any>(
   options?: AttributeOptions<Entity>
 ): PropertyDecorator {
   return (target, propertyKey): void => {
-    let type = Reflect.getMetadata('design:type', target, propertyKey).name;
+    const reflectedMetadata = Reflect.getMetadata(
+      'design:type',
+      target,
+      propertyKey
+    );
+
+    if (!reflectedMetadata) {
+      throw new MissingReflectMetadataError('design:type');
+    }
+
+    let type = reflectedMetadata.name;
 
     if (options?.isEnum) {
       // default to "String" when attribute is marked as enum
