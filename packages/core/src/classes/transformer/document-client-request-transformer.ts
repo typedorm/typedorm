@@ -18,7 +18,6 @@ import {parseKey} from '../../helpers/parse-key';
 import {KeyCondition} from '../expression/key-condition';
 import {Connection} from '../connection/connection';
 import {ExpressionBuilder} from '../expression/expression-builder';
-import {EntityManagerUpdateOptions} from '../manager/entity-manager';
 import {AttributeMetadata} from '../metadata/attribute-metadata';
 import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {BaseTransformer} from './base-transformer';
@@ -50,6 +49,16 @@ export interface TransformerToDynamoQueryItemsOptions {
    * @default ASC
    */
   orderBy?: QUERY_ORDER;
+
+  where?: any;
+}
+
+export interface TransformerToDynamoUpdateItemsOptions {
+  /**
+   * key separator
+   * @default '.''
+   */
+  nestedKeySeparator?: string;
 
   where?: any;
 }
@@ -247,7 +256,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
-    options: EntityManagerUpdateOptions = {}
+    options: TransformerToDynamoUpdateItemsOptions = {}
   ):
     | DynamoDB.DocumentClient.UpdateItemInput
     | LazyTransactionWriteItemListLoader {
@@ -327,6 +336,38 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ExpressionAttributeNames,
       ExpressionAttributeValues,
     };
+
+    // if 'where' was provided, build condition expression
+    if (options.where && !isEmptyObject(options.where)) {
+      const condition = this._expressionInputParser.parseToCondition(
+        options.where
+      );
+
+      if (!condition) {
+        throw new Error(
+          `Failed to build condition expression for input: ${JSON.stringify(
+            options.where
+          )}`
+        );
+      }
+
+      const {
+        ConditionExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+      } = this._expressionBuilder.buildConditionExpression(condition);
+
+      // append condition expression if one was built
+      itemToUpdate.ConditionExpression = ConditionExpression;
+      itemToUpdate.ExpressionAttributeNames = {
+        ...itemToUpdate.ExpressionAttributeNames,
+        ...ExpressionAttributeNames,
+      };
+      itemToUpdate.ExpressionAttributeValues = {
+        ...itemToUpdate.ExpressionAttributeValues,
+        ...ExpressionAttributeValues,
+      };
+    }
 
     // when item does not have any unique attributes to update, return putItemInput
     if (!uniqueAttributesToUpdate.length) {
@@ -575,9 +616,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       const filter = this._expressionInputParser.parseToFilter(where);
 
       if (!filter) {
-        throw `Failed to build filter expression for input: ${JSON.stringify(
-          where
-        )}`;
+        throw new Error(
+          `Failed to build filter expression for input: ${JSON.stringify(
+            where
+          )}`
+        );
       }
 
       const {

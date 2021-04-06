@@ -24,9 +24,15 @@ export class ExpressionBuilder {
     return this.buildConditionExpression(uniqueRecordCondition);
   }
 
-  buildConditionExpression(condition: Condition) {
+  buildConditionExpression(
+    condition: Condition
+  ): {
+    ConditionExpression?: string;
+    ExpressionAttributeNames?: Record<string, any>;
+    ExpressionAttributeValues?: Record<string, any>;
+  } {
     if (!condition.expression) {
-      return {ConditionExpression: ''};
+      return {};
     }
     const expression = {
       ConditionExpression: condition.expression.trim(),
