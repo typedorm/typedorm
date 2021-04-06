@@ -423,6 +423,71 @@ test('updates item with unique attributes and returns all updated attributes', a
   });
 });
 
+test('updates item and return all new attributes with given condition', async () => {
+  dcMock.update.mockReturnValue({
+    promise: () => ({
+      Attributes: {
+        PK: 'USER#1',
+        SK: 'USER#1',
+        GSI1PK: 'USER#STATUS#active',
+        GSI1SK: 'USER#Me',
+        id: '1',
+        name: 'user',
+        status: 'active',
+        age: 4,
+      },
+    }),
+  });
+  const updatedItem = await manager.update<UserPrimaryKey, User>(
+    User,
+    {id: '1'},
+    {
+      name: 'user',
+      status: 'active',
+    },
+    {
+      where: {
+        age: {
+          BETWEEN: [1, 11],
+        },
+      },
+    }
+  );
+
+  expect(dcMock.update).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#attr0': 'name',
+      '#attr1': 'status',
+      '#attr2': 'GSI1SK',
+      '#attr3': 'GSI1PK',
+      '#CE_age': 'age',
+    },
+    ExpressionAttributeValues: {
+      ':val0': 'user',
+      ':val1': 'active',
+      ':val2': 'USER#user',
+      ':val3': 'USER#STATUS#active',
+      ':CE_age_end': 11,
+      ':CE_age_start': 1,
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression:
+      'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2, #attr3 = :val3',
+    ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
+  });
+  expect(updatedItem).toEqual({
+    id: '1',
+    name: 'user',
+    status: 'active',
+    age: 4,
+  });
+});
+
 test('does not update an item when failed to get item by key', async () => {
   manager.findOne = jest.fn();
 

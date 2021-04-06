@@ -418,6 +418,94 @@ test('transforms update item record with unique attributes', () => {
   ]);
 });
 
+test('transforms update item request with condition input', () => {
+  const updatedItem = transformer.toDynamoUpdateItem<UserPrimaryKey, User>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      name: 'new name',
+    },
+    {
+      where: {
+        age: {
+          BETWEEN: [3, 10],
+        },
+      },
+    }
+  );
+  expect(updatedItem).toEqual({
+    ExpressionAttributeNames: {
+      '#attr0': 'name',
+      '#attr1': 'GSI1SK',
+      '#CE_age': 'age',
+    },
+    ExpressionAttributeValues: {
+      ':val0': 'new name',
+      ':val1': 'USER#new name',
+      ':CE_age_end': 10,
+      ':CE_age_start': 3,
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
+  });
+});
+
+test('transforms update item request with complex condition input', () => {
+  const updatedItem = transformer.toDynamoUpdateItem<UserPrimaryKey, User>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      name: 'new name',
+    },
+    {
+      where: {
+        AND: {
+          age: {
+            GE: 3,
+          },
+          status: {
+            IN: ['active', 'standby'],
+          },
+        },
+      },
+    }
+  );
+  expect(updatedItem).toEqual({
+    ExpressionAttributeNames: {
+      '#attr0': 'name',
+      '#attr1': 'GSI1SK',
+      '#CE_age': 'age',
+      '#CE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':val0': 'new name',
+      ':val1': 'USER#new name',
+      ':CE_age': 3,
+      ':CE_status_0': 'active',
+      ':CE_status_1': 'standby',
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    ConditionExpression:
+      '(#CE_age >= :CE_age) AND (#CE_status IN (:CE_status_0, :CE_status_1))',
+  });
+});
+
 /**
  * @group toDynamoDeleteItem
  */
