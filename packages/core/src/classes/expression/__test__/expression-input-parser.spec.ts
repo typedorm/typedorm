@@ -1,5 +1,6 @@
 import {ATTRIBUTE_TYPE} from '@typedorm/common';
 import {User, UserPrimaryKey} from '@typedorm/core/__mocks__/user';
+import {Condition} from '../condition';
 import {ExpressionInputParser} from '../expression-input-parser';
 import {Filter} from '../filter';
 import {KeyCondition} from '../key-condition';
@@ -179,5 +180,38 @@ test('parses filter with complex nested logical operators', () => {
     ':FE_age_start': 1,
     ':FE_name': 'admin',
     ':FE_status': 'SS',
+  });
+});
+
+test('parses deep nested condition', () => {
+  const parsedCondition = expInputParser.parseToCondition<UserPrimaryKey, User>(
+    {
+      NOT: {
+        NOT: {
+          OR: {
+            AND: {
+              age: 'ATTRIBUTE_EXISTS',
+              name: 'ATTRIBUTE_NOT_EXISTS',
+            },
+            status: {
+              LE: '1',
+            },
+          },
+        },
+      },
+    }
+  );
+
+  expect(parsedCondition).toBeInstanceOf(Condition);
+  expect(parsedCondition?.expression).toEqual(
+    'NOT (NOT (((attribute_exists(#CE_age)) AND (attribute_not_exists(#CE_name))) OR (#CE_status <= :CE_status)))'
+  );
+  expect(parsedCondition?.names).toEqual({
+    '#CE_age': 'age',
+    '#CE_name': 'name',
+    '#CE_status': 'status',
+  });
+  expect(parsedCondition?.values).toEqual({
+    ':CE_status': '1',
   });
 });

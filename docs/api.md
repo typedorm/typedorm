@@ -242,6 +242,11 @@ exists(
     // body can include 'user$name' set to new value)
     // @default it '.'
     nestedKeySeparator
+
+    // @Optional
+    // condition based updates
+    // when present, it must evaluate to true in order for operation to succeed.
+    where
   }
 
 )
@@ -301,7 +306,7 @@ find(
     // @default ASC
     orderBy
 
-    // optional
+    // @optional
     // Filter returned items
     // Any conditions listed here will apply after items have been read from dynamodb and
     // therefore this should be avoided wherever possible, but can be helpful in some cases

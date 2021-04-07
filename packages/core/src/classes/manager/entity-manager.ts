@@ -19,12 +19,18 @@ import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {isWriteTransactionItemList} from '../transaction/type-guards';
 import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 import {FilterOptions} from '../expression/filter-options-type';
+import {ConditionOptions} from '../expression/condition-options-type';
 
-export interface EntityManagerUpdateOptions {
+export interface EntityManagerUpdateOptions<PrimaryKey, Entity> {
   /**
    * @default '.'
    */
   nestedKeySeparator?: string;
+
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<PrimaryKey, Entity>;
 }
 
 export interface EntityManagerQueryOptions<PrimaryKey, Entity>
@@ -217,7 +223,7 @@ export class EntityManager {
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
-    options?: EntityManagerUpdateOptions
+    options?: EntityManagerUpdateOptions<PrimaryKey, Entity>
   ): Promise<Entity> {
     const dynamoUpdateItem = this._dcReqTransformer.toDynamoUpdateItem<
       PrimaryKey,

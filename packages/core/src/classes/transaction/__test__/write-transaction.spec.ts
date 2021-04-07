@@ -34,6 +34,52 @@ test('creates transaction item with existing items', () => {
   ]);
 });
 
+test('creates transaction update item with given condition', () => {
+  const transaction = new WriteTransaction(connection);
+  transaction.chian({
+    update: {
+      item: User,
+      primaryKey: {
+        id: '111',
+      },
+      body: {
+        name: 'updated name',
+      },
+      options: {
+        where: {
+          age: {
+            LE: 1,
+          },
+        },
+      },
+    },
+  });
+
+  expect(transaction.items).toEqual([
+    {
+      Update: {
+        ConditionExpression: '#CE_age <= :CE_age',
+        ExpressionAttributeNames: {
+          '#CE_age': 'age',
+          '#attr0': 'name',
+          '#attr1': 'GSI1SK',
+        },
+        ExpressionAttributeValues: {
+          ':CE_age': 1,
+          ':val0': 'updated name',
+          ':val1': 'USER#updated name',
+        },
+        Key: {
+          PK: 'USER#111',
+          SK: 'USER#111',
+        },
+        TableName: 'test-table',
+        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+      },
+    },
+  ]);
+});
+
 /**
  * @group chain
  */

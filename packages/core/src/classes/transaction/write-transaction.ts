@@ -42,7 +42,7 @@ export class WriteTransaction extends Transaction {
     if (isCreateTransaction(chainedItem)) {
       this.items = this.chainCreateTransaction(chainedItem);
       // update
-    } else if (isUpdateTransaction(chainedItem)) {
+    } else if (isUpdateTransaction<PrimaryKey, Entity>(chainedItem)) {
       const {item, body, primaryKey, options} = chainedItem.update;
 
       const itemToUpdate = this._dcReqTransformer.toDynamoUpdateItem<
@@ -57,7 +57,7 @@ export class WriteTransaction extends Transaction {
         this.items.push(itemToUpdate);
       }
       // remove
-    } else if (isRemoveTransaction(chainedItem)) {
+    } else if (isRemoveTransaction<PrimaryKey, Entity>(chainedItem)) {
       const {item, primaryKey} = chainedItem.delete;
 
       const itemToRemove = this._dcReqTransformer.toDynamoDeleteItem<

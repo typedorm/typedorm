@@ -12,6 +12,8 @@ import {Filter} from './filter';
 import {BaseExpressionInput, MERGE_STRATEGY} from './base-expression-input';
 import {isScalarType} from '../../helpers/is-scalar-type';
 import {FilterOptions} from './filter-options-type';
+import {ConditionOptions} from './condition-options-type';
+import {Condition} from './condition';
 
 export type KeyConditionOptions = RequireOnlyOne<
   {
@@ -37,6 +39,12 @@ export class ExpressionInputParser {
     options: FilterOptions<PrimaryKey, Entity>
   ) {
     return this.recursiveParseToBaseExpression(options, Filter).pop();
+  }
+
+  parseToCondition<PrimaryKey, Entity>(
+    options: ConditionOptions<PrimaryKey, Entity>
+  ) {
+    return this.recursiveParseToBaseExpression(options, Condition).pop();
   }
 
   /**

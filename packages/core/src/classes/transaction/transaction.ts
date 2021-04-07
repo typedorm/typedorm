@@ -18,7 +18,7 @@ export interface WriteTransactionUpdate<PrimaryKey, Entity> {
     item: EntityTarget<Entity>;
     primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
     body: UpdateAttributes<PrimaryKey, Entity>;
-    options?: EntityManagerUpdateOptions;
+    options?: EntityManagerUpdateOptions<PrimaryKey, Entity>;
   };
 }
 export interface WriteTransactionDelete<PrimaryKey, Entity> {
