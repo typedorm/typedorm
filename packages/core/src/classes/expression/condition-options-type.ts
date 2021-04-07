@@ -69,14 +69,20 @@ type RecursiveConditionOptions<PrimaryKey, Entity> = {
     'OR' | 'AND'
   >]: RequireAtLeastOne<
     AttributeConditionOptions<PrimaryKey, Entity> &
-      RecursiveConditionOptions<PrimaryKey, Entity>
+      // manually infer recursive type
+      RecursiveConditionOptions<PrimaryKey, Entity> extends infer R
+      ? R
+      : never
   >;
 } &
   // for `NOT` logical operators require one from defined options or other self
   {
     [key in Extract<ConditionType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
       AttributeConditionOptions<PrimaryKey, Entity> &
-        RecursiveConditionOptions<PrimaryKey, Entity>
+        // manually infer recursive type
+        RecursiveConditionOptions<PrimaryKey, Entity> extends infer R
+        ? R
+        : never
     >;
   } &
   // require attribute filter

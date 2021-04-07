@@ -62,14 +62,20 @@ type RecursiveFilterOptions<PrimaryKey, Entity> = {
   // for `AND` and `OR` logical operators require at least one of defined options or other self
   [key in Extract<FilterType.LogicalOperator, 'OR' | 'AND'>]: RequireAtLeastOne<
     AttributeFilterOptions<PrimaryKey, Entity> &
-      RecursiveFilterOptions<PrimaryKey, Entity>
+      // manually infer recursive type
+      RecursiveFilterOptions<PrimaryKey, Entity> extends infer R
+      ? R
+      : never
   >;
 } &
   // for `NOT` logical operators require one from defined options or other self
   {
     [key in Extract<FilterType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
       AttributeFilterOptions<PrimaryKey, Entity> &
-        RecursiveFilterOptions<PrimaryKey, Entity>
+        // manually infer recursive type
+        RecursiveFilterOptions<PrimaryKey, Entity> extends infer R
+        ? R
+        : never
     >;
   } &
   // require attribute filter
@@ -78,3 +84,5 @@ type RecursiveFilterOptions<PrimaryKey, Entity> = {
 export type FilterOptions<PrimaryKey, Entity> = RequireOnlyOne<
   RecursiveFilterOptions<PrimaryKey, Entity>
 >;
+
+// export type FilterOptions<PrimaryKey, Entity> = any;
