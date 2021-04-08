@@ -54,27 +54,52 @@ test('creates transaction update item with given condition', () => {
       },
     },
   });
+});
+
+test('creates transaction put item with given condition', () => {
+  const transaction = new WriteTransaction(connection);
+  const user = new User();
+  user.id = '1';
+  user.name = 'test user';
+  user.status = 'active';
+
+  transaction.chian({
+    create: {
+      item: user,
+      options: {
+        where: {
+          age: {
+            LE: 1,
+          },
+        },
+      },
+    },
+  });
 
   expect(transaction.items).toEqual([
     {
-      Update: {
-        ConditionExpression: '#CE_age <= :CE_age',
+      Put: {
+        ConditionExpression:
+          '((attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))) AND (#CE_age <= :CE_age)',
         ExpressionAttributeNames: {
+          '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
           '#CE_age': 'age',
-          '#attr0': 'name',
-          '#attr1': 'GSI1SK',
         },
         ExpressionAttributeValues: {
           ':CE_age': 1,
-          ':val0': 'updated name',
-          ':val1': 'USER#updated name',
         },
-        Key: {
-          PK: 'USER#111',
-          SK: 'USER#111',
+        Item: {
+          GSI1PK: 'USER#STATUS#active',
+          GSI1SK: 'USER#test user',
+          PK: 'USER#1',
+          SK: 'USER#1',
+          __en: 'user',
+          id: '1',
+          name: 'test user',
+          status: 'active',
         },
         TableName: 'test-table',
-        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
       },
     },
   ]);

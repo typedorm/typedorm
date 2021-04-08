@@ -39,7 +39,7 @@ export class WriteTransaction extends Transaction {
     chainedItem: WriteTransactionChainItem<PrimaryKey, Entity>
   ): WriteTransaction {
     // create
-    if (isCreateTransaction(chainedItem)) {
+    if (isCreateTransaction<Entity>(chainedItem)) {
       this.items = this.chainCreateTransaction(chainedItem);
       // update
     } else if (isUpdateTransaction<PrimaryKey, Entity>(chainedItem)) {
@@ -81,11 +81,12 @@ export class WriteTransaction extends Transaction {
     chainedItem: WriteTransactionCreate<Entity>
   ) {
     const {
-      create: {item},
+      create: {item, options},
     } = chainedItem;
 
     const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem<Entity>(
-      item
+      item,
+      options
     );
 
     if (!isWriteTransactionItemList(dynamoPutItemInput)) {

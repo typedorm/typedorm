@@ -5,13 +5,16 @@ import {
   UpdateAttributes,
 } from '@typedorm/common';
 import {Connection} from '../connection/connection';
-import {EntityManagerUpdateOptions} from '../manager/entity-manager';
+import {
+  EntityManagerCreateOptions,
+  EntityManagerUpdateOptions,
+} from '../manager/entity-manager';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
 import {LazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 
 // transaction interfaces
 export interface WriteTransactionCreate<Entity> {
-  create: {item: Entity};
+  create: {item: Entity; options?: EntityManagerCreateOptions<Entity>};
 }
 export interface WriteTransactionUpdate<PrimaryKey, Entity> {
   update: {
