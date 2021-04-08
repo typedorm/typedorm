@@ -11,7 +11,7 @@ import {Connection} from '../connection/connection';
 import {WriteTransaction} from '../transaction/write-transaction';
 import {
   DocumentClientRequestTransformer,
-  TransformerToDynamoQueryItemsOptions,
+  ManagerToDynamoQueryItemsOptions,
 } from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
@@ -21,7 +21,19 @@ import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-trans
 import {FilterOptions} from '../expression/filter-options-type';
 import {ConditionOptions} from '../expression/condition-options-type';
 
-export interface EntityManagerUpdateOptions<PrimaryKey, Entity> {
+export interface EntityManagerCreateOptions<Entity> {
+  /**
+   * @default false
+   */
+  overwriteIfExists?: boolean;
+
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<Entity>;
+}
+
+export interface EntityManagerUpdateOptions<Entity> {
   /**
    * @default '.'
    */
@@ -30,11 +42,11 @@ export interface EntityManagerUpdateOptions<PrimaryKey, Entity> {
   /**
    * Specify condition to apply
    */
-  where?: ConditionOptions<PrimaryKey, Entity>;
+  where?: ConditionOptions<Entity>;
 }
 
 export interface EntityManagerQueryOptions<PrimaryKey, Entity>
-  extends TransformerToDynamoQueryItemsOptions {
+  extends ManagerToDynamoQueryItemsOptions {
   cursor?: DynamoDB.DocumentClient.Key;
 
   /**
@@ -58,8 +70,14 @@ export class EntityManager {
    * Creates new record in table with given entity
    * @param entity Entity to add to table as a new record
    */
-  async create<Entity>(entity: Entity): Promise<Entity> {
-    const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(entity);
+  async create<Entity>(
+    entity: Entity,
+    options?: EntityManagerCreateOptions<Entity>
+  ): Promise<Entity> {
+    const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(
+      entity,
+      options
+    );
     const entityClass = getConstructorForInstance(entity);
 
     if (!isWriteTransactionItemList(dynamoPutItemInput)) {
@@ -223,7 +241,7 @@ export class EntityManager {
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
-    options?: EntityManagerUpdateOptions<PrimaryKey, Entity>
+    options?: EntityManagerUpdateOptions<Entity>
   ): Promise<Entity> {
     const dynamoUpdateItem = this._dcReqTransformer.toDynamoUpdateItem<
       PrimaryKey,

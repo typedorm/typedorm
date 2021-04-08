@@ -77,6 +77,88 @@ test('creates entity', async () => {
   });
 });
 
+test('creates entity with possible overwrite', async () => {
+  dcMock.put.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const user = new User();
+  user.id = '1';
+  user.name = 'Test User';
+  user.status = 'active';
+
+  const userEntity = await manager.create(user, {
+    overwriteIfExists: true,
+  });
+  expect(dcMock.put).toHaveBeenCalledTimes(1);
+  expect(dcMock.put).toHaveBeenCalledWith({
+    Item: {
+      GSI1PK: 'USER#STATUS#active',
+      GSI1SK: 'USER#Test User',
+      PK: 'USER#1',
+      SK: 'USER#1',
+      id: '1',
+      __en: 'user',
+      name: 'Test User',
+      status: 'active',
+    },
+    TableName: 'test-table',
+  });
+  expect(userEntity).toEqual({
+    id: '1',
+    name: 'Test User',
+    status: 'active',
+  });
+});
+
+test('creates entity with possible overwrite and given condition', async () => {
+  dcMock.put.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const user = new User();
+  user.id = '1';
+  user.name = 'Test User';
+  user.status = 'active';
+
+  const userEntity = await manager.create<User>(user, {
+    overwriteIfExists: true,
+    where: {
+      NOT: {
+        id: {
+          EQ: '1',
+        },
+      },
+    },
+  });
+  expect(dcMock.put).toHaveBeenCalledTimes(1);
+  expect(dcMock.put).toHaveBeenCalledWith({
+    Item: {
+      GSI1PK: 'USER#STATUS#active',
+      GSI1SK: 'USER#Test User',
+      PK: 'USER#1',
+      SK: 'USER#1',
+      id: '1',
+      __en: 'user',
+      name: 'Test User',
+      status: 'active',
+    },
+    ConditionExpression: 'NOT (#CE_id = :CE_id)',
+    ExpressionAttributeNames: {
+      '#CE_id': 'id',
+    },
+    ExpressionAttributeValues: {
+      ':CE_id': '1',
+    },
+    TableName: 'test-table',
+  });
+  expect(userEntity).toEqual({
+    id: '1',
+    name: 'Test User',
+    status: 'active',
+  });
+});
+
 /**
  * Issue: #11
  */

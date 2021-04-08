@@ -83,6 +83,44 @@ test('transforms put item requests', () => {
   });
 });
 
+test('transforms put item requests with condition', () => {
+  const user = new User();
+  user.id = '1';
+  user.name = 'Tito';
+  user.status = 'active';
+
+  const putItem = transformer.toDynamoPutItem(user, {
+    where: {
+      status: {
+        EQ: 'active',
+      },
+    },
+  });
+  expect(putItem).toEqual({
+    Item: {
+      GSI1PK: 'USER#STATUS#active',
+      GSI1SK: 'USER#Tito',
+      PK: 'USER#1',
+      SK: 'USER#1',
+      id: '1',
+      name: 'Tito',
+      __en: 'user',
+      status: 'active',
+    },
+    ConditionExpression:
+      '((attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))) AND (#CE_status = :CE_status)',
+    ExpressionAttributeNames: {
+      '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
+      '#CE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':CE_status': 'active',
+    },
+    TableName: 'test-table',
+  });
+});
+
 test('transforms put item request with unique attributes', () => {
   resetTestConnection();
 

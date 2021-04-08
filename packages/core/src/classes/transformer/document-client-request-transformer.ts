@@ -27,7 +27,26 @@ import {
   KeyConditionOptions,
 } from '../expression/expression-input-parser';
 
-export interface TransformerToDynamoQueryItemsOptions {
+export interface ManagerToDynamoPutItemOptions {
+  /**
+   * @default false
+   */
+  overwriteIfExists?: boolean;
+
+  where?: any;
+}
+
+export interface ManagerToDynamoUpdateItemsOptions {
+  /**
+   * key separator
+   * @default '.''
+   */
+  nestedKeySeparator?: string;
+
+  where?: any;
+}
+
+export interface ManagerToDynamoQueryItemsOptions {
   /**
    * Index to query, when omitted, query will be run against main table
    */
@@ -53,26 +72,9 @@ export interface TransformerToDynamoQueryItemsOptions {
   where?: any;
 }
 
-export interface TransformerToDynamoUpdateItemsOptions {
-  /**
-   * key separator
-   * @default '.''
-   */
-  nestedKeySeparator?: string;
-
-  where?: any;
-}
-
-export interface ManagerToDynamoPutItemOptions {
-  /**
-   * @default false
-   */
-  overwriteIfExists: boolean;
-}
-
 export class DocumentClientRequestTransformer extends BaseTransformer {
-  private _expressionBuilder: ExpressionBuilder;
-  private _expressionInputParser: ExpressionInputParser;
+  protected _expressionBuilder: ExpressionBuilder;
+  protected _expressionInputParser: ExpressionInputParser;
 
   constructor(connection: Connection) {
     super(connection);
@@ -80,45 +82,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     this._expressionInputParser = new ExpressionInputParser();
   }
 
-  toDynamoGetItem<PrimaryKey, Entity>(
-    entityClass: EntityTarget<Entity>,
-    primaryKey: PrimaryKey
-  ): DynamoDB.DocumentClient.GetItemInput {
-    const metadata = this.connection.getEntityByTarget(entityClass);
+  get expressionBuilder() {
+    return this._expressionBuilder;
+  }
 
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.GET,
-      'Before',
-      metadata.name,
-      primaryKey
-    );
-
-    const tableName = this.getTableNameForEntity(entityClass);
-
-    const parsedPrimaryKey = this.getParsedPrimaryKey(
-      metadata.table,
-      metadata.schema.primaryKey,
-      primaryKey
-    );
-
-    if (isEmptyObject(parsedPrimaryKey)) {
-      throw new Error('Primary could not be resolved');
-    }
-
-    const transformBody = {
-      TableName: tableName,
-      Key: {
-        ...parsedPrimaryKey,
-      },
-    };
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.GET,
-      'After',
-      metadata.name,
-      null,
-      transformBody
-    );
-    return transformBody;
+  get expressionInputParser() {
+    return this._expressionInputParser;
   }
 
   toDynamoPutItem<Entity>(
@@ -179,7 +148,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     } as DynamoDB.DocumentClient.PutItemInput;
 
     // apply attribute not exist condition when creating unique
-    const uniqueRecordConditionExpression = new ExpressionBuilder().buildUniqueRecordConditionExpression(
+    const uniqueRecordConditionExpression = this.expressionBuilder.buildUniqueRecordConditionExpression(
       table
     );
 
@@ -191,6 +160,44 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
     }
 
+    // if there is `where` condition options exists, build condition expression
+    if (options?.where && !isEmptyObject(options?.where)) {
+      const condition = this.expressionInputParser.parseToCondition(
+        options?.where
+      );
+
+      if (!condition) {
+        throw new Error(
+          `Failed to build condition expression for input: ${JSON.stringify(
+            options?.where
+          )}`
+        );
+      }
+
+      const {
+        ConditionExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+      } = this.expressionBuilder.buildConditionExpression(condition);
+
+      // by default, entity manger appends unique record condition expression to avoid overwriting items if they already exist
+      // so handle that
+      dynamoPutItem.ConditionExpression = ExpressionBuilder.andMergeExpressions(
+        dynamoPutItem.ConditionExpression,
+        ConditionExpression
+      );
+
+      dynamoPutItem.ExpressionAttributeNames = {
+        ...dynamoPutItem.ExpressionAttributeNames,
+        ...ExpressionAttributeNames,
+      };
+      dynamoPutItem.ExpressionAttributeValues = {
+        ...dynamoPutItem.ExpressionAttributeValues,
+        ...ExpressionAttributeValues,
+      };
+    }
+
+    // no unique attributes exist, so return early
     if (!uniqueAttributes.length) {
       this.connection.logger.logTransform(
         TRANSFORM_TYPE.PUT,
@@ -199,6 +206,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         null,
         dynamoPutItem
       );
+
       return dynamoPutItem;
     }
 
@@ -252,11 +260,52 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     return uniqueAttributesPutItems;
   }
 
+  toDynamoGetItem<PrimaryKey, Entity>(
+    entityClass: EntityTarget<Entity>,
+    primaryKey: PrimaryKey
+  ): DynamoDB.DocumentClient.GetItemInput {
+    const metadata = this.connection.getEntityByTarget(entityClass);
+
+    this.connection.logger.logTransform(
+      TRANSFORM_TYPE.GET,
+      'Before',
+      metadata.name,
+      primaryKey
+    );
+
+    const tableName = this.getTableNameForEntity(entityClass);
+
+    const parsedPrimaryKey = this.getParsedPrimaryKey(
+      metadata.table,
+      metadata.schema.primaryKey,
+      primaryKey
+    );
+
+    if (isEmptyObject(parsedPrimaryKey)) {
+      throw new Error('Primary could not be resolved');
+    }
+
+    const transformBody = {
+      TableName: tableName,
+      Key: {
+        ...parsedPrimaryKey,
+      },
+    };
+    this.connection.logger.logTransform(
+      TRANSFORM_TYPE.GET,
+      'After',
+      metadata.name,
+      null,
+      transformBody
+    );
+    return transformBody;
+  }
+
   toDynamoUpdateItem<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
     body: UpdateAttributes<PrimaryKey, Entity>,
-    options: TransformerToDynamoUpdateItemsOptions = {}
+    options: ManagerToDynamoUpdateItemsOptions = {}
   ):
     | DynamoDB.DocumentClient.UpdateItemInput
     | LazyTransactionWriteItemListLoader {
@@ -316,7 +365,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       UpdateExpression,
       ExpressionAttributeNames,
       ExpressionAttributeValues,
-    } = this._expressionBuilder.buildUpdateExpression({
+    } = this.expressionBuilder.buildUpdateExpression({
       ...attributesToUpdate,
       ...affectedIndexes,
     });
@@ -339,7 +388,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // if 'where' was provided, build condition expression
     if (options.where && !isEmptyObject(options.where)) {
-      const condition = this._expressionInputParser.parseToCondition(
+      const condition = this.expressionInputParser.parseToCondition(
         options.where
       );
 
@@ -355,7 +404,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ConditionExpression,
         ExpressionAttributeNames,
         ExpressionAttributeValues,
-      } = this._expressionBuilder.buildConditionExpression(condition);
+      } = this.expressionBuilder.buildConditionExpression(condition);
 
       // append condition expression if one was built
       itemToUpdate.ConditionExpression = ConditionExpression;
@@ -464,7 +513,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   toDynamoQueryItem<PartitionKeyAttributes, Entity>(
     entityClass: EntityTarget<Entity>,
     partitionKeyAttributes: PartitionKeyAttributes | string,
-    queryOptions?: TransformerToDynamoQueryItemsOptions
+    queryOptions?: ManagerToDynamoQueryItemsOptions
   ): DynamoDB.DocumentClient.QueryInput {
     const {table, schema, name} = this.connection.getEntityByTarget(
       entityClass
@@ -532,7 +581,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       parsedPartitionKey.value
     );
 
-    const partitionKeyConditionExpression = this._expressionBuilder.buildKeyConditionExpression(
+    const partitionKeyConditionExpression = this.expressionBuilder.buildKeyConditionExpression(
       partitionKeyCondition
     );
 
@@ -583,7 +632,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     if (keyCondition && !isEmptyObject(keyCondition)) {
       // build sort key condition
 
-      const sortKeyCondition = this._expressionInputParser.parseToKeyCondition(
+      const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
         parsedSortKey.name,
         keyCondition
       );
@@ -593,7 +642,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         KeyConditionExpression,
         ExpressionAttributeNames,
         ExpressionAttributeValues,
-      } = this._expressionBuilder.buildKeyConditionExpression(
+      } = this.expressionBuilder.buildKeyConditionExpression(
         partitionKeyCondition.merge(sortKeyCondition)
       );
 
@@ -613,7 +662,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // when filter conditions are given generate filter expression
     if (where && !isEmptyObject(where)) {
-      const filter = this._expressionInputParser.parseToFilter(where);
+      const filter = this.expressionInputParser.parseToFilter(where);
 
       if (!filter) {
         throw new Error(
@@ -627,7 +676,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         FilterExpression,
         ExpressionAttributeNames,
         ExpressionAttributeValues,
-      } = this._expressionBuilder.buildFilterExpression(filter);
+      } = this.expressionBuilder.buildFilterExpression(filter);
 
       queryInputParams = {
         ...queryInputParams,
@@ -676,7 +725,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     // returns transact write item list
     return (previousItemBody: any) => {
       // updating unique attributes also require checking if new value exists
-      const uniqueRecordConditionExpression = new ExpressionBuilder().buildUniqueRecordConditionExpression(
+      const uniqueRecordConditionExpression = this.expressionBuilder.buildUniqueRecordConditionExpression(
         table
       );
 
