@@ -7,6 +7,22 @@ import {Filter} from './filter';
 import {KeyCondition} from './key-condition';
 
 export class ExpressionBuilder {
+  static andMergeExpressions(existingExp?: string, newExp?: string) {
+    if (existingExp && !newExp) {
+      return existingExp;
+    }
+
+    if (newExp && !existingExp) {
+      return newExp;
+    }
+
+    if (!newExp && !existingExp) {
+      return '';
+    }
+
+    return `(${existingExp}) AND (${newExp})`;
+  }
+
   /**
    * Higher level function to build unique record condition expression
    * @param table table to build unique record expression for
