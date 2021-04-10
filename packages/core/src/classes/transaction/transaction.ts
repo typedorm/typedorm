@@ -7,6 +7,7 @@ import {
 import {Connection} from '../connection/connection';
 import {
   EntityManagerCreateOptions,
+  EntityManagerDeleteOptions,
   EntityManagerUpdateOptions,
 } from '../manager/entity-manager';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
@@ -28,6 +29,7 @@ export interface WriteTransactionDelete<PrimaryKey, Entity> {
   delete: {
     item: EntityTarget<Entity>;
     primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+    options?: EntityManagerDeleteOptions<Entity>;
   };
 }
 export type WriteTransactionChainItem<PrimaryKey, Entity> =

@@ -7,20 +7,43 @@ import {Filter} from './filter';
 import {KeyCondition} from './key-condition';
 
 export class ExpressionBuilder {
-  static andMergeExpressions(existingExp?: string, newExp?: string) {
-    if (existingExp && !newExp) {
-      return existingExp;
+  andMergeConditionExpressions(
+    existingExp: {
+      ConditionExpression?: string;
+      ExpressionAttributeNames?: any;
+      ExpressionAttributeValues?: any;
+    },
+    newExp: {
+      ConditionExpression?: string;
+      ExpressionAttributeNames?: any;
+      ExpressionAttributeValues?: any;
+    }
+  ) {
+    if (existingExp.ConditionExpression && !newExp.ConditionExpression) {
+      return this.removeEmptyFieldsAndReturn(existingExp);
     }
 
-    if (newExp && !existingExp) {
-      return newExp;
+    if (newExp.ConditionExpression && !existingExp.ConditionExpression) {
+      return this.removeEmptyFieldsAndReturn(newExp);
     }
 
     if (!newExp && !existingExp) {
-      return '';
+      return {};
     }
 
-    return `(${existingExp}) AND (${newExp})`;
+    const mergedExp = {
+      ConditionExpression: `(${existingExp.ConditionExpression}) AND (${newExp.ConditionExpression})`,
+      ExpressionAttributeNames: {
+        ...existingExp.ExpressionAttributeNames,
+        ...newExp.ExpressionAttributeNames,
+      },
+      ExpressionAttributeValues: {
+        ...existingExp.ExpressionAttributeValues,
+        ...newExp.ExpressionAttributeValues,
+      },
+    };
+
+    return this.removeEmptyFieldsAndReturn(mergedExp);
   }
 
   /**
@@ -37,7 +60,8 @@ export class ExpressionBuilder {
           )
       : new Condition().attributeNotExist(table.partitionKey);
 
-    return this.buildConditionExpression(uniqueRecordCondition);
+    const expression = this.buildConditionExpression(uniqueRecordCondition);
+    return this.removeEmptyFieldsAndReturn(expression);
   }
 
   buildConditionExpression(
@@ -50,11 +74,13 @@ export class ExpressionBuilder {
     if (!condition.expression) {
       return {};
     }
+
     const expression = {
       ConditionExpression: condition.expression.trim(),
       ExpressionAttributeNames: condition.names,
       ExpressionAttributeValues: condition.values,
     };
+
     return this.removeEmptyFieldsAndReturn(expression);
   }
 
@@ -152,8 +178,8 @@ export class ExpressionBuilder {
   }
 
   private removeEmptyFieldsAndReturn(expression: {
-    ExpressionAttributeNames: any;
-    ExpressionAttributeValues: any;
+    ExpressionAttributeNames?: Record<string, any>;
+    ExpressionAttributeValues?: Record<string, any>;
     [key: string]: any;
   }) {
     if (isEmptyObject(expression.ExpressionAttributeNames)) {
