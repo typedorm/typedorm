@@ -5,26 +5,31 @@ import {
   UpdateAttributes,
 } from '@typedorm/common';
 import {Connection} from '../connection/connection';
-import {EntityManagerUpdateOptions} from '../manager/entity-manager';
+import {
+  EntityManagerCreateOptions,
+  EntityManagerDeleteOptions,
+  EntityManagerUpdateOptions,
+} from '../manager/entity-manager';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
 import {LazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 
 // transaction interfaces
 export interface WriteTransactionCreate<Entity> {
-  create: {item: Entity};
+  create: {item: Entity; options?: EntityManagerCreateOptions<Entity>};
 }
 export interface WriteTransactionUpdate<PrimaryKey, Entity> {
   update: {
     item: EntityTarget<Entity>;
     primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
     body: UpdateAttributes<PrimaryKey, Entity>;
-    options?: EntityManagerUpdateOptions<PrimaryKey, Entity>;
+    options?: EntityManagerUpdateOptions<Entity>;
   };
 }
 export interface WriteTransactionDelete<PrimaryKey, Entity> {
   delete: {
     item: EntityTarget<Entity>;
     primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+    options?: EntityManagerDeleteOptions<Entity>;
   };
 }
 export type WriteTransactionChainItem<PrimaryKey, Entity> =

@@ -1,5 +1,5 @@
 import {
-  NonKeyAttributes,
+  NestedAttributes,
   RequireOnlyOne,
   ConditionType,
   ScalarType,
@@ -7,9 +7,8 @@ import {
   RequireAtLeastOne,
 } from '@typedorm/common';
 
-type AttributeConditionOptions<PrimaryKey, Entity> =
-  | NonKeyAttributes<
-      PrimaryKey,
+type AttributeConditionOptions<Entity> =
+  | NestedAttributes<
       Entity,
       RequireOnlyOne<
         // if condition is one of the below, value must be of scalar type
@@ -53,8 +52,7 @@ type AttributeConditionOptions<PrimaryKey, Entity> =
       >
     >
   // for 'ATTRIBUTE_EXISTS' and 'ATTRIBUTE_NOT_EXISTS', key can be higher level attribute or a path to nested attribute
-  | NonKeyAttributes<
-      PrimaryKey,
+  | NestedAttributes<
       Entity,
       Extract<
         ConditionType.FunctionOperator,
@@ -62,15 +60,15 @@ type AttributeConditionOptions<PrimaryKey, Entity> =
       >
     >;
 
-type RecursiveConditionOptions<PrimaryKey, Entity> = {
+type RecursiveConditionOptions<Entity> = {
   // for `AND` and `OR` logical operators require at least one of defined options or other self
   [key in Extract<
     ConditionType.LogicalOperator,
     'OR' | 'AND'
   >]: RequireAtLeastOne<
-    AttributeConditionOptions<PrimaryKey, Entity> &
+    AttributeConditionOptions<Entity> &
       // manually infer recursive type
-      RecursiveConditionOptions<PrimaryKey, Entity> extends infer R
+      RecursiveConditionOptions<Entity> extends infer R
       ? R
       : never
   >;
@@ -78,16 +76,16 @@ type RecursiveConditionOptions<PrimaryKey, Entity> = {
   // for `NOT` logical operators require one from defined options or other self
   {
     [key in Extract<ConditionType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
-      AttributeConditionOptions<PrimaryKey, Entity> &
+      AttributeConditionOptions<Entity> &
         // manually infer recursive type
-        RecursiveConditionOptions<PrimaryKey, Entity> extends infer R
+        RecursiveConditionOptions<Entity> extends infer R
         ? R
         : never
     >;
   } &
   // require attribute filter
-  AttributeConditionOptions<PrimaryKey, Entity>;
+  AttributeConditionOptions<Entity>;
 
-export type ConditionOptions<PrimaryKey, Entity> = RequireOnlyOne<
-  RecursiveConditionOptions<PrimaryKey, Entity>
+export type ConditionOptions<Entity> = RequireOnlyOne<
+  RecursiveConditionOptions<Entity>
 >;

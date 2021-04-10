@@ -41,9 +41,7 @@ export class ExpressionInputParser {
     return this.recursiveParseToBaseExpression(options, Filter).pop();
   }
 
-  parseToCondition<PrimaryKey, Entity>(
-    options: ConditionOptions<PrimaryKey, Entity>
-  ) {
+  parseToCondition<Entity>(options: ConditionOptions<Entity>) {
     return this.recursiveParseToBaseExpression(options, Condition).pop();
   }
 

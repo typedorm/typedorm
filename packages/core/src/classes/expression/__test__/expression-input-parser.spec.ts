@@ -184,23 +184,21 @@ test('parses filter with complex nested logical operators', () => {
 });
 
 test('parses deep nested condition', () => {
-  const parsedCondition = expInputParser.parseToCondition<UserPrimaryKey, User>(
-    {
+  const parsedCondition = expInputParser.parseToCondition<User>({
+    NOT: {
       NOT: {
-        NOT: {
-          OR: {
-            AND: {
-              age: 'ATTRIBUTE_EXISTS',
-              name: 'ATTRIBUTE_NOT_EXISTS',
-            },
-            status: {
-              LE: '1',
-            },
+        OR: {
+          AND: {
+            age: 'ATTRIBUTE_EXISTS',
+            name: 'ATTRIBUTE_NOT_EXISTS',
+          },
+          status: {
+            LE: '1',
           },
         },
       },
-    }
-  );
+    },
+  });
 
   expect(parsedCondition).toBeInstanceOf(Condition);
   expect(parsedCondition?.expression).toEqual(

@@ -39,7 +39,7 @@ export class WriteTransaction extends Transaction {
     chainedItem: WriteTransactionChainItem<PrimaryKey, Entity>
   ): WriteTransaction {
     // create
-    if (isCreateTransaction(chainedItem)) {
+    if (isCreateTransaction<Entity>(chainedItem)) {
       this.items = this.chainCreateTransaction(chainedItem);
       // update
     } else if (isUpdateTransaction<PrimaryKey, Entity>(chainedItem)) {
@@ -58,12 +58,12 @@ export class WriteTransaction extends Transaction {
       }
       // remove
     } else if (isRemoveTransaction<PrimaryKey, Entity>(chainedItem)) {
-      const {item, primaryKey} = chainedItem.delete;
+      const {item, primaryKey, options} = chainedItem.delete;
 
       const itemToRemove = this._dcReqTransformer.toDynamoDeleteItem<
         PrimaryKey,
         Entity
-      >(item, primaryKey);
+      >(item, primaryKey, options);
       if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
         this.items.push({
           Delete: itemToRemove,
@@ -81,11 +81,12 @@ export class WriteTransaction extends Transaction {
     chainedItem: WriteTransactionCreate<Entity>
   ) {
     const {
-      create: {item},
+      create: {item, options},
     } = chainedItem;
 
     const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem<Entity>(
-      item
+      item,
+      options
     );
 
     if (!isWriteTransactionItemList(dynamoPutItemInput)) {
