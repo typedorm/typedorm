@@ -46,6 +46,10 @@ export interface ManagerToDynamoUpdateItemsOptions {
   where?: any;
 }
 
+export interface ManagerToDynamoDeleteItemsOptions {
+  where?: any;
+}
+
 export interface ManagerToDynamoQueryItemsOptions {
   /**
    * Index to query, when omitted, query will be run against main table
@@ -182,19 +186,24 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
       // by default, entity manger appends unique record condition expression to avoid overwriting items if they already exist
       // so handle that
-      dynamoPutItem.ConditionExpression = ExpressionBuilder.andMergeExpressions(
-        dynamoPutItem.ConditionExpression,
-        ConditionExpression
+      const mergedExp = this._expressionBuilder.andMergeConditionExpressions(
+        {
+          ConditionExpression: dynamoPutItem.ConditionExpression,
+          ExpressionAttributeNames: dynamoPutItem.ExpressionAttributeNames,
+          ExpressionAttributeValues: dynamoPutItem.ExpressionAttributeValues,
+        },
+        {
+          ConditionExpression,
+          ExpressionAttributeNames,
+          ExpressionAttributeValues,
+        }
       );
 
-      dynamoPutItem.ExpressionAttributeNames = {
-        ...dynamoPutItem.ExpressionAttributeNames,
-        ...ExpressionAttributeNames,
-      };
-      dynamoPutItem.ExpressionAttributeValues = {
-        ...dynamoPutItem.ExpressionAttributeValues,
-        ...ExpressionAttributeValues,
-      };
+      dynamoPutItem.ConditionExpression = mergedExp.ConditionExpression;
+      dynamoPutItem.ExpressionAttributeNames =
+        mergedExp.ExpressionAttributeNames;
+      dynamoPutItem.ExpressionAttributeValues =
+        mergedExp.ExpressionAttributeValues;
     }
 
     // no unique attributes exist, so return early
@@ -451,7 +460,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
   toDynamoDeleteItem<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKey: PrimaryKey
+    primaryKey: PrimaryKey,
+    options?: ManagerToDynamoDeleteItemsOptions
   ):
     | DynamoDB.DocumentClient.DeleteItemInput
     | LazyTransactionWriteItemListLoader {
@@ -478,14 +488,46 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       entityClass
     );
 
-    const mainItemToRemove = {
+    const mainItemToRemove: DynamoDB.DocumentClient.DeleteItemInput = {
       TableName: tableName,
       Key: {
         ...parsedPrimaryKey,
       },
     };
-    // if item does not have any unique attributes return it as is
+
+    if (options?.where && !isEmptyObject(options.where)) {
+      const condition = this.expressionInputParser.parseToCondition(
+        options?.where
+      );
+
+      if (!condition) {
+        throw new Error(
+          `Failed to build condition expression for input: ${JSON.stringify(
+            options?.where
+          )}`
+        );
+      }
+
+      const {
+        ConditionExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+      } = this.expressionBuilder.buildConditionExpression(condition);
+
+      mainItemToRemove.ConditionExpression = ConditionExpression;
+      mainItemToRemove.ExpressionAttributeNames = {
+        ...mainItemToRemove.ExpressionAttributeNames,
+        ...ExpressionAttributeNames,
+      };
+
+      mainItemToRemove.ExpressionAttributeValues = {
+        ...mainItemToRemove.ExpressionAttributeValues,
+        ...ExpressionAttributeValues,
+      };
+    }
+
     if (!uniqueAttributesToRemove?.length) {
+      // if item does not have any unique attributes return it as is
       this.connection.logger.logTransform(
         TRANSFORM_TYPE.DELETE,
         'After',

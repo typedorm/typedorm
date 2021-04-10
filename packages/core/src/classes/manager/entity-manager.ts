@@ -45,6 +45,13 @@ export interface EntityManagerUpdateOptions<Entity> {
   where?: ConditionOptions<Entity>;
 }
 
+export interface EntityManagerDeleteOptions<Entity> {
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<Entity>;
+}
+
 export interface EntityManagerQueryOptions<PrimaryKey, Entity>
   extends ManagerToDynamoQueryItemsOptions {
   cursor?: DynamoDB.DocumentClient.Key;
@@ -296,12 +303,13 @@ export class EntityManager {
    */
   async delete<PrimaryKeyAttributes, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKeyAttributes: PrimaryKeyAttributes
+    primaryKeyAttributes: PrimaryKeyAttributes,
+    options?: EntityManagerDeleteOptions<Entity>
   ) {
     const dynamoDeleteItem = this._dcReqTransformer.toDynamoDeleteItem<
       PrimaryKeyAttributes,
       Entity
-    >(entityClass, primaryKeyAttributes);
+    >(entityClass, primaryKeyAttributes, options);
 
     if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
       await this.connection.documentClient.delete(dynamoDeleteItem).promise();

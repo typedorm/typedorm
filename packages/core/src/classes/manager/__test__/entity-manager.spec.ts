@@ -615,6 +615,46 @@ test('deletes item by primary key', async () => {
   });
 });
 
+test('deletes item by primary key and given condition', async () => {
+  dcMock.delete.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      Attributes: {},
+    }),
+  });
+
+  const result = await manager.delete<UserPrimaryKey, User>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      where: {
+        status: {
+          NE: 'active',
+        },
+      },
+    }
+  );
+
+  expect(dcMock.delete).toHaveBeenCalledWith({
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    TableName: 'test-table',
+    ConditionExpression: '#CE_status <> :CE_status',
+    ExpressionAttributeNames: {
+      '#CE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':CE_status': 'active',
+    },
+  });
+  expect(result).toEqual({
+    success: true,
+  });
+});
+
 test('throws an error when trying to delete item by non primary key attributes', async () => {
   await expect(
     manager.delete(User, {
