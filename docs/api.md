@@ -188,6 +188,15 @@ create(
   // Entity to put into db
   // Item will be created to table configured on @Entity or Connection
   entity
+
+  // @Optional;
+  // Additional options
+  options: {
+    // @Optional
+    // condition based creates
+    // when present, it must evaluate to true in order for operation to succeed.
+    where
+  }
 )
 ```
 
@@ -263,6 +272,15 @@ delete(
 
   // Primary key attributes or unique attributes referenced in schemas
   primaryKeyAttributes
+
+  // @Optional;
+  // Additional options
+  options: {
+    // @Optional
+    // condition based creates
+    // when present, it must evaluate to true in order for operation to succeed.
+    where
+  }
 )
 ```
 
