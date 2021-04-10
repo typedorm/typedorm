@@ -54,6 +54,68 @@ test('creates transaction update item with given condition', () => {
       },
     },
   });
+
+  expect(transaction.items).toEqual([
+    {
+      Update: {
+        ConditionExpression: '#CE_age <= :CE_age',
+        ExpressionAttributeNames: {
+          '#CE_age': 'age',
+          '#attr0': 'name',
+          '#attr1': 'GSI1SK',
+        },
+        ExpressionAttributeValues: {
+          ':CE_age': 1,
+          ':val0': 'updated name',
+          ':val1': 'USER#updated name',
+        },
+        Key: {
+          PK: 'USER#111',
+          SK: 'USER#111',
+        },
+        TableName: 'test-table',
+        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+      },
+    },
+  ]);
+});
+
+test('creates transaction  with delete item and given condition', () => {
+  const transaction = new WriteTransaction(connection);
+  transaction.chian({
+    delete: {
+      item: User,
+      primaryKey: {
+        id: '111',
+      },
+      options: {
+        where: {
+          age: {
+            LE: 1,
+          },
+        },
+      },
+    },
+  });
+
+  expect(transaction.items).toEqual([
+    {
+      Delete: {
+        ConditionExpression: '#CE_age <= :CE_age',
+        ExpressionAttributeNames: {
+          '#CE_age': 'age',
+        },
+        ExpressionAttributeValues: {
+          ':CE_age': 1,
+        },
+        Key: {
+          PK: 'USER#111',
+          SK: 'USER#111',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
 });
 
 test('creates transaction put item with given condition', () => {
