@@ -58,12 +58,12 @@ export class WriteTransaction extends Transaction {
       }
       // remove
     } else if (isRemoveTransaction<PrimaryKey, Entity>(chainedItem)) {
-      const {item, primaryKey} = chainedItem.delete;
+      const {item, primaryKey, options} = chainedItem.delete;
 
       const itemToRemove = this._dcReqTransformer.toDynamoDeleteItem<
         PrimaryKey,
         Entity
-      >(item, primaryKey);
+      >(item, primaryKey, options);
       if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
         this.items.push({
           Delete: itemToRemove,
