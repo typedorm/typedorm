@@ -4,6 +4,7 @@ import {Condition} from '../condition';
 import {ExpressionInputParser} from '../expression-input-parser';
 import {Filter} from '../filter';
 import {KeyCondition} from '../key-condition';
+import {Projection} from '../projection';
 
 let expInputParser: ExpressionInputParser;
 beforeEach(() => {
@@ -212,4 +213,20 @@ test('parses deep nested condition', () => {
   expect(parsedCondition?.values).toEqual({
     ':CE_status': '1',
   });
+});
+
+/**
+ * @group parseToProjection
+ */
+test('parses options to valid projection', () => {
+  const projection = expInputParser.parseToProjection<User>([
+    'id',
+    'name',
+    'status.active',
+  ]);
+
+  expect(projection).toBeInstanceOf(Projection);
+  expect(projection.expression).toEqual(
+    '#PE_id, #PE_name, #PE_status.#PE_status_active'
+  );
 });
