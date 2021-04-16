@@ -851,6 +851,32 @@ test('transforms simple query item request', () => {
   });
 });
 
+test('transforms simple query item request with projection expression', () => {
+  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      select: ['status', 'name'],
+    }
+  );
+  expect(queryItem).toEqual({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#PE_name': 'name',
+      '#PE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#1',
+    },
+    ScanIndexForward: true,
+    KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
+    TableName: 'test-table',
+    ProjectionExpression: '#PE_status, #PE_name',
+  });
+});
+
 test('transforms query item request with filter input', () => {
   const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
     User,

@@ -20,6 +20,7 @@ import {isWriteTransactionItemList} from '../transaction/type-guards';
 import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 import {FilterOptions} from '../expression/filter-options-type';
 import {ConditionOptions} from '../expression/condition-options-type';
+import {ProjectionKeys} from '../expression/expression-input-parser';
 
 export interface EntityManagerCreateOptions<Entity> {
   /**
@@ -62,6 +63,8 @@ export interface EntityManagerQueryOptions<PrimaryKey, Entity>
    * are read
    */
   where?: FilterOptions<PrimaryKey, Entity>;
+
+  select?: ProjectionKeys<Entity>;
 }
 
 export class EntityManager {

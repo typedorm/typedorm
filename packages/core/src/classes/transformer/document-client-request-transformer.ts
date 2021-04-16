@@ -74,6 +74,8 @@ export interface ManagerToDynamoQueryItemsOptions {
   orderBy?: QUERY_ORDER;
 
   where?: any;
+
+  select?: any[];
 }
 
 export class DocumentClientRequestTransformer extends BaseTransformer {
@@ -661,7 +663,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // at this point we have resolved partition key and table to query
-    const {keyCondition, limit, orderBy: order, where} = queryOptions;
+    const {keyCondition, limit, orderBy: order, where, select} = queryOptions;
 
     let queryInputParams = {
       TableName: table.name,
@@ -671,9 +673,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ...partitionKeyConditionExpression,
     } as DynamoDB.DocumentClient.QueryInput;
 
+    // if key condition was provided
     if (keyCondition && !isEmptyObject(keyCondition)) {
       // build sort key condition
-
       const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
         parsedSortKey.name,
         keyCondition
@@ -730,6 +732,33 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ExpressionAttributeValues: {
           ...queryInputParams.ExpressionAttributeValues,
           ...ExpressionAttributeValues,
+        },
+      };
+    }
+
+    // when projection keys are provided
+    if (select && select.length) {
+      const projection = this.expressionInputParser.parseToProjection(select);
+
+      if (!projection) {
+        throw new Error(
+          `Failed to build projection expression for input: ${JSON.stringify(
+            select
+          )}`
+        );
+      }
+
+      const {
+        ProjectionExpression,
+        ExpressionAttributeNames,
+      } = this.expressionBuilder.buildProjectionExpression(projection);
+
+      queryInputParams = {
+        ...queryInputParams,
+        ProjectionExpression,
+        ExpressionAttributeNames: {
+          ...queryInputParams.ExpressionAttributeNames,
+          ...ExpressionAttributeNames,
         },
       };
     }
