@@ -189,10 +189,10 @@ create(
   // Item will be created to table configured on @Entity or Connection
   entity
 
-  // @Optional;
+  // @optional;
   // Additional options
   options: {
-    // @Optional
+    // @optional
     // condition based creates
     // when present, it must evaluate to true in order for operation to succeed.
     where
@@ -211,6 +211,15 @@ findOne(
 
   // All attributes referenced in primary key
   primaryKeyAttributes
+
+  // @optional
+  // Get item options
+  options: {
+    // @optional
+    // Specify attributes to get, only selected attributes are fetched
+    // @default `ALL`
+    select
+  }
 )
 ```
 
@@ -243,7 +252,7 @@ exists(
   // Attributes to update, if doesn't already exist,it will be created
   body
 
-  // @Optional;
+  // @optional;
   // Additional options
   options: {
     // @optional
@@ -252,7 +261,7 @@ exists(
     // @default it '.'
     nestedKeySeparator
 
-    // @Optional
+    // @optional
     // condition based updates
     // when present, it must evaluate to true in order for operation to succeed.
     where
@@ -273,10 +282,10 @@ delete(
   // Primary key attributes or unique attributes referenced in schemas
   primaryKeyAttributes
 
-  // @Optional;
+  // @optional;
   // Additional options
   options: {
-    // @Optional
+    // @optional
     // condition based creates
     // when present, it must evaluate to true in order for operation to succeed.
     where
@@ -330,6 +339,11 @@ find(
     // therefore this should be avoided wherever possible, but can be helpful in some cases
     // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
     where
+
+    // @optional
+    // Specify attributes to get, only selected attributes are fetched
+    // @default `ALL`
+    select
   }
 )
 ```
