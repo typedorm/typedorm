@@ -74,6 +74,12 @@ export interface ManagerToDynamoQueryItemsOptions {
   orderBy?: QUERY_ORDER;
 
   where?: any;
+
+  select?: any[];
+}
+
+export interface ManagerToDynamoGetItemOptions {
+  select?: any[];
 }
 
 export class DocumentClientRequestTransformer extends BaseTransformer {
@@ -271,7 +277,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
   toDynamoGetItem<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKey: PrimaryKey
+    primaryKey: PrimaryKey,
+    options?: ManagerToDynamoGetItemOptions
   ): DynamoDB.DocumentClient.GetItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
@@ -294,12 +301,53 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       throw new Error('Primary could not be resolved');
     }
 
-    const transformBody = {
+    let transformBody = {
       TableName: tableName,
       Key: {
         ...parsedPrimaryKey,
       },
-    };
+    } as DynamoDB.DocumentClient.GetItemInput;
+
+    // early return if no options were provided
+    if (!options || isEmptyObject(options)) {
+      this.connection.logger.logTransform(
+        TRANSFORM_TYPE.GET,
+        'After',
+        metadata.name,
+        null,
+        transformBody
+      );
+      return transformBody;
+    }
+
+    if (options.select) {
+      const projection = this.expressionInputParser.parseToProjection(
+        options.select
+      );
+
+      if (!projection) {
+        throw new Error(
+          `Failed to build projection expression for input: ${JSON.stringify(
+            options.select
+          )}`
+        );
+      }
+
+      const {
+        ProjectionExpression,
+        ExpressionAttributeNames,
+      } = this.expressionBuilder.buildProjectionExpression(projection);
+
+      transformBody = {
+        ...transformBody,
+        ProjectionExpression,
+        ExpressionAttributeNames: {
+          ...transformBody.ExpressionAttributeNames,
+          ...ExpressionAttributeNames,
+        },
+      };
+    }
+
     this.connection.logger.logTransform(
       TRANSFORM_TYPE.GET,
       'After',
@@ -661,7 +709,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // at this point we have resolved partition key and table to query
-    const {keyCondition, limit, orderBy: order, where} = queryOptions;
+    const {keyCondition, limit, orderBy: order, where, select} = queryOptions;
 
     let queryInputParams = {
       TableName: table.name,
@@ -671,9 +719,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ...partitionKeyConditionExpression,
     } as DynamoDB.DocumentClient.QueryInput;
 
+    // if key condition was provided
     if (keyCondition && !isEmptyObject(keyCondition)) {
       // build sort key condition
-
       const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
         parsedSortKey.name,
         keyCondition
@@ -730,6 +778,33 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ExpressionAttributeValues: {
           ...queryInputParams.ExpressionAttributeValues,
           ...ExpressionAttributeValues,
+        },
+      };
+    }
+
+    // when projection keys are provided
+    if (select && select.length) {
+      const projection = this.expressionInputParser.parseToProjection(select);
+
+      if (!projection) {
+        throw new Error(
+          `Failed to build projection expression for input: ${JSON.stringify(
+            select
+          )}`
+        );
+      }
+
+      const {
+        ProjectionExpression,
+        ExpressionAttributeNames,
+      } = this.expressionBuilder.buildProjectionExpression(projection);
+
+      queryInputParams = {
+        ...queryInputParams,
+        ProjectionExpression,
+        ExpressionAttributeNames: {
+          ...queryInputParams.ExpressionAttributeNames,
+          ...ExpressionAttributeNames,
         },
       };
     }

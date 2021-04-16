@@ -5,6 +5,7 @@ import {MERGE_STRATEGY} from './base-expression-input';
 import {Condition} from './condition';
 import {Filter} from './filter';
 import {KeyCondition} from './key-condition';
+import {Projection} from './projection';
 
 export class ExpressionBuilder {
   andMergeConditionExpressions(
@@ -79,6 +80,24 @@ export class ExpressionBuilder {
       ConditionExpression: condition.expression.trim(),
       ExpressionAttributeNames: condition.names,
       ExpressionAttributeValues: condition.values,
+    };
+
+    return this.removeEmptyFieldsAndReturn(expression);
+  }
+
+  buildProjectionExpression(
+    projection: Projection
+  ): {
+    ProjectionExpression?: string;
+    ExpressionAttributeNames?: Record<string, any>;
+  } {
+    if (!projection.expression) {
+      return {};
+    }
+
+    const expression = {
+      ProjectionExpression: projection.expression.trim(),
+      ExpressionAttributeNames: projection.names,
     };
 
     return this.removeEmptyFieldsAndReturn(expression);

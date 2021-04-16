@@ -38,6 +38,29 @@ test('transforms get item requests', () => {
   });
 });
 
+test('transforms get item requests with projection expression', () => {
+  const getItem = transformer.toDynamoGetItem<UserPrimaryKey, User>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      select: ['name'],
+    }
+  );
+  expect(getItem).toEqual({
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ExpressionAttributeNames: {
+      '#PE_name': 'name',
+    },
+    ProjectionExpression: '#PE_name',
+    TableName: 'test-table',
+  });
+});
+
 test('transforms get item requests for inherited class', () => {
   const getItem = transformer.toDynamoGetItem(Customer, {
     id: '1',
@@ -848,6 +871,32 @@ test('transforms simple query item request', () => {
     },
     KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
     TableName: 'test-table',
+  });
+});
+
+test('transforms simple query item request with projection expression', () => {
+  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      select: ['status', 'name'],
+    }
+  );
+  expect(queryItem).toEqual({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#PE_name': 'name',
+      '#PE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#1',
+    },
+    ScanIndexForward: true,
+    KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
+    TableName: 'test-table',
+    ProjectionExpression: '#PE_status, #PE_name',
   });
 });
 

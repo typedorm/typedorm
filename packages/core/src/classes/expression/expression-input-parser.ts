@@ -14,6 +14,7 @@ import {isScalarType} from '../../helpers/is-scalar-type';
 import {FilterOptions} from './filter-options-type';
 import {ConditionOptions} from './condition-options-type';
 import {Condition} from './condition';
+import {Projection} from './projection';
 
 export type KeyConditionOptions = RequireOnlyOne<
   {
@@ -26,6 +27,8 @@ export type KeyConditionOptions = RequireOnlyOne<
       [key in KeyConditionType.RangeOperator]: [ScalarType, ScalarType];
     }
 >;
+
+export type ProjectionKeys<Entity> = (keyof Entity)[] | string[];
 
 /**
  * Parses expression input to expression instances
@@ -43,6 +46,13 @@ export class ExpressionInputParser {
 
   parseToCondition<Entity>(options: ConditionOptions<Entity>) {
     return this.recursiveParseToBaseExpression(options, Condition).pop();
+  }
+
+  parseToProjection<Entity>(keys: ProjectionKeys<Entity>) {
+    const projection = new Projection();
+    projection.addProjectionAttributes(keys as string[]);
+
+    return projection;
   }
 
   /**

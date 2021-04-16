@@ -20,6 +20,7 @@ import {isWriteTransactionItemList} from '../transaction/type-guards';
 import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 import {FilterOptions} from '../expression/filter-options-type';
 import {ConditionOptions} from '../expression/condition-options-type';
+import {ProjectionKeys} from '../expression/expression-input-parser';
 
 export interface EntityManagerCreateOptions<Entity> {
   /**
@@ -54,6 +55,9 @@ export interface EntityManagerDeleteOptions<Entity> {
 
 export interface EntityManagerQueryOptions<PrimaryKey, Entity>
   extends ManagerToDynamoQueryItemsOptions {
+  /**
+   * Cursor to traverse from
+   */
   cursor?: DynamoDB.DocumentClient.Key;
 
   /**
@@ -62,6 +66,20 @@ export interface EntityManagerQueryOptions<PrimaryKey, Entity>
    * are read
    */
   where?: FilterOptions<PrimaryKey, Entity>;
+
+  /**
+   * Specifies which attributes to fetch
+   * @default all attributes are fetched
+   */
+  select?: ProjectionKeys<Entity>;
+}
+
+export interface EntityManagerFindOneOptions<Entity> {
+  /**
+   * Specifies which attributes to fetch
+   * @default all attributes are fetched
+   */
+  select?: ProjectionKeys<Entity>;
 }
 
 export class EntityManager {
@@ -125,11 +143,13 @@ export class EntityManager {
    */
   async findOne<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKeyAttributes: PrimaryKey
+    primaryKeyAttributes: PrimaryKey,
+    options?: EntityManagerFindOneOptions<Entity>
   ): Promise<Entity | undefined> {
     const dynamoGetItem = this._dcReqTransformer.toDynamoGetItem(
       entityClass,
-      primaryKeyAttributes
+      primaryKeyAttributes,
+      options
     );
 
     const response = await this.connection.documentClient
