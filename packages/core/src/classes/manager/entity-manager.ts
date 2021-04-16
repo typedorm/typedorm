@@ -55,6 +55,9 @@ export interface EntityManagerDeleteOptions<Entity> {
 
 export interface EntityManagerQueryOptions<PrimaryKey, Entity>
   extends ManagerToDynamoQueryItemsOptions {
+  /**
+   * Cursor to traverse from
+   */
   cursor?: DynamoDB.DocumentClient.Key;
 
   /**
@@ -64,6 +67,18 @@ export interface EntityManagerQueryOptions<PrimaryKey, Entity>
    */
   where?: FilterOptions<PrimaryKey, Entity>;
 
+  /**
+   * Specifies which attributes to fetch
+   * @default all attributes are fetched
+   */
+  select?: ProjectionKeys<Entity>;
+}
+
+export interface EntityManagerFindOneOptions<Entity> {
+  /**
+   * Specifies which attributes to fetch
+   * @default all attributes are fetched
+   */
   select?: ProjectionKeys<Entity>;
 }
 
@@ -128,11 +143,13 @@ export class EntityManager {
    */
   async findOne<PrimaryKey, Entity>(
     entityClass: EntityTarget<Entity>,
-    primaryKeyAttributes: PrimaryKey
+    primaryKeyAttributes: PrimaryKey,
+    options?: EntityManagerFindOneOptions<Entity>
   ): Promise<Entity | undefined> {
     const dynamoGetItem = this._dcReqTransformer.toDynamoGetItem(
       entityClass,
-      primaryKeyAttributes
+      primaryKeyAttributes,
+      options
     );
 
     const response = await this.connection.documentClient

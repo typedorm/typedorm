@@ -38,6 +38,29 @@ test('transforms get item requests', () => {
   });
 });
 
+test('transforms get item requests with projection expression', () => {
+  const getItem = transformer.toDynamoGetItem<UserPrimaryKey, User>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      select: ['name'],
+    }
+  );
+  expect(getItem).toEqual({
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ExpressionAttributeNames: {
+      '#PE_name': 'name',
+    },
+    ProjectionExpression: '#PE_name',
+    TableName: 'test-table',
+  });
+});
+
 test('transforms get item requests for inherited class', () => {
   const getItem = transformer.toDynamoGetItem(Customer, {
     id: '1',
