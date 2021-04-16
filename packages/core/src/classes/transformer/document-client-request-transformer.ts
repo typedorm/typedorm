@@ -1,6 +1,5 @@
 import {
   EntityTarget,
-  IndexOptions,
   INDEX_TYPE,
   QUERY_ORDER,
   Replace,
@@ -8,6 +7,7 @@ import {
   Table,
   UpdateAttributes,
   TRANSFORM_TYPE,
+  IndexOptions,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {dropProp} from '../../helpers/drop-prop';
