@@ -3,7 +3,7 @@ import {
   WriteTransactionCreate,
   WriteTransactionDelete,
   WriteTransactionUpdate,
-} from './transaction';
+} from './transaction-old';
 
 export function isCreateTransaction<Entity>(
   item: any

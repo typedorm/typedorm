@@ -1,7 +1,7 @@
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {User, UserPrimaryKey} from '../../../../__mocks__/user';
 import {UserUniqueEmail} from '../../../../__mocks__/user-unique-email';
-import {WriteTransaction} from '../write-transaction';
+import {WriteTransaction} from '../write-transaction-old';
 import {Connection} from '../../connection/connection';
 
 let writeTransaction: WriteTransaction;

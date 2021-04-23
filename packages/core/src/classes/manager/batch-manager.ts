@@ -9,7 +9,7 @@ import {
   INTERNAL_ENTITY_ATTRIBUTE,
   MANAGER_NAME,
 } from '@typedorm/common';
-import {WriteTransaction} from '../transaction/write-transaction';
+import {WriteTransaction} from '../transaction/write-transaction-old';
 import {
   BatchGetResponseMap,
   BatchWriteItemRequestMap,

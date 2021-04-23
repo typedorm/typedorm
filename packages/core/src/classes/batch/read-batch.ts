@@ -6,13 +6,7 @@ export interface ReadBatchItem<Entity, PrimaryKey> {
   primaryKey: PrimaryKey;
 }
 
-export class ReadBatch extends Batch {
-  protected _items: ReadBatchItem<any, any>[];
-  constructor() {
-    super();
-    this._items = [];
-  }
-
+export class ReadBatch extends Batch<ReadBatchItem<any, any>> {
   add(batchItems: ReadBatchItem<any, any>[]): this {
     this.items.push(...batchItems);
     return this;
@@ -28,9 +22,5 @@ export class ReadBatch extends Batch {
     });
 
     return this;
-  }
-
-  get items() {
-    return this._items;
   }
 }

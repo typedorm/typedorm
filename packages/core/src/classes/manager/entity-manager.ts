@@ -8,7 +8,7 @@ import {
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
-import {WriteTransaction} from '../transaction/write-transaction';
+import {WriteTransaction} from '../transaction/write-transaction-old';
 import {
   DocumentClientRequestTransformer,
   ManagerToDynamoQueryItemsOptions,

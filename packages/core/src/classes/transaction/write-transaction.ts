@@ -1,115 +1,114 @@
-import {DynamoDB} from 'aws-sdk';
-import {dropProp} from '../../helpers/drop-prop';
-import {Connection} from '../connection/connection';
 import {
-  isLazyTransactionWriteItemListLoader,
-  LazyTransactionWriteItemListLoader,
-} from '../transformer/is-lazy-transaction-write-item-list-loader';
-import {
-  Transaction,
-  WriteTransactionChainItem,
-  WriteTransactionCreate,
-} from './transaction';
-import {
-  isCreateTransaction,
-  isRemoveTransaction,
-  isUpdateTransaction,
-  isWriteTransactionItemList,
-} from './type-guards';
+  EntityTarget,
+  PrimaryKeyAttributes,
+  UpdateAttributes,
+} from '@typedorm/common';
+import {ConditionOptions} from '../expression/condition-options-type';
+import {Transaction} from './transaction';
 
-export class WriteTransaction extends Transaction {
-  protected _items: (
-    | LazyTransactionWriteItemListLoader
-    | DynamoDB.DocumentClient.TransactWriteItem
-  )[];
+interface WriteTransactionCreateOptions<Entity> {
+  /**
+   * @default false
+   */
+  overwriteIfExists?: boolean;
 
-  constructor(
-    connection: Connection,
-    initialItems?: DynamoDB.DocumentClient.TransactWriteItemList
-  ) {
-    super(connection);
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<Entity>;
+}
+export interface WriteTransactionCreate<Entity> {
+  create: {item: Entity; options?: WriteTransactionCreateOptions<Entity>};
+}
 
-    // initialize items if there are any
-    if (initialItems) {
-      this._items = [...initialItems];
-    }
-  }
+interface WriteTransactionUpdateOptions<Entity> {
+  /**
+   * @default '.'
+   */
+  nestedKeySeparator?: string;
 
-  chian<PrimaryKey, Entity>(
-    chainedItem: WriteTransactionChainItem<PrimaryKey, Entity>
-  ): WriteTransaction {
-    // create
-    if (isCreateTransaction<Entity>(chainedItem)) {
-      this.items = this.chainCreateTransaction(chainedItem);
-      // update
-    } else if (isUpdateTransaction<PrimaryKey, Entity>(chainedItem)) {
-      const {item, body, primaryKey, options} = chainedItem.update;
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<Entity>;
+}
+export interface WriteTransactionUpdate<PrimaryKey, Entity> {
+  update: {
+    item: EntityTarget<Entity>;
+    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+    body: UpdateAttributes<PrimaryKey, Entity>;
+    options?: WriteTransactionUpdateOptions<Entity>;
+  };
+}
 
-      const itemToUpdate = this._dcReqTransformer.toDynamoUpdateItem<
-        PrimaryKey,
-        Entity
-      >(item, primaryKey, body, options);
-      if (!isLazyTransactionWriteItemListLoader(itemToUpdate)) {
-        this.items.push({
-          Update: dropProp(itemToUpdate, 'ReturnValues') as DynamoDB.Update,
-        });
-      } else {
-        this.items.push(itemToUpdate);
-      }
-      // remove
-    } else if (isRemoveTransaction<PrimaryKey, Entity>(chainedItem)) {
-      const {item, primaryKey, options} = chainedItem.delete;
+interface WriteTransactionDeleteOptions<Entity> {
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<Entity>;
+}
+export interface WriteTransactionDelete<PrimaryKey, Entity> {
+  delete: {
+    item: EntityTarget<Entity>;
+    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+    options?: WriteTransactionDeleteOptions<Entity>;
+  };
+}
+export type WriteTransactionItem<PrimaryKey, Entity> =
+  | WriteTransactionCreate<Entity>
+  | WriteTransactionUpdate<PrimaryKey, Entity>
+  | WriteTransactionDelete<PrimaryKey, Entity>;
 
-      const itemToRemove = this._dcReqTransformer.toDynamoDeleteItem<
-        PrimaryKey,
-        Entity
-      >(item, primaryKey, options);
-      if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
-        this.items.push({
-          Delete: itemToRemove,
-        });
-      } else {
-        this.items.push(itemToRemove);
-      }
-    } else {
-      return this;
-    }
+export class WriteTransaction extends Transaction<
+  WriteTransactionItem<any, any>
+> {
+  add(transactionItems: WriteTransactionItem<any, any>[]): this {
+    this.items.push(...transactionItems);
     return this;
   }
 
-  private chainCreateTransaction<Entity>(
-    chainedItem: WriteTransactionCreate<Entity>
-  ) {
-    const {
-      create: {item, options},
-    } = chainedItem;
-
-    const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem<Entity>(
-      item,
-      options
-    );
-
-    if (!isWriteTransactionItemList(dynamoPutItemInput)) {
-      return [
-        {
-          Put: dynamoPutItemInput,
-        },
-      ] as DynamoDB.DocumentClient.TransactWriteItemList;
-    }
-
-    return [...dynamoPutItemInput];
+  addCreateItem<Entity>(
+    item: Entity,
+    options?: WriteTransactionCreateOptions<Entity>
+  ): this {
+    this.items.push({
+      create: {
+        item,
+        options: options as WriteTransactionCreateOptions<any>,
+      },
+    });
+    return this;
   }
 
-  get items() {
-    return this._items;
+  addUpdateItem<Entity, PrimaryKey = Partial<Entity>>(
+    item: EntityTarget<Entity>,
+    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>,
+    body: UpdateAttributes<PrimaryKey, Entity>,
+    options?: WriteTransactionUpdateOptions<Entity>
+  ): this {
+    this.items.push({
+      update: {
+        item,
+        primaryKey,
+        body,
+        options: options as WriteTransactionUpdateOptions<any>,
+      },
+    });
+    return this;
   }
 
-  set items(
-    items: (
-      | DynamoDB.DocumentClient.TransactWriteItem
-      | LazyTransactionWriteItemListLoader
-    )[]
-  ) {
-    this._items = [...this.items, ...items];
+  addDeleteItem<Entity, PrimaryKey = Partial<Entity>>(
+    item: EntityTarget<Entity>,
+    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>,
+    options?: WriteTransactionDeleteOptions<Entity>
+  ): this {
+    this.items.push({
+      delete: {
+        item,
+        primaryKey,
+        options: options as WriteTransactionDeleteOptions<any>,
+      },
+    });
+    return this;
   }
 }
