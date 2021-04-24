@@ -1,9 +1,9 @@
-import {DynamoDB} from 'aws-sdk';
 import {
   WriteTransactionCreate,
   WriteTransactionDelete,
   WriteTransactionUpdate,
-} from './transaction-old';
+} from './write-transaction';
+import {DynamoDB} from 'aws-sdk';
 
 export function isCreateTransaction<Entity>(
   item: any
@@ -20,6 +20,36 @@ export function isUpdateTransaction<PrimaryKey, Entity>(
 }
 
 export function isRemoveTransaction<PrimaryKey, Entity>(
+  item: any
+): item is WriteTransactionDelete<PrimaryKey, Entity> {
+  return (
+    (item as WriteTransactionDelete<PrimaryKey, Entity>).delete !== undefined
+  );
+}
+
+/**
+ *
+ *
+ *
+ *
+ *
+ */
+
+export function isTransactionAddCreateItem<Entity>(
+  item: any
+): item is WriteTransactionCreate<Entity> {
+  return (item as WriteTransactionCreate<Entity>).create !== undefined;
+}
+
+export function isTransactionAddUpdateItem<PrimaryKey, Entity>(
+  item: any
+): item is WriteTransactionUpdate<PrimaryKey, Entity> {
+  return (
+    (item as WriteTransactionUpdate<PrimaryKey, Entity>).update !== undefined
+  );
+}
+
+export function isTransactionAddDeleteItem<PrimaryKey, Entity>(
   item: any
 ): item is WriteTransactionDelete<PrimaryKey, Entity> {
   return (
