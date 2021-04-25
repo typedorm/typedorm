@@ -6,7 +6,7 @@ import {WriteBatch} from '../../batch/write-batch';
 import {Connection} from '../../connection/connection';
 import {BatchManager} from '../batch-manager';
 import {EntityManager} from '../entity-manager';
-import {TransactionManager} from '../transaction-manager-old';
+import {TransactionManager} from '../transaction-manager';
 import {ReadBatch} from '../../batch/read-batch';
 
 let connection: Connection;
@@ -18,9 +18,9 @@ let entityManager: Replace<
 >;
 let transactionManager: Replace<
   TransactionManager,
-  'write',
+  'writeRaw',
   {
-    write: jest.SpyInstance;
+    writeRaw: jest.SpyInstance;
   }
 >;
 const documentClientMock = {
@@ -40,7 +40,7 @@ beforeEach(() => {
   transactionManager = connection.transactionManger as any;
 
   entityManager.findOne = jest.fn();
-  transactionManager.write = jest.fn();
+  transactionManager.writeRaw = jest.fn();
   originalPromiseAll = spyOn(Promise, 'all').and.callThrough();
 });
 
@@ -77,7 +77,7 @@ test('processes batch write request with simple request items', async () => {
   expect(originalPromiseAll).toHaveBeenCalledTimes(1);
   expect(documentClientMock.batchWrite).toHaveBeenCalledTimes(3);
   expect(entityManager.findOne).not.toHaveBeenCalled();
-  expect(transactionManager.write).not.toHaveBeenCalled();
+  expect(transactionManager.writeRaw).not.toHaveBeenCalled();
   expect(result).toEqual({
     failedItems: [],
     unprocessedItems: [],
@@ -112,7 +112,7 @@ test('processes batch write request and retries as needed', async () => {
   expect(originalPromiseAll).toHaveBeenCalledTimes(4);
   expect(documentClientMock.batchWrite).toHaveBeenCalledTimes(10);
   expect(entityManager.findOne).not.toHaveBeenCalled();
-  expect(transactionManager.write).not.toHaveBeenCalled();
+  expect(transactionManager.writeRaw).not.toHaveBeenCalled();
   expect(result).toEqual({
     failedItems: [],
     unprocessedItems: [],
@@ -130,7 +130,7 @@ test('processes batch write requests that contains mix of unique and lazy load i
     };
   });
 
-  transactionManager.write.mockImplementation(() => {
+  transactionManager.writeRaw.mockImplementation(() => {
     return {};
   });
 
@@ -142,7 +142,7 @@ test('processes batch write requests that contains mix of unique and lazy load i
   expect(originalPromiseAll).toHaveBeenCalledTimes(4);
   expect(documentClientMock.batchWrite).toHaveBeenCalledTimes(6);
   expect(entityManager.findOne).toHaveBeenCalled();
-  expect(transactionManager.write).toHaveBeenCalled();
+  expect(transactionManager.writeRaw).toHaveBeenCalled();
 
   expect(result).toEqual({
     failedItems: [],
@@ -236,7 +236,7 @@ test('processes batch write requests where some of the items could not be proces
     },
   }));
 
-  transactionManager.write.mockImplementation(() => {
+  transactionManager.writeRaw.mockImplementation(() => {
     throw new Error();
   });
 

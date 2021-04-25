@@ -1,8 +1,8 @@
 import {UserPrimaryKey} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {Connection} from '../../connection/connection';
-import {WriteTransaction} from '../../transaction/write-transaction-old';
-import {TransactionManager} from '../transaction-manager-old';
+import {WriteTransaction} from '../../transaction/write-transaction';
+import {TransactionManager} from '../transaction-manager';
 import {User} from '../../../../__mocks__/user';
 import {
   UserUniqueEmail,
@@ -28,7 +28,7 @@ afterEach(() => {
 });
 
 /**
- * @group write
+ * @group write (v1)
  */
 test('performs write transactions for simple writes', async () => {
   dcMock.transactWrite.mockReturnValue({
@@ -146,8 +146,7 @@ test('performs write transactions for simple writes', async () => {
     ],
   });
   expect(response).toEqual({
-    ConsumedCapacity: [{}],
-    ItemCollectionMetrics: [{}],
+    success: true,
   });
 });
 
@@ -312,33 +311,6 @@ test('performs write transactions for entities with non existing unique attribut
       },
     ],
   });
-});
-
-test('throws an error if no existing item found', async () => {
-  connection.entityManager.findOne = jest.fn();
-
-  const transaction = new WriteTransaction(connection).chian<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
-  >({
-    update: {
-      item: UserUniqueEmail,
-      primaryKey: {
-        id: '1',
-      },
-      body: {
-        email: 'new@example.com',
-        status: 'active',
-      },
-    },
-  });
-
-  const update = () => manager.write(transaction);
-
-  expect(dcMock.transactWrite).not.toHaveBeenCalled();
-  await expect(update).rejects.toThrow(
-    'Failed to process entity "UserUniqueEmail", could not find entity with primary key "{"id":"1"}"'
-  );
 });
 
 test('performs write transactions when removing entities with unique attributes ', async () => {

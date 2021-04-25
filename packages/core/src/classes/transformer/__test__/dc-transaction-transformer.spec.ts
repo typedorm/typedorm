@@ -151,3 +151,61 @@ test('transforms transaction write items with unique attributes', () => {
     ],
   });
 });
+
+test('creates transaction put item with given condition', () => {
+  const transaction = new WriteTransaction(connection);
+  const user = new User();
+  user.id = '1';
+  user.name = 'test user';
+  user.status = 'active';
+
+  transaction.add([
+    {
+      create: {
+        item: user,
+        options: {
+          where: {
+            age: {
+              LE: 1,
+            },
+          },
+        },
+      },
+    },
+  ]);
+
+  const transformed = dcTransactionTransformer.toDynamoWriteTransactionItems(
+    transaction
+  );
+
+  expect(transformed).toEqual({
+    lazyTransactionWriteItemListLoader: [],
+    transactionItemList: [
+      {
+        Put: {
+          ConditionExpression:
+            '((attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))) AND (#CE_age <= :CE_age)',
+          ExpressionAttributeNames: {
+            '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
+            '#CE_age': 'age',
+          },
+          ExpressionAttributeValues: {
+            ':CE_age': 1,
+          },
+          Item: {
+            GSI1PK: 'USER#STATUS#active',
+            GSI1SK: 'USER#test user',
+            PK: 'USER#1',
+            SK: 'USER#1',
+            __en: 'user',
+            id: '1',
+            name: 'test user',
+            status: 'active',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+});

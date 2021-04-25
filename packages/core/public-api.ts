@@ -8,14 +8,14 @@ export * from './src/classes/connection/connection-options';
 // models
 export * from './src/classes/expression/condition';
 export * from './src/classes/expression/key-condition';
-export * from './src/classes/transaction/write-transaction-old';
+export * from './src/classes/transaction/write-transaction';
 export * from './src/classes/batch/write-batch';
 export * from './src/classes/batch/read-batch';
 
 // managers
 export * from './src/classes/manager/entity-manager';
 export * from './src/classes/manager/batch-manager';
-export * from './src/classes/manager/transaction-manager-old';
+export * from './src/classes/manager/transaction-manager';
 
 // public method exports
 

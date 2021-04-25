@@ -3,6 +3,7 @@ import {
   PrimaryKeyAttributes,
   UpdateAttributes,
 } from '@typedorm/common';
+import {Connection} from '../connection/connection';
 import {ConditionOptions} from '../expression/condition-options-type';
 import {Transaction} from './transaction';
 
@@ -62,6 +63,38 @@ export type WriteTransactionItem<PrimaryKey, Entity> =
 export class WriteTransaction extends Transaction<
   WriteTransactionItem<any, any>
 > {
+  constructor(
+    /** only here for backwards compatibility
+     * @deprecated
+     * `WriteTransaction` does no longer need the connection object defined
+     * at this level, it is now auto inferred by transaction transformer
+     */
+    connection?: Connection,
+    /**
+     * only here for backwards compatibility
+     * @deprecated use `.add` for appending bulk items
+     */
+    transactionItems?: WriteTransactionItem<any, any>[]
+  ) {
+    super();
+
+    if (transactionItems && transactionItems.length) {
+      throw new Error(
+        `From 1.12.x, appending existing operation to 'WriteTransaction' is not supported. 
+        Please use '.add' for appending bulk items.`
+      );
+    }
+  }
+
+  /**
+   * @deprecated use operation specific method or `.add` instead
+   */
+  chian<PrimaryKey, Entity>(
+    chainedItem: WriteTransactionItem<PrimaryKey, Entity>
+  ): this {
+    return this.add([chainedItem as WriteTransactionItem<any, any>]);
+  }
+
   add(transactionItems: WriteTransactionItem<any, any>[]): this {
     this.items.push(...transactionItems);
     return this;

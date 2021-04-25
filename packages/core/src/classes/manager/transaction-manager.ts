@@ -18,6 +18,10 @@ export class TransactionManager {
     );
   }
 
+  /**
+   * Processes transactions over document client's transaction api
+   * @param transaction Write transaction to process
+   */
   async write(transaction: WriteTransaction) {
     const {
       transactionItemList,
@@ -43,7 +47,6 @@ export class TransactionManager {
         })
       )
     ).flat();
-
     const itemsToWriteInTransaction = [
       ...transactionItemList,
       ...lazyTransactionItems,
@@ -64,13 +67,23 @@ export class TransactionManager {
       );
     }
 
+    return this.writeRaw(itemsToWriteInTransaction);
+  }
+
+  /**
+   * Perhaps, you are looking for ".write" instead.
+   *
+   * Writes items to dynamodb over document client's transact write API without performing any pre transforming
+   * You would almost never need to use this.
+   */
+  async writeRaw(transactItems: DynamoDB.DocumentClient.TransactWriteItem[]) {
     const transactionInput: DynamoDB.DocumentClient.TransactWriteItemsInput = {
-      TransactItems: itemsToWriteInTransaction,
+      TransactItems: transactItems,
     };
 
     this.connection.logger.logInfo(
       MANAGER_NAME.TRANSACTION_MANAGER,
-      `Running a batch write request for ${itemsToWriteInTransaction.length} items`
+      `Running a batch write request for ${transactItems.length} items`
     );
 
     const transactionRequest = this.connection.documentClient.transactWrite(

@@ -9,7 +9,6 @@ import {
   INTERNAL_ENTITY_ATTRIBUTE,
   MANAGER_NAME,
 } from '@typedorm/common';
-import {WriteTransaction} from '../transaction/write-transaction-old';
 import {
   BatchGetResponseMap,
   BatchWriteItemRequestMap,
@@ -96,14 +95,9 @@ export class BatchManager {
     // 1.1. get transaction write items limits
     const transactionRequests = transactionListItems.map(
       ({rawInput, transformedInput}) => {
-        const writeTransaction = new WriteTransaction(
-          this.connection,
-          transformedInput
-        );
-
         // make all promises in pLimitable so their concurrency can be controlled properly
         return this.toLimited(
-          () => this.connection.transactionManger.write(writeTransaction),
+          () => this.connection.transactionManger.writeRaw(transformedInput),
           // return original item when failed to process
           rawInput,
           REQUEST_TYPE.TRANSACT_WRITE
@@ -136,12 +130,9 @@ export class BatchManager {
               existingItem
             );
 
-            const writeTransaction = new WriteTransaction(
-              this.connection,
+            return this.connection.transactionManger.writeRaw(
               deleteTransactionItemList
             );
-
-            return this.connection.transactionManger.write(writeTransaction);
           },
 
           // default item to return if failed to process
