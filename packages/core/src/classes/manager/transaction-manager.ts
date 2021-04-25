@@ -1,92 +1,85 @@
-import {DynamoDB} from 'aws-sdk';
-import {TRANSACTION_WRITE_ITEMS_LIMIT} from '@typedorm/common';
-import {WriteTransaction} from '../transaction/write-transaction-old';
+import {WriteTransaction} from './../transaction/write-transaction';
 import {Connection} from '../connection/connection';
-import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
+import {DocumentClientTransactionTransformer} from '../transformer/document-client-transaction-transformer';
+import {
+  MANAGER_NAME,
+  TRANSACTION_WRITE_ITEMS_LIMIT,
+  WriteTransactionItemLimitExceededError,
+} from '@typedorm/common';
+import {DynamoDB} from 'aws-sdk';
+import {handleTransactionRequest} from '../../helpers/handle-transaction-request';
 
-/**
- * Performs transactions using document client's writeTransaction
- */
 export class TransactionManager {
-  constructor(private connection: Connection) {}
+  private _dcTransactionTransformer: DocumentClientTransactionTransformer;
+
+  constructor(private connection: Connection) {
+    this._dcTransactionTransformer = new DocumentClientTransactionTransformer(
+      connection
+    );
+  }
 
   async write(transaction: WriteTransaction) {
-    const transactionItems = (
-      await Promise.all(
-        transaction.items.map(async item => {
-          if (!isLazyTransactionWriteItemListLoader(item)) {
-            return item;
-          }
+    const {
+      transactionItemList,
+      lazyTransactionWriteItemListLoader,
+    } = this._dcTransactionTransformer.toDynamoWriteTransactionItems(
+      transaction
+    );
 
+    this.connection.logger.logInfo(
+      MANAGER_NAME.TRANSACTION_MANAGER,
+      `Requested to write transaction for total ${transaction.items.length} items.`
+    );
+
+    const lazyTransactionItems = (
+      await Promise.all(
+        lazyTransactionWriteItemListLoader.map(async item => {
           // if updating/removing unique attribute in transaction, get previous value of attributes
           const existingItem = await this.connection.entityManager.findOne(
             item.entityClass,
             item.primaryKeyAttributes
           );
-
-          if (!existingItem) {
-            throw new Error(
-              `Failed to process entity "${
-                item.entityClass.name
-              }", could not find entity with primary key "${JSON.stringify(
-                item.primaryKeyAttributes
-              )}"`
-            );
-          }
-
           return item.lazyLoadTransactionWriteItems(existingItem);
         })
       )
     ).flat();
 
-    if (transactionItems.length > TRANSACTION_WRITE_ITEMS_LIMIT) {
-      throw new Error(
-        `Transaction write limit exceeded, current transaction write limit is "${TRANSACTION_WRITE_ITEMS_LIMIT}"`
+    const itemsToWriteInTransaction = [
+      ...transactionItemList,
+      ...lazyTransactionItems,
+    ];
+
+    if (itemsToWriteInTransaction.length > TRANSACTION_WRITE_ITEMS_LIMIT) {
+      throw new WriteTransactionItemLimitExceededError(
+        transaction.items.length,
+        itemsToWriteInTransaction.length
+      );
+    }
+
+    if (itemsToWriteInTransaction.length > transaction.items.length) {
+      this.connection.logger.logInfo(
+        MANAGER_NAME.TRANSACTION_MANAGER,
+        `Original items count ${transaction.items.length} expanded 
+        to ${itemsToWriteInTransaction.length} to accommodate unique attributes.`
       );
     }
 
     const transactionInput: DynamoDB.DocumentClient.TransactWriteItemsInput = {
-      TransactItems: transactionItems,
+      TransactItems: itemsToWriteInTransaction,
     };
 
-    // FIXME: current promise implementation of document client transact write does not provide a way
-    // the transaction was failed, as a work around we do following.
-    // refer to this issue for more details https://github.com/aws/aws-sdk-js/issues/2464
+    this.connection.logger.logInfo(
+      MANAGER_NAME.TRANSACTION_MANAGER,
+      `Running a batch write request for ${itemsToWriteInTransaction.length} items`
+    );
+
     const transactionRequest = this.connection.documentClient.transactWrite(
       transactionInput
     );
 
-    let cancellationReasons: any[];
-    transactionRequest.on('extractError', response => {
-      try {
-        cancellationReasons = JSON.parse(response.httpResponse.body.toString())
-          .CancellationReasons;
-      } catch (err) {
-        // suppress this just in case some types of errors aren't JSON parseable
-        console.error('Error extracting cancellation error', err);
-      }
-    });
+    await handleTransactionRequest(transactionRequest);
 
-    return new Promise((resolve, reject) => {
-      transactionRequest.send((err, response) => {
-        if (err) {
-          // pull all reasons from response and map them to errors
-          const transactionError = new Error() as any;
-          transactionError.code = err.code;
-          transactionError.message = err.message;
-          transactionError.cancellationReasons = cancellationReasons.map(
-            reason => {
-              return {
-                code: reason.Code,
-                message: reason.Message,
-              };
-            }
-          );
-          return reject(transactionError);
-        }
-
-        return resolve(response);
-      });
-    }) as Promise<DynamoDB.DocumentClient.TransactWriteItemsOutput>;
+    // return success when successfully processed all items in a transaction
+    return {success: true};
   }
 }

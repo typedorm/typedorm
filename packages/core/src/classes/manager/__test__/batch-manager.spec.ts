@@ -6,7 +6,7 @@ import {WriteBatch} from '../../batch/write-batch';
 import {Connection} from '../../connection/connection';
 import {BatchManager} from '../batch-manager';
 import {EntityManager} from '../entity-manager';
-import {TransactionManager} from '../transaction-manager';
+import {TransactionManager} from '../transaction-manager-old';
 import {ReadBatch} from '../../batch/read-batch';
 
 let connection: Connection;

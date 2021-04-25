@@ -2,7 +2,7 @@ import {UserPrimaryKey} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {Connection} from '../../connection/connection';
 import {WriteTransaction} from '../../transaction/write-transaction-old';
-import {TransactionManager} from '../transaction-manager';
+import {TransactionManager} from '../transaction-manager-old';
 import {User} from '../../../../__mocks__/user';
 import {
   UserUniqueEmail,

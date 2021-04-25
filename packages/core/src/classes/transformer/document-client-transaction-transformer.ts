@@ -1,5 +1,8 @@
-import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
-import {DocumentClient} from 'aws-sdk/clients/dynamodb';
+import {
+  LazyTransactionWriteItemListLoader,
+  isLazyTransactionWriteItemListLoader,
+} from './is-lazy-transaction-write-item-list-loader';
+import DynamoDB, {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {
   isTransactionAddDeleteItem,
   isTransactionAddUpdateItem,
@@ -16,6 +19,7 @@ import {
 import {Connection} from '../connection/connection';
 import {LowOrderTransformers} from './low-order-transformers';
 import {isTransactionAddCreateItem} from '../transaction/type-guards';
+import {dropProp} from '../../helpers/drop-prop';
 
 export class DocumentClientTransactionTransformer extends LowOrderTransformers {
   constructor(connection: Connection) {
@@ -30,12 +34,21 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
       'Before',
       items
     );
+
+    const transformed = this.innerTransformTransactionWriteItems(items);
+
+    this.connection.logger.logTransformTransaction(
+      TRANSFORM_TRANSACTION_TYPE.TRANSACTION_WRITE,
+      'After',
+      transformed
+    );
+    return transformed;
   }
 
   /**
    * Parse each item in the request to be in one of the following collections
    * - transactionListItems: items that must be processed in a transaction instead of batch (i.e items with unique attributes)
-   * - LazyTransactionWriteItemListLoaderItems: items that are must be processed in transaction but also requires other requests to be made first (i.e delete of unique items)
+   * - lazyTransactionWriteItemListLoaderItems: items that are must be processed in transaction but also requires other requests to be made first (i.e delete of unique items)
    */
   private innerTransformTransactionWriteItems(
     transactionItems: WriteTransactionItem<any, any>[]
@@ -57,9 +70,43 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
             acc.transactionItemList.push(...dynamoPutItemInput);
           }
         } else if (isTransactionAddUpdateItem(transactionItem)) {
-          // TODO: update item
+          const {
+            update: {item, primaryKey, body, options},
+          } = transactionItem;
+
+          const dynamoUpdateItemInput = this.toDynamoUpdateItem(
+            item,
+            primaryKey,
+            body,
+            options
+          );
+          if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItemInput)) {
+            acc.transactionItemList.push({
+              Update: dropProp(
+                dynamoUpdateItemInput,
+                'ReturnValues'
+              ) as DynamoDB.Update,
+            });
+          } else {
+            acc.lazyTransactionWriteItemListLoader.push(dynamoUpdateItemInput);
+          }
         } else if (isTransactionAddDeleteItem(transactionItem)) {
-          // TODO: delete item
+          const {
+            delete: {item, primaryKey, options},
+          } = transactionItem;
+
+          const dynamoDeleteItemInput = this.toDynamoDeleteItem(
+            item,
+            primaryKey,
+            options
+          );
+          if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItemInput)) {
+            acc.transactionItemList.push({
+              Delete: dynamoDeleteItemInput,
+            });
+          } else {
+            acc.lazyTransactionWriteItemListLoader.push(dynamoDeleteItemInput);
+          }
         } else {
           throw new InvalidTransactionWriteItemError(transactionItem);
         }
@@ -67,7 +114,7 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
       },
       {
         transactionItemList: [] as DocumentClient.TransactWriteItemList,
-        LazyTransactionWriteItemListLoader: [] as LazyTransactionWriteItemListLoader[],
+        lazyTransactionWriteItemListLoader: [] as LazyTransactionWriteItemListLoader[],
       }
     );
   }
