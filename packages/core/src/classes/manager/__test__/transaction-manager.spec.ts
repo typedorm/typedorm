@@ -56,11 +56,7 @@ test('performs write transactions for simple writes', async () => {
   newUser.status = 'inactive';
 
   const transaction = new WriteTransaction(connection)
-    .chian({
-      create: {
-        item: user,
-      },
-    })
+    .addCreateItem(user)
     .chian<UserPrimaryKey, User>({
       update: {
         item: User,
@@ -72,11 +68,13 @@ test('performs write transactions for simple writes', async () => {
         },
       },
     })
-    .chian({
-      create: {
-        item: newUser,
+    .add([
+      {
+        create: {
+          item: newUser,
+        },
       },
-    });
+    ]);
 
   const response = await manager.write(transaction);
 
