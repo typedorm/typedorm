@@ -5,3 +5,4 @@ export * from './invalid-expression-input';
 export * from './invalid-batch-write-item-error';
 export * from './missing-reflect-metadata-error';
 export * from './invalid-transaction-write-item-error';
+export * from './write-transaction-item-limit-exceeded-error';
