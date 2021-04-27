@@ -6,3 +6,5 @@ export * from './invalid-batch-write-item-error';
 export * from './missing-reflect-metadata-error';
 export * from './invalid-transaction-write-item-error';
 export * from './write-transaction-item-limit-exceeded-error';
+export * from './invalid-transaction-read-item-error';
+export * from './read-transaction-item-limit-exceeded-error';
