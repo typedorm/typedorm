@@ -1,10 +1,10 @@
 import {WriteTransactionCancelledException} from '@typedorm/common';
-import {AWSError, DynamoDB, Request} from 'aws-sdk';
+import {AWSError, Request} from 'aws-sdk';
 
 // Current promise implementation of document client transact write does not provide a way
 // the transaction was failed, as a work around we do following.
 // refer to this issue for more details https://github.com/aws/aws-sdk-js/issues/2464
-export function handleTransactionRequest<T>(
+export function handleTransactionResult<T>(
   transactionRequest: Request<T, AWSError>
 ) {
   let cancellationReasons: {Code: string; Message: string}[];
@@ -35,5 +35,5 @@ export function handleTransactionRequest<T>(
 
       return resolve(response);
     });
-  }) as Promise<DynamoDB.DocumentClient.TransactWriteItemsOutput>;
+  }) as Promise<T>;
 }

@@ -4,41 +4,18 @@ import {
   WriteTransactionUpdate,
 } from './write-transaction';
 import {DynamoDB} from 'aws-sdk';
-
-export function isCreateTransaction<Entity>(
-  item: any
-): item is WriteTransactionCreate<Entity> {
-  return (item as WriteTransactionCreate<Entity>).create !== undefined;
-}
-
-export function isUpdateTransaction<PrimaryKey, Entity>(
-  item: any
-): item is WriteTransactionUpdate<PrimaryKey, Entity> {
-  return (
-    (item as WriteTransactionUpdate<PrimaryKey, Entity>).update !== undefined
-  );
-}
-
-export function isRemoveTransaction<PrimaryKey, Entity>(
-  item: any
-): item is WriteTransactionDelete<PrimaryKey, Entity> {
-  return (
-    (item as WriteTransactionDelete<PrimaryKey, Entity>).delete !== undefined
-  );
-}
-
-/**
- *
- *
- *
- *
- *
- */
+import {ReadTransactionGet} from './read-transaction';
 
 export function isTransactionAddCreateItem<Entity>(
   item: any
 ): item is WriteTransactionCreate<Entity> {
   return (item as WriteTransactionCreate<Entity>).create !== undefined;
+}
+
+export function isTransactionAddGetItem<Entity, PrimaryKey>(
+  item: any
+): item is ReadTransactionGet<Entity, PrimaryKey> {
+  return (item as ReadTransactionGet<Entity, PrimaryKey>).get !== undefined;
 }
 
 export function isTransactionAddUpdateItem<PrimaryKey, Entity>(

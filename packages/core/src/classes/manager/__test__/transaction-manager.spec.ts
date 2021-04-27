@@ -28,7 +28,7 @@ afterEach(() => {
 });
 
 /**
- * @group write (v1)
+ * @group write (legacy)
  */
 test('performs write transactions for simple writes', async () => {
   dcMock.transactWrite.mockReturnValue({
@@ -364,4 +364,11 @@ test('performs write transactions when removing entities with unique attributes 
       },
     ],
   });
+});
+
+/**
+ * @group read
+ */
+test('reads items in a transaction', () => {
+  // TODO: add tests
 });

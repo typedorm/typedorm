@@ -6,6 +6,7 @@ import {UserUniqueEmail} from '@typedorm/core/__mocks__/user-unique-email';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {Connection} from '../../connection/connection';
 import {DocumentClientTransactionTransformer} from '../document-client-transaction-transformer';
+import {ReadTransaction} from '../../transaction/read-transaction';
 
 let connection: Connection;
 let dcTransactionTransformer: DocumentClientTransactionTransformer;
@@ -203,6 +204,93 @@ test('creates transaction put item with given condition', () => {
             name: 'test user',
             status: 'active',
           },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+});
+
+/**
+ * @group toDynamoReadTransactionItems
+ */
+test('transforms get transaction', () => {
+  const readTransaction = new ReadTransaction()
+    .addGetItem(User, {
+      id: 1,
+    })
+    .addGetItem(User, {
+      id: 2,
+    });
+
+  const transformed = dcTransactionTransformer.toDynamoReadTransactionItems(
+    readTransaction
+  );
+
+  expect(transformed).toEqual({
+    transactionItemList: [
+      {
+        Get: {
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+        },
+      },
+      {
+        Get: {
+          Key: {
+            PK: 'USER#2',
+            SK: 'USER#2',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+});
+
+test('transforms get transaction with projection', () => {
+  const readTransaction = new ReadTransaction()
+    .addGetItem(User, {
+      id: 1,
+    })
+    .addGetItem(
+      User,
+      {
+        id: 2,
+      },
+      {
+        select: ['name'],
+      }
+    );
+
+  const transformed = dcTransactionTransformer.toDynamoReadTransactionItems(
+    readTransaction
+  );
+
+  expect(transformed).toEqual({
+    transactionItemList: [
+      {
+        Get: {
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+        },
+      },
+      {
+        Get: {
+          Key: {
+            PK: 'USER#2',
+            SK: 'USER#2',
+          },
+          ExpressionAttributeNames: {
+            '#PE_name': 'name',
+          },
+          ProjectionExpression: '#PE_name',
           TableName: 'test-table',
         },
       },

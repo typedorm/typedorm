@@ -5,10 +5,12 @@ import {
 import DynamoDB, {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {
   isTransactionAddDeleteItem,
+  isTransactionAddGetItem,
   isTransactionAddUpdateItem,
   isWriteTransactionItemList,
 } from './../transaction/type-guards';
 import {
+  InvalidTransactionReadItemError,
   InvalidTransactionWriteItemError,
   TRANSFORM_TRANSACTION_TYPE,
 } from '@typedorm/common';
@@ -20,6 +22,10 @@ import {Connection} from '../connection/connection';
 import {LowOrderTransformers} from './low-order-transformers';
 import {isTransactionAddCreateItem} from '../transaction/type-guards';
 import {dropProp} from '../../helpers/drop-prop';
+import {
+  ReadTransaction,
+  ReadTransactionItem,
+} from '../transaction/read-transaction';
 
 export class DocumentClientTransactionTransformer extends LowOrderTransformers {
   constructor(connection: Connection) {
@@ -45,9 +51,63 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
     return transformed;
   }
 
+  toDynamoReadTransactionItems(readTransaction: ReadTransaction) {
+    const {items} = readTransaction;
+
+    this.connection.logger.logTransformTransaction(
+      TRANSFORM_TRANSACTION_TYPE.TRANSACTION_READ,
+      'Before',
+      items
+    );
+
+    const transformed = this.innerTransformTransactionReadItems(items);
+
+    this.connection.logger.logTransformTransaction(
+      TRANSFORM_TRANSACTION_TYPE.TRANSACTION_READ,
+      'After',
+      transformed
+    );
+
+    return transformed;
+  }
+
   /**
    * Parse each item in the request to be in one of the following collections
-   * - transactionListItems: items that must be processed in a transaction instead of batch (i.e items with unique attributes)
+   * - transactionItemList: items that must be processed in a transaction
+   */
+  private innerTransformTransactionReadItems(
+    transactionItems: ReadTransactionItem<any, any>[]
+  ) {
+    return transactionItems.reduce(
+      (acc, transactionItem) => {
+        if (isTransactionAddGetItem(transactionItem)) {
+          const {
+            get: {item, primaryKey, options},
+          } = transactionItem;
+
+          const dynamoGetItemInput = this.toDynamoGetItem(
+            item,
+            primaryKey,
+            options
+          );
+
+          acc.transactionItemList.push({
+            Get: dynamoGetItemInput,
+          });
+        } else {
+          throw new InvalidTransactionReadItemError(transactionItem);
+        }
+        return acc;
+      },
+      {
+        transactionItemList: [] as DocumentClient.TransactGetItemList,
+      }
+    );
+  }
+
+  /**
+   * Parse each item in the request to be in one of the following collections
+   * - transactionItemList: items that must be processed in a transaction
    * - lazyTransactionWriteItemListLoaderItems: items that are must be processed in transaction but also requires other requests to be made first (i.e delete of unique items)
    */
   private innerTransformTransactionWriteItems(
