@@ -111,7 +111,7 @@ export class TransactionManager {
     return response.Responses?.map((response, index) => {
       if (!response.Item) {
         // If a requested item could not be retrieved, the corresponding ItemResponse object is Null,
-        return;
+        return null;
       }
 
       const originalRequest = transaction.items[index];

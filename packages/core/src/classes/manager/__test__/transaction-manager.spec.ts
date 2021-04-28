@@ -8,16 +8,19 @@ import {
   UserUniqueEmail,
   UserUniqueEmailPrimaryKey,
 } from '@typedorm/core/__mocks__/user-unique-email';
+import {Organisation} from '@typedorm/core/__mocks__/organisation';
+import {ReadTransaction} from '../../transaction/read-transaction';
 
 let manager: TransactionManager;
 const dcMock = {
   transactWrite: jest.fn(),
+  transactGet: jest.fn(),
 };
 
 let connection: Connection;
 beforeEach(() => {
   connection = createTestConnection({
-    entities: [User, UserUniqueEmail],
+    entities: [User, UserUniqueEmail, Organisation],
     documentClient: dcMock,
   });
   manager = new TransactionManager(connection);
@@ -369,6 +372,162 @@ test('performs write transactions when removing entities with unique attributes 
 /**
  * @group read
  */
-test('reads items in a transaction', () => {
-  // TODO: add tests
+test('reads items in a transaction', async () => {
+  dcMock.transactGet.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      ConsumedCapacity: [{}],
+      ItemCollectionMetrics: [{}],
+    }),
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        Responses: [
+          {
+            Item: {
+              GSI1PK: 'USER#STATUS#inactive',
+              GSI1SK: 'USER#user name',
+              PK: 'USER#1',
+              SK: 'USER#1',
+              id: '1',
+              __en: 'user',
+              name: 'user name',
+              status: 'inactive',
+            },
+          },
+          {
+            Item: {
+              GSI1PK: 'ORG#1#STATUS#inactive',
+              GSI1SK: 'ORG#test-org#ACTIVE#active',
+              GSI2PK: 'ORG#1#STATUS#inactive',
+              GSI2SK: 'ORG#test-org#TEAM_COUNT#110',
+              PK: 'ORG#1',
+              SK: 'ORG#1',
+              id: '1',
+              __en: 'organisation',
+              name: 'test-org',
+              status: 'inactive',
+              active: 'active',
+              teamCount: 110,
+            },
+          },
+        ],
+      });
+    }),
+  });
+
+  const readTransaction = new ReadTransaction().add([
+    {
+      get: {
+        item: User,
+        primaryKey: {
+          id: 1,
+        },
+      },
+    },
+    {
+      get: {
+        item: Organisation,
+        primaryKey: {
+          id: 1,
+        },
+      },
+    },
+  ]);
+  const response = await manager.read(readTransaction);
+  expect(response).toEqual([
+    {
+      id: '1',
+      name: 'user name',
+      status: 'inactive',
+    },
+    {
+      active: 'active',
+      id: '1',
+      name: 'test-org',
+      status: 'inactive',
+      teamCount: 110,
+    },
+  ]);
+});
+
+test('reads items in a transaction and parses them to original item properly when one of the item requested did not exist', async () => {
+  dcMock.transactGet.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      ConsumedCapacity: [{}],
+      ItemCollectionMetrics: [{}],
+    }),
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        Responses: [
+          {
+            Item: null,
+          },
+          {
+            Item: {},
+          },
+          {
+            Item: {
+              GSI1PK: 'ORG#1#STATUS#inactive',
+              GSI1SK: 'ORG#test-org#ACTIVE#active',
+              GSI2PK: 'ORG#1#STATUS#inactive',
+              GSI2SK: 'ORG#test-org#TEAM_COUNT#110',
+              PK: 'ORG#1',
+              SK: 'ORG#1',
+              id: '1',
+              __en: 'organisation',
+              name: 'test-org',
+              status: 'inactive',
+              active: 'active',
+              teamCount: 110,
+            },
+          },
+        ],
+      });
+    }),
+  });
+
+  const readTransaction = new ReadTransaction().add([
+    {
+      get: {
+        item: User,
+        primaryKey: {
+          id: 1,
+        },
+      },
+    },
+    {
+      get: {
+        item: User,
+        primaryKey: {
+          id: 1,
+        },
+        options: {
+          select: ['some.nonexistent.key'],
+        },
+      },
+    },
+    {
+      get: {
+        item: Organisation,
+        primaryKey: {
+          id: 1,
+        },
+      },
+    },
+  ]);
+  const response = await manager.read(readTransaction);
+  expect(response).toEqual([
+    null,
+    {},
+    {
+      active: 'active',
+      id: '1',
+      name: 'test-org',
+      status: 'inactive',
+      teamCount: 110,
+    },
+  ]);
 });
