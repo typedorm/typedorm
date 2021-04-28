@@ -8,7 +8,6 @@ import {
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
-import {WriteTransaction} from '../transaction/write-transaction';
 import {
   DocumentClientRequestTransformer,
   ManagerToDynamoQueryItemsOptions,
@@ -120,11 +119,7 @@ export class EntityManager {
     // dynamoPutItemInput is a transact item list, meaning that it contains one or more unique attributes, which also
     // needs to be created along with original item
 
-    const transaction = new WriteTransaction(
-      this.connection,
-      dynamoPutItemInput
-    );
-    await this.connection.transactionManger.write(transaction);
+    await this.connection.transactionManger.writeRaw(dynamoPutItemInput);
 
     const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
@@ -305,9 +300,10 @@ export class EntityManager {
       existingItem
     );
 
-    const transaction = new WriteTransaction(this.connection, updateItemList);
+    // FIXME: implement new write transaction
     // since write transaction does not return any, we will need to get the latest one from dynamo
-    await this.connection.transactionManger.write(transaction);
+    await this.connection.transactionManger.writeRaw(updateItemList);
+
     const updatedItem = (await this.findOne<PrimaryKey, Entity>(
       entityClass,
       primaryKeyAttributes
@@ -355,9 +351,9 @@ export class EntityManager {
     const deleteItemList = dynamoDeleteItem.lazyLoadTransactionWriteItems(
       existingItem
     );
-    const transaction = new WriteTransaction(this.connection, deleteItemList);
+
     // delete main item and all it's unique attributes as part of single transaction
-    await this.connection.transactionManger.write(transaction);
+    await this.connection.transactionManger.writeRaw(deleteItemList);
     return {
       success: true,
     };

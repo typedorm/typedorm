@@ -22,5 +22,8 @@ export * from './src/helpers/is-primary-key';
 export * from './src/helpers/nested-attributes-type';
 export * from './src/utils/get-entity-definition';
 
+// exceptions
+export * from './src/exceptions';
+
 // classes
 export * from './src/table';
