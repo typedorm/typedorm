@@ -1,1 +1,1 @@
-export * from './write-transaction-cancelled-exception';
+export * from './transaction-cancelled-exception';

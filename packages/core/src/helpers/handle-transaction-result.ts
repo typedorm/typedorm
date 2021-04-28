@@ -1,4 +1,4 @@
-import {WriteTransactionCancelledException} from '@typedorm/common';
+import {TransactionCancelledException} from '@typedorm/common';
 import {AWSError, Request} from 'aws-sdk';
 
 // Current promise implementation of document client transact write does not provide a way
@@ -28,9 +28,7 @@ export function handleTransactionResult<T>(
             message: reason.Message,
           };
         });
-        return reject(
-          new WriteTransactionCancelledException(err.code, reasons)
-        );
+        return reject(new TransactionCancelledException(err.code, reasons));
       }
 
       return resolve(response);
