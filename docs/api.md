@@ -20,6 +20,9 @@ _Note: In an event of inconstancy between actual API and this document, API shou
   - [BatchManager](#batchmanager)
     - [BatchManager.write](#batchmanagerwrite)
     - [BatchManager.read](#batchmanagerread)
+  - [TransactionManager](#transactionmanager)
+    - [TransactionManager.write](#transactionmanagerwrite)
+    - [TransactionManager.read](#transactionmanagerread)
 
 ## Connection
 
@@ -414,4 +417,32 @@ read(
   }
 )
 
+```
+
+## TransactionManager
+
+Transaction manager api.
+
+### TransactionManager.write
+
+Writes entities to dynamodb over document client transaction api.
+
+```Typescript
+write(
+  // Write request input
+  // Must be an instance of `WriteTransaction` class
+  transaction
+)
+```
+
+### TransactionManager.read
+
+Reads entities to from dynamodb over document client transaction api.
+
+```Typescript
+read(
+  // Read request input
+  // Must be an instance of `ReadTransaction` class
+  transaction
+)
 ```
