@@ -821,7 +821,7 @@ test('finds items matching given query params and options', async () => {
       where: {
         AND: {
           age: {
-            BETWEEN: ['1', '2'],
+            BETWEEN: [1, 5],
           },
           name: {
             EQ: 'Me',

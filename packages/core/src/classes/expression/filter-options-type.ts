@@ -4,31 +4,28 @@ import {
   NonKeyAttributesWithReturnType,
   RequireAtLeastOne,
   RequireOnlyOne,
-  ScalarType,
 } from '@typedorm/common';
 
 type AttributeFilterOptions<Entity, PrimaryKey> =
   // Require max 1 operator on non key attribute
-  | NonKeyAttributesWithReturnType<
-      Entity,
-      PrimaryKey,
-      RequireOnlyOne<
+  | {
+      [enKey in keyof Omit<Entity, keyof PrimaryKey>]?: RequireOnlyOne<
         {
           [key in
             | FilterType.SimpleOperator
             | Extract<
                 FilterType.FunctionOperator,
                 'CONTAINS' | 'BEGINS_WITH'
-              >]: ScalarType;
+              >]: Entity[enKey];
         } &
           {
             [key in Extract<FilterType.RangeOperator, 'BETWEEN'>]: [
-              ScalarType,
-              ScalarType
+              Entity[enKey],
+              Entity[enKey]
             ];
           } &
           {
-            [key in Extract<FilterType.RangeOperator, 'IN'>]: ScalarType[];
+            [key in Extract<FilterType.RangeOperator, 'IN'>]: Entity[enKey][];
           } &
           {
             [key in Extract<
@@ -42,12 +39,12 @@ type AttributeFilterOptions<Entity, PrimaryKey> =
               'SIZE'
             >]: RequireOnlyOne<
               {
-                [key in FilterType.SimpleOperator]: ScalarType;
+                [key in FilterType.SimpleOperator]: Entity[enKey];
               }
             >;
           }
-      >
-    >
+      >;
+    }
   // Require 'ATTRIBUTE_EXISTS' or 'ATTRIBUTE_NOT_EXISTS' on non key attribute
   | NonKeyAttributesWithReturnType<
       Entity,

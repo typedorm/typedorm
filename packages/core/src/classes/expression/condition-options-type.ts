@@ -2,15 +2,13 @@ import {
   NestedAttributes,
   RequireOnlyOne,
   ConditionType,
-  ScalarType,
   ATTRIBUTE_TYPE,
   RequireAtLeastOne,
 } from '@typedorm/common';
 
 type AttributeConditionOptions<Entity> =
-  | NestedAttributes<
-      Entity,
-      RequireOnlyOne<
+  | {
+      [enKey in keyof Entity]?: RequireOnlyOne<
         // if condition is one of the below, value must be of scalar type
         {
           [key in
@@ -18,18 +16,21 @@ type AttributeConditionOptions<Entity> =
             | Extract<
                 ConditionType.FunctionOperator,
                 'CONTAINS' | 'BEGINS_WITH'
-              >]: ScalarType;
+              >]: Entity[enKey];
         } &
           // if between operator, value must be an array of two items
           {
             [key in Extract<ConditionType.RangeOperator, 'BETWEEN'>]: [
-              ScalarType,
-              ScalarType
+              Entity[enKey],
+              Entity[enKey]
             ];
           } &
           // for 'IN' operator value must be a list of scalar type
           {
-            [key in Extract<ConditionType.RangeOperator, 'IN'>]: ScalarType[];
+            [key in Extract<
+              ConditionType.RangeOperator,
+              'IN'
+            >]: Entity[enKey][];
           } &
           // for 'ATTRIBUTE_TYPE' value must be one of the given enum values
           {
@@ -45,12 +46,12 @@ type AttributeConditionOptions<Entity> =
               'SIZE'
             >]: RequireOnlyOne<
               {
-                [key in ConditionType.SimpleOperator]: ScalarType;
+                [key in ConditionType.SimpleOperator]: Entity[enKey];
               }
             >;
           }
-      >
-    >
+      >;
+    }
   // for 'ATTRIBUTE_EXISTS' and 'ATTRIBUTE_NOT_EXISTS', key can be higher level attribute or a path to nested attribute
   | NestedAttributes<
       Entity,

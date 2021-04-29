@@ -411,8 +411,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // get all affected indexes for attributes
     const affectedIndexes = this.getAffectedIndexesForAttributes<
-      PrimaryKey,
-      Entity
+      Entity,
+      PrimaryKey
     >(entityClass, attributesToUpdate, {
       nestedKeySeparator,
     });
