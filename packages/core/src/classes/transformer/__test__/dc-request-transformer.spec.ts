@@ -26,7 +26,7 @@ afterEach(() => {
  * @group toDynamoGetItem
  */
 test('transforms get item requests', () => {
-  const getItem = transformer.toDynamoGetItem<UserPrimaryKey, User>(User, {
+  const getItem = transformer.toDynamoGetItem<User, UserPrimaryKey>(User, {
     id: '1',
   });
   expect(getItem).toEqual({
@@ -39,7 +39,7 @@ test('transforms get item requests', () => {
 });
 
 test('transforms get item requests with projection expression', () => {
-  const getItem = transformer.toDynamoGetItem<UserPrimaryKey, User>(
+  const getItem = transformer.toDynamoGetItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -437,7 +437,7 @@ test('transforms put item request consisting unique attributes with provided pri
  * @group toDynamoUpdateItem
  */
 test('transforms update item request', () => {
-  const updatedItem = transformer.toDynamoUpdateItem<UserPrimaryKey, User>(
+  const updatedItem = transformer.toDynamoUpdateItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -467,8 +467,8 @@ test('transforms update item request', () => {
 
 test('transforms update item record with unique attributes', () => {
   const updatedItem = transformer.toDynamoUpdateItem<
-    UserPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserPrimaryKey
   >(
     UserUniqueEmail,
     {
@@ -531,7 +531,7 @@ test('transforms update item record with unique attributes', () => {
 });
 
 test('transforms update item request with condition input', () => {
-  const updatedItem = transformer.toDynamoUpdateItem<UserPrimaryKey, User>(
+  const updatedItem = transformer.toDynamoUpdateItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -572,8 +572,8 @@ test('transforms update item request with condition input', () => {
 
 test('transforms update item record with unique attributes and condition options', () => {
   const updatedItem = transformer.toDynamoUpdateItem<
-    UserPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserPrimaryKey
   >(
     UserUniqueEmail,
     {
@@ -647,7 +647,7 @@ test('transforms update item record with unique attributes and condition options
 });
 
 test('transforms update item request with complex condition input', () => {
-  const updatedItem = transformer.toDynamoUpdateItem<UserPrimaryKey, User>(
+  const updatedItem = transformer.toDynamoUpdateItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -698,7 +698,7 @@ test('transforms update item request with complex condition input', () => {
  * @group toDynamoDeleteItem
  */
 test('transforms delete item request', () => {
-  const deleteItemInput = transformer.toDynamoDeleteItem<UserPrimaryKey, User>(
+  const deleteItemInput = transformer.toDynamoDeleteItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -714,7 +714,7 @@ test('transforms delete item request', () => {
 });
 
 test('transforms delete item request with condition options', () => {
-  const deleteItemInput = transformer.toDynamoDeleteItem<UserPrimaryKey, User>(
+  const deleteItemInput = transformer.toDynamoDeleteItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -746,8 +746,8 @@ test('transforms delete item request with condition options', () => {
 
 test('transforms delete item request with unique attributes', () => {
   const deleteItemInput = transformer.toDynamoDeleteItem<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >(UserUniqueEmail, {
     id: '1',
   });
@@ -793,8 +793,8 @@ test('transforms delete item request with unique attributes', () => {
 
 test('transforms delete item request with unique attributes and condition options', () => {
   const deleteItemInput = transformer.toDynamoDeleteItem<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >(
     UserUniqueEmail,
     {
@@ -859,7 +859,7 @@ test('transforms delete item request with unique attributes and condition option
  * @group toDynamoQueryItem
  */
 test('transforms simple query item request', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(User, {
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(User, {
     id: '1',
   });
   expect(queryItem).toEqual({
@@ -875,7 +875,7 @@ test('transforms simple query item request', () => {
 });
 
 test('transforms simple query item request with projection expression', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -901,7 +901,7 @@ test('transforms simple query item request with projection expression', () => {
 });
 
 test('transforms query item request with filter input', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -931,7 +931,7 @@ test('transforms query item request with filter input', () => {
 });
 
 test('transforms complex query item request', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -962,7 +962,7 @@ test('transforms complex query item request', () => {
 });
 
 test('transforms index based query item request', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserGSI1, User>(
+  const queryItem = transformer.toDynamoQueryItem<User, UserGSI1>(
     User,
     {
       status: '13',

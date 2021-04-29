@@ -214,7 +214,7 @@ test('finds one entity by given primary key', async () => {
     }),
   });
 
-  const userEntity = await manager.findOne<UserPrimaryKey, User>(User, {
+  const userEntity = await manager.findOne<User, UserPrimaryKey>(User, {
     id: '1',
   });
   expect(dcMock.get).toHaveBeenCalledTimes(1);
@@ -331,7 +331,7 @@ test('updates item and return all new attributes', async () => {
       },
     }),
   });
-  const updatedItem = await manager.update<UserPrimaryKey, User>(
+  const updatedItem = await manager.update<User, UserPrimaryKey>(
     User,
     {id: '1'},
     {
@@ -383,8 +383,8 @@ test('updates item and attributes marked to be autoUpdated', async () => {
   });
 
   const updatedItem = await manager.update<
-    UserAutoGenerateAttributesPrimaryKey,
-    UserAutoGenerateAttributes
+    UserAutoGenerateAttributes,
+    UserAutoGenerateAttributesPrimaryKey
   >(
     UserAutoGenerateAttributes,
     {id: '1'},
@@ -441,8 +441,8 @@ test('updates item with unique attributes and returns all updated attributes', a
   });
 
   const updatedItem = await manager.update<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >(
     UserUniqueEmail,
     {
@@ -520,7 +520,7 @@ test('updates item and return all new attributes with given condition', async ()
       },
     }),
   });
-  const updatedItem = await manager.update<UserPrimaryKey, User>(
+  const updatedItem = await manager.update<User, UserPrimaryKey>(
     User,
     {id: '1'},
     {
@@ -574,7 +574,7 @@ test('does not update an item when failed to get item by key', async () => {
   manager.findOne = jest.fn();
 
   const updatedItem = async () =>
-    await manager.update<UserUniqueEmailPrimaryKey, UserUniqueEmail>(
+    await manager.update<UserUniqueEmail, UserUniqueEmailPrimaryKey>(
       UserUniqueEmail,
       {
         id: '1',
@@ -599,7 +599,7 @@ test('deletes item by primary key', async () => {
     }),
   });
 
-  const result = await manager.delete<UserPrimaryKey, User>(User, {
+  const result = await manager.delete<User, UserPrimaryKey>(User, {
     id: '1',
   });
 
@@ -622,7 +622,7 @@ test('deletes item by primary key and given condition', async () => {
     }),
   });
 
-  const result = await manager.delete<UserPrimaryKey, User>(
+  const result = await manager.delete<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -683,8 +683,8 @@ test('deletes an item with unique attributes', async () => {
   });
 
   const deletedResponse = await manager.delete<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >(UserUniqueEmail, {
     id: '1',
   });
@@ -821,7 +821,7 @@ test('finds items matching given query params and options', async () => {
       where: {
         AND: {
           age: {
-            BETWEEN: [1, 5],
+            BETWEEN: ['1', '2'],
           },
           name: {
             EQ: 'Me',

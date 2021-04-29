@@ -1,4 +1,4 @@
-import {EntityTarget, PrimaryKeyAttributes} from '@typedorm/common';
+import {EntityTarget} from '@typedorm/common';
 import {Batch} from './batch';
 
 export interface WriteBatchCreate<Entity> {
@@ -10,7 +10,7 @@ export interface WriteBatchCreate<Entity> {
 export interface WriteBatchDelete<Entity, PrimaryKey> {
   delete: {
     item: EntityTarget<Entity>;
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+    primaryKey: PrimaryKey;
   };
 }
 

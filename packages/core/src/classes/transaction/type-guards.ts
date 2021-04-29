@@ -18,19 +18,19 @@ export function isTransactionAddGetItem<Entity, PrimaryKey>(
   return (item as ReadTransactionGet<Entity, PrimaryKey>).get !== undefined;
 }
 
-export function isTransactionAddUpdateItem<PrimaryKey, Entity>(
+export function isTransactionAddUpdateItem<Entity, PrimaryKey>(
   item: any
-): item is WriteTransactionUpdate<PrimaryKey, Entity> {
+): item is WriteTransactionUpdate<Entity, PrimaryKey> {
   return (
-    (item as WriteTransactionUpdate<PrimaryKey, Entity>).update !== undefined
+    (item as WriteTransactionUpdate<Entity, PrimaryKey>).update !== undefined
   );
 }
 
-export function isTransactionAddDeleteItem<PrimaryKey, Entity>(
+export function isTransactionAddDeleteItem<Entity, PrimaryKey>(
   item: any
-): item is WriteTransactionDelete<PrimaryKey, Entity> {
+): item is WriteTransactionDelete<Entity, PrimaryKey> {
   return (
-    (item as WriteTransactionDelete<PrimaryKey, Entity>).delete !== undefined
+    (item as WriteTransactionDelete<Entity, PrimaryKey>).delete !== undefined
   );
 }
 
