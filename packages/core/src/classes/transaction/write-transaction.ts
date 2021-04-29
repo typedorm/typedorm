@@ -85,8 +85,8 @@ export class WriteTransaction extends Transaction<
   /**
    * @deprecated use operation specific method or `.add` instead
    */
-  chian<PrimaryKey, Entity>(
-    chainedItem: WriteTransactionItem<PrimaryKey, Entity>
+  chian<Entity, PrimaryKey>(
+    chainedItem: WriteTransactionItem<Entity, PrimaryKey>
   ): this {
     return this.add([chainedItem as WriteTransactionItem<any, any>]);
   }

@@ -60,7 +60,7 @@ test('performs write transactions for simple writes', async () => {
 
   const transaction = new WriteTransaction(connection)
     .addCreateItem(user)
-    .chian<UserPrimaryKey, User>({
+    .chian<User, UserPrimaryKey>({
       update: {
         item: User,
         primaryKey: {
@@ -168,8 +168,8 @@ test('performs write transactions for entities with unique attributes ', async (
   });
 
   const transaction = new WriteTransaction(connection).chian<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >({
     update: {
       item: UserUniqueEmail,
@@ -254,8 +254,8 @@ test('performs write transactions for entities with non existing unique attribut
   });
 
   const transaction = new WriteTransaction(connection).chian<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >({
     update: {
       item: UserUniqueEmail,
@@ -331,8 +331,8 @@ test('performs write transactions when removing entities with unique attributes 
   });
 
   const transaction = new WriteTransaction(connection).chian<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >({
     delete: {
       item: UserUniqueEmail,
