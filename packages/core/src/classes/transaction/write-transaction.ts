@@ -1,8 +1,4 @@
-import {
-  EntityTarget,
-  PrimaryKeyAttributes,
-  UpdateAttributes,
-} from '@typedorm/common';
+import {EntityTarget, UpdateAttributes} from '@typedorm/common';
 import {Connection} from '../connection/connection';
 import {ConditionOptions} from '../expression/condition-options-type';
 import {Transaction} from './transaction';
@@ -33,11 +29,11 @@ interface WriteTransactionUpdateOptions<Entity> {
    */
   where?: ConditionOptions<Entity>;
 }
-export interface WriteTransactionUpdate<PrimaryKey, Entity> {
+export interface WriteTransactionUpdate<Entity, PrimaryKey> {
   update: {
     item: EntityTarget<Entity>;
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
-    body: UpdateAttributes<PrimaryKey, Entity>;
+    primaryKey: PrimaryKey;
+    body: UpdateAttributes<Entity, PrimaryKey>;
     options?: WriteTransactionUpdateOptions<Entity>;
   };
 }
@@ -48,17 +44,17 @@ interface WriteTransactionDeleteOptions<Entity> {
    */
   where?: ConditionOptions<Entity>;
 }
-export interface WriteTransactionDelete<PrimaryKey, Entity> {
+export interface WriteTransactionDelete<Entity, PrimaryKey> {
   delete: {
     item: EntityTarget<Entity>;
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+    primaryKey: PrimaryKey;
     options?: WriteTransactionDeleteOptions<Entity>;
   };
 }
-export type WriteTransactionItem<PrimaryKey, Entity> =
+export type WriteTransactionItem<Entity, PrimaryKey> =
   | WriteTransactionCreate<Entity>
-  | WriteTransactionUpdate<PrimaryKey, Entity>
-  | WriteTransactionDelete<PrimaryKey, Entity>;
+  | WriteTransactionUpdate<Entity, PrimaryKey>
+  | WriteTransactionDelete<Entity, PrimaryKey>;
 
 export class WriteTransaction extends Transaction<
   WriteTransactionItem<any, any>
@@ -89,8 +85,8 @@ export class WriteTransaction extends Transaction<
   /**
    * @deprecated use operation specific method or `.add` instead
    */
-  chian<PrimaryKey, Entity>(
-    chainedItem: WriteTransactionItem<PrimaryKey, Entity>
+  chian<Entity, PrimaryKey>(
+    chainedItem: WriteTransactionItem<Entity, PrimaryKey>
   ): this {
     return this.add([chainedItem as WriteTransactionItem<any, any>]);
   }
@@ -115,8 +111,8 @@ export class WriteTransaction extends Transaction<
 
   addUpdateItem<Entity, PrimaryKey = Partial<Entity>>(
     item: EntityTarget<Entity>,
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>,
-    body: UpdateAttributes<PrimaryKey, Entity>,
+    primaryKey: PrimaryKey,
+    body: UpdateAttributes<Entity, PrimaryKey>,
     options?: WriteTransactionUpdateOptions<Entity>
   ): this {
     this.items.push({
@@ -132,7 +128,7 @@ export class WriteTransaction extends Transaction<
 
   addDeleteItem<Entity, PrimaryKey = Partial<Entity>>(
     item: EntityTarget<Entity>,
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>,
+    primaryKey: PrimaryKey,
     options?: WriteTransactionDeleteOptions<Entity>
   ): this {
     this.items.push({

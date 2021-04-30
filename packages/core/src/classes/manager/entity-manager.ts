@@ -2,7 +2,6 @@ import {DynamoDB} from 'aws-sdk';
 import {
   EntityAttributes,
   EntityTarget,
-  PrimaryKeyAttributes,
   UpdateAttributes,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
@@ -52,7 +51,7 @@ export interface EntityManagerDeleteOptions<Entity> {
   where?: ConditionOptions<Entity>;
 }
 
-export interface EntityManagerQueryOptions<PrimaryKey, Entity>
+export interface EntityManagerQueryOptions<Entity, PrimaryKey>
   extends ManagerToDynamoQueryItemsOptions {
   /**
    * Cursor to traverse from
@@ -64,7 +63,7 @@ export interface EntityManagerQueryOptions<PrimaryKey, Entity>
    * Avoid using this where possible, since filters in dynamodb applies after items
    * are read
    */
-  where?: FilterOptions<PrimaryKey, Entity>;
+  where?: FilterOptions<Entity, PrimaryKey>;
 
   /**
    * Specifies which attributes to fetch
@@ -136,7 +135,7 @@ export class EntityManager {
    * @param entityClass Entity to get value of
    * @param props attributes of entity
    */
-  async findOne<PrimaryKey, Entity>(
+  async findOne<Entity, PrimaryKey = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
     options?: EntityManagerFindOneOptions<Entity>
@@ -259,15 +258,15 @@ export class EntityManager {
    * @param body Attributes to update
    * @param options update options
    */
-  async update<PrimaryKey, Entity>(
+  async update<Entity, PrimaryKey = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
-    primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
-    body: UpdateAttributes<PrimaryKey, Entity>,
+    primaryKeyAttributes: PrimaryKey,
+    body: UpdateAttributes<Entity, PrimaryKey>,
     options?: EntityManagerUpdateOptions<Entity>
-  ): Promise<Entity> {
+  ): Promise<Entity | undefined> {
     const dynamoUpdateItem = this._dcReqTransformer.toDynamoUpdateItem<
-      PrimaryKey,
-      Entity
+      Entity,
+      PrimaryKey
     >(entityClass, primaryKeyAttributes, body, options);
 
     if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
@@ -283,7 +282,7 @@ export class EntityManager {
     }
 
     // first get existing item, so that we can safely clear previous unique attributes
-    const existingItem = await this.findOne<PrimaryKey, Entity>(
+    const existingItem = await this.findOne<Entity, PrimaryKey>(
       entityClass,
       primaryKeyAttributes
     );
@@ -300,16 +299,8 @@ export class EntityManager {
       existingItem
     );
 
-    // FIXME: implement new write transaction
-    // since write transaction does not return any, we will need to get the latest one from dynamo
     await this.connection.transactionManger.writeRaw(updateItemList);
-
-    const updatedItem = (await this.findOne<PrimaryKey, Entity>(
-      entityClass,
-      primaryKeyAttributes
-    )) as Entity;
-
-    return updatedItem;
+    return this.findOne<Entity, PrimaryKey>(entityClass, primaryKeyAttributes);
   }
 
   /**
@@ -317,14 +308,14 @@ export class EntityManager {
    * @param entityClass Entity Class to delete
    * @param primaryKeyAttributes Entity Primary key
    */
-  async delete<PrimaryKeyAttributes, Entity>(
+  async delete<Entity, PrimaryKeyAttributes = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKeyAttributes,
     options?: EntityManagerDeleteOptions<Entity>
   ) {
     const dynamoDeleteItem = this._dcReqTransformer.toDynamoDeleteItem<
-      PrimaryKeyAttributes,
-      Entity
+      Entity,
+      PrimaryKeyAttributes
     >(entityClass, primaryKeyAttributes, options);
 
     if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
@@ -335,7 +326,7 @@ export class EntityManager {
     }
 
     // first get existing item, so that we can safely clear previous unique attributes
-    const existingItem = await this.findOne<PrimaryKeyAttributes, Entity>(
+    const existingItem = await this.findOne<Entity, PrimaryKeyAttributes>(
       entityClass,
       primaryKeyAttributes
     );
@@ -369,14 +360,14 @@ export class EntityManager {
   async find<Entity, PartitionKey = Partial<EntityAttributes<Entity>> | string>(
     entityClass: EntityTarget<Entity>,
     partitionKey: PartitionKey,
-    queryOptions?: EntityManagerQueryOptions<PartitionKey, Entity>
+    queryOptions?: EntityManagerQueryOptions<Entity, PartitionKey>
   ): Promise<{
     items: DynamoDB.DocumentClient.ItemList;
     cursor?: DynamoDB.DocumentClient.Key | undefined;
   }> {
     const dynamoQueryItem = this._dcReqTransformer.toDynamoQueryItem<
-      PartitionKey,
-      Entity
+      Entity,
+      PartitionKey
     >(entityClass, partitionKey, queryOptions);
 
     const response = await this._internalRecursiveQuery({

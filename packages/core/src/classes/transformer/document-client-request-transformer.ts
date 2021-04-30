@@ -2,7 +2,6 @@ import {
   EntityTarget,
   IndexOptions,
   INDEX_TYPE,
-  PrimaryKeyAttributes,
   QUERY_ORDER,
   Replace,
   RETURN_VALUES,
@@ -275,7 +274,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     return uniqueAttributesPutItems;
   }
 
-  toDynamoGetItem<PrimaryKey, Entity>(
+  toDynamoGetItem<Entity, PrimaryKey>(
     entityClass: EntityTarget<Entity>,
     primaryKey: PrimaryKey,
     options?: ManagerToDynamoGetItemOptions
@@ -358,10 +357,10 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     return transformBody;
   }
 
-  toDynamoUpdateItem<PrimaryKey, Entity>(
+  toDynamoUpdateItem<Entity, PrimaryKey>(
     entityClass: EntityTarget<Entity>,
-    primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
-    body: UpdateAttributes<PrimaryKey, Entity>,
+    primaryKeyAttributes: PrimaryKey,
+    body: UpdateAttributes<Entity, PrimaryKey>,
     options: ManagerToDynamoUpdateItemsOptions = {}
   ):
     | DynamoDB.DocumentClient.UpdateItemInput
@@ -412,8 +411,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // get all affected indexes for attributes
     const affectedIndexes = this.getAffectedIndexesForAttributes<
-      PrimaryKey,
-      Entity
+      Entity,
+      PrimaryKey
     >(entityClass, attributesToUpdate, {
       nestedKeySeparator,
     });
@@ -489,8 +488,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // if there are unique attributes, return a lazy loader, which will return write item list
     const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdateItemFactory<
-      PrimaryKey,
-      Entity
+      Entity,
+      PrimaryKey
     >(
       metadata.table,
       metadata.name,
@@ -506,7 +505,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     };
   }
 
-  toDynamoDeleteItem<PrimaryKey, Entity>(
+  toDynamoDeleteItem<Entity, PrimaryKey>(
     entityClass: EntityTarget<Entity>,
     primaryKey: PrimaryKey,
     options?: ManagerToDynamoDeleteItemsOptions
@@ -600,7 +599,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     };
   }
 
-  toDynamoQueryItem<PartitionKeyAttributes, Entity>(
+  toDynamoQueryItem<Entity, PartitionKeyAttributes>(
     entityClass: EntityTarget<Entity>,
     partitionKeyAttributes: PartitionKeyAttributes | string,
     queryOptions?: ManagerToDynamoQueryItemsOptions
@@ -826,7 +825,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
    * to perform some sort of async call in order to fetch attributes and proceed with build
    *
    */
-  private lazyToDynamoUpdateItemFactory<PrimaryKey, Entity>(
+  private lazyToDynamoUpdateItemFactory<Entity, PrimaryKey>(
     table: Table,
     entityName: string,
     uniqueAttributesToUpdate: Replace<
@@ -837,7 +836,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       }
     >[],
     mainItem: DynamoDB.DocumentClient.UpdateItemInput,
-    newBody: UpdateAttributes<PrimaryKey, Entity>
+    newBody: UpdateAttributes<Entity, PrimaryKey>
   ) {
     // returns transact write item list
     return (previousItemBody: any) => {

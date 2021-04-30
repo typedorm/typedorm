@@ -38,8 +38,8 @@ export class ExpressionInputParser {
     return this.operatorToBaseExpression(key, options, new KeyCondition());
   }
 
-  parseToFilter<PrimaryKey, Entity>(
-    options: FilterOptions<PrimaryKey, Entity>
+  parseToFilter<Entity, PrimaryKey>(
+    options: FilterOptions<Entity, PrimaryKey>
   ) {
     return this.recursiveParseToBaseExpression(options, Filter).pop();
   }

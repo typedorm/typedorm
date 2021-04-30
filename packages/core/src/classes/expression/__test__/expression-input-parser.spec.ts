@@ -29,7 +29,7 @@ test('parses keyCondition input', () => {
  * @group parseToFilter
  */
 test('parses simple filter input', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     age: {
       EQ: 12,
     },
@@ -40,7 +40,7 @@ test('parses simple filter input', () => {
 });
 
 test('parses filter with range operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     name: {
       CONTAINS: 'tes',
     },
@@ -51,7 +51,7 @@ test('parses filter with range operator', () => {
 });
 
 test('parses filter with key only operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     status: 'ATTRIBUTE_EXISTS',
   });
 
@@ -60,7 +60,7 @@ test('parses filter with key only operator', () => {
 });
 
 test('parses filter with attribute type operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     status: {
       ATTRIBUTE_TYPE: ATTRIBUTE_TYPE.BOOLEAN,
     },
@@ -73,10 +73,10 @@ test('parses filter with attribute type operator', () => {
 });
 
 test('parses filter with size operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     status: {
       SIZE: {
-        EQ: 1,
+        EQ: '1',
       },
     },
   });
@@ -86,7 +86,7 @@ test('parses filter with size operator', () => {
 });
 
 test('parses filter with single logical operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     AND: {
       age: {
         BETWEEN: [1, 3],
@@ -110,10 +110,10 @@ test('parses filter with single logical operator', () => {
 });
 
 test('parses filter with `NOT` logical operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     NOT: {
       age: {
-        BEGINS_WITH: '1',
+        BEGINS_WITH: 1,
       },
     },
   });
@@ -126,8 +126,8 @@ test('parses filter with `NOT` logical operator', () => {
 
 test('parses nester object property', () => {
   const parsedFilter = expInputParser.parseToFilter<
-    UserPrimaryKey,
-    User & {'profile.name.firstName': string}
+    User & {'profile.name.firstName': string},
+    UserPrimaryKey
   >({
     'profile.name.firstName': {
       EQ: 'sam',
@@ -149,7 +149,7 @@ test('parses nester object property', () => {
 });
 
 test('parses filter with complex nested logical operators', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     OR: {
       AND: {
         age: {

@@ -1,3 +1,3 @@
-export type NonKeyAttributes<PrimaryKey, Entity, ValueType> = {
-  [key in keyof Omit<Entity, keyof PrimaryKey>]?: ValueType;
+export type NonKeyAttributes<Entity, PrimaryKey> = {
+  [key in keyof Omit<Entity, keyof PrimaryKey>]?: Entity[key];
 };

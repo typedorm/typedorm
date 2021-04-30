@@ -2,7 +2,12 @@ import {
   DynamoEntityIndexesSchema,
   DynamoEntityIndexSchema,
 } from './../metadata/entity-metadata';
-import {EntityTarget, Table, SparseIndexParseError} from '@typedorm/common';
+import {
+  EntityTarget,
+  Table,
+  SparseIndexParseError,
+  UpdateAttributes,
+} from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {isScalarType} from '../../helpers/is-scalar-type';
@@ -99,11 +104,9 @@ export abstract class BaseTransformer {
    * @param attributes Attributes to check affected indexes for
    * @param options
    */
-  getAffectedIndexesForAttributes<PrimaryKey, Entity>(
+  getAffectedIndexesForAttributes<Entity, PrimaryKey>(
     entityClass: EntityTarget<Entity>,
-    attributes: {
-      [key in keyof Omit<Entity, keyof PrimaryKey>]?: any;
-    } & {[key: string]: any},
+    attributes: UpdateAttributes<Entity, PrimaryKey>,
     options?: {nestedKeySeparator: string}
   ) {
     const nestedKeySeparator = options?.nestedKeySeparator ?? '.';
