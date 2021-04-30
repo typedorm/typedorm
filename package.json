@@ -1,7 +1,7 @@
 {
   "name": "@typedorm/monorepo",
   "version": "0.0.0-development",
-  "description": "TypeDORM - Fully Typed ORM for DynamoDB",
+  "description": "TypeDORM - Strongly typed ORM for DynamoDB",
   "private": true,
   "main": "index.js",
   "scripts": {
