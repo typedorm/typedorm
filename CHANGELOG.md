@@ -1,3 +1,10 @@
+## [1.11.2](https://github.com/typedorm/typedorm/compare/v1.11.1...v1.11.2) (2021-04-30)
+
+
+### Bug Fixes
+
+* changelog generator ([d3859ab](https://github.com/typedorm/typedorm/commit/d3859abdda783941a42360d96f11b2c782618c78))
+
 # [1.0.0-beta.2](https://github.com/typedorm/typedorm/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2020-11-27)
 
 
