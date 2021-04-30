@@ -1,4 +1,4 @@
-import {EntityTarget, PrimaryKeyAttributes} from '@typedorm/common';
+import {EntityTarget} from '@typedorm/common';
 import {Batch} from './batch';
 
 export interface WriteBatchCreate<Entity> {
@@ -10,7 +10,7 @@ export interface WriteBatchCreate<Entity> {
 export interface WriteBatchDelete<Entity, PrimaryKey> {
   delete: {
     item: EntityTarget<Entity>;
-    primaryKey: PrimaryKeyAttributes<PrimaryKey, any>;
+    primaryKey: PrimaryKey;
   };
 }
 
@@ -18,13 +18,7 @@ export type WriteBatchItem<Entity, PrimaryKey> =
   | WriteBatchCreate<Entity>
   | WriteBatchDelete<Entity, PrimaryKey>;
 
-export class WriteBatch extends Batch {
-  protected _items: WriteBatchItem<any, any>[];
-  constructor() {
-    super();
-    this._items = [];
-  }
-
+export class WriteBatch extends Batch<WriteBatchItem<any, any>> {
   add(batchItems: WriteBatchItem<any, any>[]): this {
     this.items.push(...batchItems);
     return this;
@@ -50,9 +44,5 @@ export class WriteBatch extends Batch {
       },
     });
     return this;
-  }
-
-  get items() {
-    return this._items;
   }
 }

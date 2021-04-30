@@ -2,16 +2,14 @@ import {DynamoDB} from 'aws-sdk';
 import {
   EntityAttributes,
   EntityTarget,
-  PrimaryKeyAttributes,
   UpdateAttributes,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
-import {WriteTransaction} from '../transaction/write-transaction';
 import {
   DocumentClientRequestTransformer,
-  TransformerToDynamoQueryItemsOptions,
+  ManagerToDynamoQueryItemsOptions,
 } from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
@@ -19,16 +17,45 @@ import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {isWriteTransactionItemList} from '../transaction/type-guards';
 import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 import {FilterOptions} from '../expression/filter-options-type';
+import {ConditionOptions} from '../expression/condition-options-type';
+import {ProjectionKeys} from '../expression/expression-input-parser';
 
-export interface EntityManagerUpdateOptions {
+export interface EntityManagerCreateOptions<Entity> {
+  /**
+   * @default false
+   */
+  overwriteIfExists?: boolean;
+
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<Entity>;
+}
+
+export interface EntityManagerUpdateOptions<Entity> {
   /**
    * @default '.'
    */
   nestedKeySeparator?: string;
+
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<Entity>;
 }
 
-export interface EntityManagerQueryOptions<PrimaryKey, Entity>
-  extends TransformerToDynamoQueryItemsOptions {
+export interface EntityManagerDeleteOptions<Entity> {
+  /**
+   * Specify condition to apply
+   */
+  where?: ConditionOptions<Entity>;
+}
+
+export interface EntityManagerQueryOptions<Entity, PrimaryKey>
+  extends ManagerToDynamoQueryItemsOptions {
+  /**
+   * Cursor to traverse from
+   */
   cursor?: DynamoDB.DocumentClient.Key;
 
   /**
@@ -36,7 +63,21 @@ export interface EntityManagerQueryOptions<PrimaryKey, Entity>
    * Avoid using this where possible, since filters in dynamodb applies after items
    * are read
    */
-  where?: FilterOptions<PrimaryKey, Entity>;
+  where?: FilterOptions<Entity, PrimaryKey>;
+
+  /**
+   * Specifies which attributes to fetch
+   * @default all attributes are fetched
+   */
+  select?: ProjectionKeys<Entity>;
+}
+
+export interface EntityManagerFindOneOptions<Entity> {
+  /**
+   * Specifies which attributes to fetch
+   * @default all attributes are fetched
+   */
+  select?: ProjectionKeys<Entity>;
 }
 
 export class EntityManager {
@@ -52,8 +93,14 @@ export class EntityManager {
    * Creates new record in table with given entity
    * @param entity Entity to add to table as a new record
    */
-  async create<Entity>(entity: Entity): Promise<Entity> {
-    const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(entity);
+  async create<Entity>(
+    entity: Entity,
+    options?: EntityManagerCreateOptions<Entity>
+  ): Promise<Entity> {
+    const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(
+      entity,
+      options
+    );
     const entityClass = getConstructorForInstance(entity);
 
     if (!isWriteTransactionItemList(dynamoPutItemInput)) {
@@ -71,11 +118,7 @@ export class EntityManager {
     // dynamoPutItemInput is a transact item list, meaning that it contains one or more unique attributes, which also
     // needs to be created along with original item
 
-    const transaction = new WriteTransaction(
-      this.connection,
-      dynamoPutItemInput
-    );
-    await this.connection.transactionManger.write(transaction);
+    await this.connection.transactionManger.writeRaw(dynamoPutItemInput);
 
     const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
@@ -92,13 +135,15 @@ export class EntityManager {
    * @param entityClass Entity to get value of
    * @param props attributes of entity
    */
-  async findOne<PrimaryKey, Entity>(
+  async findOne<Entity, PrimaryKey = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
-    primaryKeyAttributes: PrimaryKey
+    primaryKeyAttributes: PrimaryKey,
+    options?: EntityManagerFindOneOptions<Entity>
   ): Promise<Entity | undefined> {
     const dynamoGetItem = this._dcReqTransformer.toDynamoGetItem(
       entityClass,
-      primaryKeyAttributes
+      primaryKeyAttributes,
+      options
     );
 
     const response = await this.connection.documentClient
@@ -213,15 +258,15 @@ export class EntityManager {
    * @param body Attributes to update
    * @param options update options
    */
-  async update<PrimaryKey, Entity>(
+  async update<Entity, PrimaryKey = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
-    primaryKeyAttributes: PrimaryKeyAttributes<PrimaryKey, any>,
-    body: UpdateAttributes<PrimaryKey, Entity>,
-    options?: EntityManagerUpdateOptions
-  ): Promise<Entity> {
+    primaryKeyAttributes: PrimaryKey,
+    body: UpdateAttributes<Entity, PrimaryKey>,
+    options?: EntityManagerUpdateOptions<Entity>
+  ): Promise<Entity | undefined> {
     const dynamoUpdateItem = this._dcReqTransformer.toDynamoUpdateItem<
-      PrimaryKey,
-      Entity
+      Entity,
+      PrimaryKey
     >(entityClass, primaryKeyAttributes, body, options);
 
     if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
@@ -237,7 +282,7 @@ export class EntityManager {
     }
 
     // first get existing item, so that we can safely clear previous unique attributes
-    const existingItem = await this.findOne<PrimaryKey, Entity>(
+    const existingItem = await this.findOne<Entity, PrimaryKey>(
       entityClass,
       primaryKeyAttributes
     );
@@ -254,15 +299,8 @@ export class EntityManager {
       existingItem
     );
 
-    const transaction = new WriteTransaction(this.connection, updateItemList);
-    // since write transaction does not return any, we will need to get the latest one from dynamo
-    await this.connection.transactionManger.write(transaction);
-    const updatedItem = (await this.findOne<PrimaryKey, Entity>(
-      entityClass,
-      primaryKeyAttributes
-    )) as Entity;
-
-    return updatedItem;
+    await this.connection.transactionManger.writeRaw(updateItemList);
+    return this.findOne<Entity, PrimaryKey>(entityClass, primaryKeyAttributes);
   }
 
   /**
@@ -270,14 +308,15 @@ export class EntityManager {
    * @param entityClass Entity Class to delete
    * @param primaryKeyAttributes Entity Primary key
    */
-  async delete<PrimaryKeyAttributes, Entity>(
+  async delete<Entity, PrimaryKeyAttributes = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
-    primaryKeyAttributes: PrimaryKeyAttributes
+    primaryKeyAttributes: PrimaryKeyAttributes,
+    options?: EntityManagerDeleteOptions<Entity>
   ) {
     const dynamoDeleteItem = this._dcReqTransformer.toDynamoDeleteItem<
-      PrimaryKeyAttributes,
-      Entity
-    >(entityClass, primaryKeyAttributes);
+      Entity,
+      PrimaryKeyAttributes
+    >(entityClass, primaryKeyAttributes, options);
 
     if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
       await this.connection.documentClient.delete(dynamoDeleteItem).promise();
@@ -287,7 +326,7 @@ export class EntityManager {
     }
 
     // first get existing item, so that we can safely clear previous unique attributes
-    const existingItem = await this.findOne<PrimaryKeyAttributes, Entity>(
+    const existingItem = await this.findOne<Entity, PrimaryKeyAttributes>(
       entityClass,
       primaryKeyAttributes
     );
@@ -303,9 +342,9 @@ export class EntityManager {
     const deleteItemList = dynamoDeleteItem.lazyLoadTransactionWriteItems(
       existingItem
     );
-    const transaction = new WriteTransaction(this.connection, deleteItemList);
+
     // delete main item and all it's unique attributes as part of single transaction
-    await this.connection.transactionManger.write(transaction);
+    await this.connection.transactionManger.writeRaw(deleteItemList);
     return {
       success: true,
     };
@@ -321,14 +360,14 @@ export class EntityManager {
   async find<Entity, PartitionKey = Partial<EntityAttributes<Entity>> | string>(
     entityClass: EntityTarget<Entity>,
     partitionKey: PartitionKey,
-    queryOptions?: EntityManagerQueryOptions<PartitionKey, Entity>
+    queryOptions?: EntityManagerQueryOptions<Entity, PartitionKey>
   ): Promise<{
     items: DynamoDB.DocumentClient.ItemList;
     cursor?: DynamoDB.DocumentClient.Key | undefined;
   }> {
     const dynamoQueryItem = this._dcReqTransformer.toDynamoQueryItem<
-      PartitionKey,
-      Entity
+      Entity,
+      PartitionKey
     >(entityClass, partitionKey, queryOptions);
 
     const response = await this._internalRecursiveQuery({

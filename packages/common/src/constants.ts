@@ -1,7 +1,12 @@
 /**
- * Current transaction write items limit set by dynamodb itself
+ * Current transaction write items limit set by dynamodb
  */
 export const TRANSACTION_WRITE_ITEMS_LIMIT = 25;
+
+/**
+ * Current transaction read items limit set by dynamodb
+ */
+export const TRANSACTION_READ_ITEMS_LIMIT = 25;
 
 /**
  * Prefix to apply to drm generated items

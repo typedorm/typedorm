@@ -1,6 +1,7 @@
 import {Condition} from '../condition';
 import {ExpressionBuilder} from '../expression-builder';
 import {Filter} from '../filter';
+import {Projection} from '../projection';
 
 const expressionBuilder = new ExpressionBuilder();
 
@@ -142,5 +143,28 @@ test('builds filter expression', () => {
       '#FE_profile_deleted': 'deleted',
     },
     FilterExpression: 'attribute_not_exists(#FE_profile.#FE_profile_deleted)',
+  });
+});
+
+/**
+ * @group buildProjectionExpression
+ */
+test('builds projection expression', () => {
+  const projection = new Projection().addProjectionAttributes([
+    'name',
+    'user.status',
+  ]);
+
+  const projectionExpression = expressionBuilder.buildProjectionExpression(
+    projection
+  );
+
+  expect(projectionExpression).toEqual({
+    ExpressionAttributeNames: {
+      '#PE_name': 'name',
+      '#PE_user': 'user',
+      '#PE_user_status': 'status',
+    },
+    ProjectionExpression: '#PE_name, #PE_user.#PE_user_status',
   });
 });

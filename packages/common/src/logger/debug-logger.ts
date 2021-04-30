@@ -15,6 +15,10 @@ export enum MANAGER_NAME {
   TRANSACTION_MANAGER = 'TRANSACTION MANAGER',
   BATCH_MANAGER = 'BATCH MANAGER',
 }
+export enum TRANSFORM_TRANSACTION_TYPE {
+  TRANSACTION_WRITE = 'TRANSACTION_WRITE',
+  TRANSACTION_READ = 'TRANSACTION_READ',
+}
 
 export enum TRANSFORM_BATCH_TYPE {
   BATCH_WRITE = 'BATCH_WRITE',
@@ -26,6 +30,10 @@ export class DebugLogger {
   private debugTransformLog = debug('typedorm:transform:log');
   // batch transform logger
   private debugTransformBatchLog = debug('typedorm:transform:batch:log');
+  // transaction transform logger
+  private debugTransformTransactionLog = debug(
+    'typedorm:transform:transaction:log'
+  );
   // info logger
   private debugInfoLog = debug('typedorm:info:log');
   private debugWarnLog = debug('typedorm:warn:log');
@@ -74,6 +82,31 @@ export class DebugLogger {
   ) {
     if (this.debugTransformBatchLog.enabled) {
       this.debugTransformBatchLog(
+        `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
+        ...(body
+          ? [
+              chalk.blueBright('\nBody: '),
+              chalk.white(this.ensurePrintable(body)),
+            ]
+          : []),
+        ...(options
+          ? [
+              chalk.blueBright('\nOptions: '),
+              chalk.white(this.ensurePrintable(options)),
+            ]
+          : [])
+      );
+    }
+  }
+
+  logTransformTransaction(
+    operation: TRANSFORM_TRANSACTION_TYPE,
+    prefix: string,
+    body?: any,
+    options?: any
+  ) {
+    if (this.debugTransformTransactionLog.enabled) {
+      this.debugTransformTransactionLog(
         `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
         ...(body
           ? [

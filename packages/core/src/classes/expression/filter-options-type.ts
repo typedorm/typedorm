@@ -1,34 +1,31 @@
 import {
   ATTRIBUTE_TYPE,
   FilterType,
-  NonKeyAttributes,
+  NonKeyAttributesWithReturnType,
   RequireAtLeastOne,
   RequireOnlyOne,
-  ScalarType,
 } from '@typedorm/common';
 
-type AttributeFilterOptions<PrimaryKey, Entity> =
+type AttributeFilterOptions<Entity, PrimaryKey> =
   // Require max 1 operator on non key attribute
-  | NonKeyAttributes<
-      PrimaryKey,
-      Entity,
-      RequireOnlyOne<
+  | {
+      [enKey in keyof Omit<Entity, keyof PrimaryKey>]?: RequireOnlyOne<
         {
           [key in
             | FilterType.SimpleOperator
             | Extract<
                 FilterType.FunctionOperator,
                 'CONTAINS' | 'BEGINS_WITH'
-              >]: ScalarType;
+              >]: Entity[enKey];
         } &
           {
             [key in Extract<FilterType.RangeOperator, 'BETWEEN'>]: [
-              ScalarType,
-              ScalarType
+              Entity[enKey],
+              Entity[enKey]
             ];
           } &
           {
-            [key in Extract<FilterType.RangeOperator, 'IN'>]: ScalarType[];
+            [key in Extract<FilterType.RangeOperator, 'IN'>]: Entity[enKey][];
           } &
           {
             [key in Extract<
@@ -42,39 +39,45 @@ type AttributeFilterOptions<PrimaryKey, Entity> =
               'SIZE'
             >]: RequireOnlyOne<
               {
-                [key in FilterType.SimpleOperator]: ScalarType;
+                [key in FilterType.SimpleOperator]: Entity[enKey];
               }
             >;
           }
-      >
-    >
+      >;
+    }
   // Require 'ATTRIBUTE_EXISTS' or 'ATTRIBUTE_NOT_EXISTS' on non key attribute
-  | NonKeyAttributes<
-      PrimaryKey,
+  | NonKeyAttributesWithReturnType<
       Entity,
+      PrimaryKey,
       Extract<
         FilterType.FunctionOperator,
         'ATTRIBUTE_EXISTS' | 'ATTRIBUTE_NOT_EXISTS'
       >
     >;
 
-type RecursiveFilterOptions<PrimaryKey, Entity> = {
+type RecursiveFilterOptions<Entity, PrimaryKey> = {
   // for `AND` and `OR` logical operators require at least one of defined options or other self
   [key in Extract<FilterType.LogicalOperator, 'OR' | 'AND'>]: RequireAtLeastOne<
-    AttributeFilterOptions<PrimaryKey, Entity> &
-      RecursiveFilterOptions<PrimaryKey, Entity>
+    AttributeFilterOptions<Entity, PrimaryKey> &
+      // manually infer recursive type
+      RecursiveFilterOptions<Entity, PrimaryKey> extends infer R
+      ? R
+      : never
   >;
 } &
   // for `NOT` logical operators require one from defined options or other self
   {
     [key in Extract<FilterType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
-      AttributeFilterOptions<PrimaryKey, Entity> &
-        RecursiveFilterOptions<PrimaryKey, Entity>
+      AttributeFilterOptions<Entity, PrimaryKey> &
+        // manually infer recursive type
+        RecursiveFilterOptions<Entity, PrimaryKey> extends infer R
+        ? R
+        : never
     >;
   } &
   // require attribute filter
-  AttributeFilterOptions<PrimaryKey, Entity>;
+  AttributeFilterOptions<Entity, PrimaryKey>;
 
-export type FilterOptions<PrimaryKey, Entity> = RequireOnlyOne<
-  RecursiveFilterOptions<PrimaryKey, Entity>
+export type FilterOptions<Entity, PrimaryKey> = RequireOnlyOne<
+  RecursiveFilterOptions<Entity, PrimaryKey>
 >;

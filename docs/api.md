@@ -20,6 +20,9 @@ _Note: In an event of inconstancy between actual API and this document, API shou
   - [BatchManager](#batchmanager)
     - [BatchManager.write](#batchmanagerwrite)
     - [BatchManager.read](#batchmanagerread)
+  - [TransactionManager](#transactionmanager)
+    - [TransactionManager.write](#transactionmanagerwrite)
+    - [TransactionManager.read](#transactionmanagerread)
 
 ## Connection
 
@@ -188,6 +191,15 @@ create(
   // Entity to put into db
   // Item will be created to table configured on @Entity or Connection
   entity
+
+  // @optional;
+  // Additional options
+  options: {
+    // @optional
+    // condition based creates
+    // when present, it must evaluate to true in order for operation to succeed.
+    where
+  }
 )
 ```
 
@@ -202,6 +214,15 @@ findOne(
 
   // All attributes referenced in primary key
   primaryKeyAttributes
+
+  // @optional
+  // Get item options
+  options: {
+    // @optional
+    // Specify attributes to get, only selected attributes are fetched
+    // @default `ALL`
+    select
+  }
 )
 ```
 
@@ -234,7 +255,7 @@ exists(
   // Attributes to update, if doesn't already exist,it will be created
   body
 
-  // @Optional;
+  // @optional;
   // Additional options
   options: {
     // @optional
@@ -242,6 +263,11 @@ exists(
     // body can include 'user$name' set to new value)
     // @default it '.'
     nestedKeySeparator
+
+    // @optional
+    // condition based updates
+    // when present, it must evaluate to true in order for operation to succeed.
+    where
   }
 
 )
@@ -258,6 +284,15 @@ delete(
 
   // Primary key attributes or unique attributes referenced in schemas
   primaryKeyAttributes
+
+  // @optional;
+  // Additional options
+  options: {
+    // @optional
+    // condition based creates
+    // when present, it must evaluate to true in order for operation to succeed.
+    where
+  }
 )
 ```
 
@@ -301,12 +336,17 @@ find(
     // @default ASC
     orderBy
 
-    // optional
+    // @optional
     // Filter returned items
     // Any conditions listed here will apply after items have been read from dynamodb and
     // therefore this should be avoided wherever possible, but can be helpful in some cases
     // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
     where
+
+    // @optional
+    // Specify attributes to get, only selected attributes are fetched
+    // @default `ALL`
+    select
   }
 )
 ```
@@ -377,4 +417,32 @@ read(
   }
 )
 
+```
+
+## TransactionManager
+
+Transaction manager api.
+
+### TransactionManager.write
+
+Writes entities to dynamodb over document client transaction api.
+
+```Typescript
+write(
+  // Write request input
+  // Must be an instance of `WriteTransaction` class
+  transaction
+)
+```
+
+### TransactionManager.read
+
+Reads entities to from dynamodb over document client transaction api.
+
+```Typescript
+read(
+  // Read request input
+  // Must be an instance of `ReadTransaction` class
+  transaction
+)
 ```

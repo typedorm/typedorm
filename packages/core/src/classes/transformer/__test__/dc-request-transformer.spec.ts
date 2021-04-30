@@ -26,7 +26,7 @@ afterEach(() => {
  * @group toDynamoGetItem
  */
 test('transforms get item requests', () => {
-  const getItem = transformer.toDynamoGetItem<UserPrimaryKey, User>(User, {
+  const getItem = transformer.toDynamoGetItem<User, UserPrimaryKey>(User, {
     id: '1',
   });
   expect(getItem).toEqual({
@@ -34,6 +34,29 @@ test('transforms get item requests', () => {
       PK: 'USER#1',
       SK: 'USER#1',
     },
+    TableName: 'test-table',
+  });
+});
+
+test('transforms get item requests with projection expression', () => {
+  const getItem = transformer.toDynamoGetItem<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      select: ['name'],
+    }
+  );
+  expect(getItem).toEqual({
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ExpressionAttributeNames: {
+      '#PE_name': 'name',
+    },
+    ProjectionExpression: '#PE_name',
     TableName: 'test-table',
   });
 });
@@ -83,6 +106,44 @@ test('transforms put item requests', () => {
   });
 });
 
+test('transforms put item requests with condition', () => {
+  const user = new User();
+  user.id = '1';
+  user.name = 'Tito';
+  user.status = 'active';
+
+  const putItem = transformer.toDynamoPutItem(user, {
+    where: {
+      status: {
+        EQ: 'active',
+      },
+    },
+  });
+  expect(putItem).toEqual({
+    Item: {
+      GSI1PK: 'USER#STATUS#active',
+      GSI1SK: 'USER#Tito',
+      PK: 'USER#1',
+      SK: 'USER#1',
+      id: '1',
+      name: 'Tito',
+      __en: 'user',
+      status: 'active',
+    },
+    ConditionExpression:
+      '((attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))) AND (#CE_status = :CE_status)',
+    ExpressionAttributeNames: {
+      '#CE_PK': 'PK',
+      '#CE_SK': 'SK',
+      '#CE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':CE_status': 'active',
+    },
+    TableName: 'test-table',
+  });
+});
+
 test('transforms put item request with unique attributes', () => {
   resetTestConnection();
 
@@ -126,6 +187,57 @@ test('transforms put item request with unique attributes', () => {
           email: 'user@example.com',
           id: '1',
           __en: 'user',
+        },
+        TableName: 'test-table',
+      },
+    },
+    {
+      Put: {
+        ConditionExpression:
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
+test('transforms put item request with unique attributes and condition options', () => {
+  const user = new UserUniqueEmail();
+  user.id = '1';
+  user.email = 'user@example.com';
+  user.name = 'test user';
+  user.status = 'active';
+
+  const putItem = transformer.toDynamoPutItem(user, {
+    where: {
+      status: 'ATTRIBUTE_NOT_EXISTS',
+    },
+  });
+  expect(putItem).toEqual([
+    {
+      Put: {
+        ConditionExpression:
+          '((attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))) AND (attribute_not_exists(#CE_status))',
+        ExpressionAttributeNames: {
+          '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
+          '#CE_status': 'status',
+        },
+        Item: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+          email: 'user@example.com',
+          id: '1',
+          name: 'test user',
+          status: 'active',
+          __en: 'user',
+          GSI1PK: 'USER#STATUS#active',
+          GSI1SK: 'USER#test user',
         },
         TableName: 'test-table',
       },
@@ -325,7 +437,7 @@ test('transforms put item request consisting unique attributes with provided pri
  * @group toDynamoUpdateItem
  */
 test('transforms update item request', () => {
-  const updatedItem = transformer.toDynamoUpdateItem<UserPrimaryKey, User>(
+  const updatedItem = transformer.toDynamoUpdateItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -355,8 +467,8 @@ test('transforms update item request', () => {
 
 test('transforms update item record with unique attributes', () => {
   const updatedItem = transformer.toDynamoUpdateItem<
-    UserPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserPrimaryKey
   >(
     UserUniqueEmail,
     {
@@ -418,11 +530,175 @@ test('transforms update item record with unique attributes', () => {
   ]);
 });
 
+test('transforms update item request with condition input', () => {
+  const updatedItem = transformer.toDynamoUpdateItem<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      name: 'new name',
+    },
+    {
+      where: {
+        age: {
+          BETWEEN: [3, 10],
+        },
+      },
+    }
+  );
+  expect(updatedItem).toEqual({
+    ExpressionAttributeNames: {
+      '#attr0': 'name',
+      '#attr1': 'GSI1SK',
+      '#CE_age': 'age',
+    },
+    ExpressionAttributeValues: {
+      ':val0': 'new name',
+      ':val1': 'USER#new name',
+      ':CE_age_end': 10,
+      ':CE_age_start': 3,
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
+  });
+});
+
+test('transforms update item record with unique attributes and condition options', () => {
+  const updatedItem = transformer.toDynamoUpdateItem<
+    UserUniqueEmail,
+    UserPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      name: 'new name',
+      email: 'new@email.com',
+    },
+    {
+      where: {
+        'user.name': {
+          NE: 'test user',
+        },
+      },
+    }
+  );
+
+  const lazyWriteItemListLoader = (updatedItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  const writeItemList = lazyWriteItemListLoader({
+    name: 'new name',
+    email: 'old@email.com',
+  });
+  expect(writeItemList).toEqual([
+    {
+      Update: {
+        ExpressionAttributeNames: {
+          '#attr0': 'name',
+          '#attr1': 'email',
+          '#attr2': 'GSI1SK',
+          '#CE_user': 'user',
+          '#CE_user_name': 'name',
+        },
+        ExpressionAttributeValues: {
+          ':val0': 'new name',
+          ':val1': 'new@email.com',
+          ':val2': 'USER#new name',
+          ':CE_user_name': 'test user',
+        },
+        Key: {PK: 'USER#1', SK: 'USER#1'},
+        TableName: 'test-table',
+        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+        ConditionExpression: '#CE_user.#CE_user_name <> :CE_user_name',
+      },
+    },
+    {
+      Put: {
+        ConditionExpression:
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+        ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
+test('transforms update item request with complex condition input', () => {
+  const updatedItem = transformer.toDynamoUpdateItem<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      name: 'new name',
+    },
+    {
+      where: {
+        AND: {
+          age: {
+            GE: 3,
+          },
+          status: {
+            IN: ['active', 'standby'],
+          },
+        },
+      },
+    }
+  );
+  expect(updatedItem).toEqual({
+    ExpressionAttributeNames: {
+      '#attr0': 'name',
+      '#attr1': 'GSI1SK',
+      '#CE_age': 'age',
+      '#CE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':val0': 'new name',
+      ':val1': 'USER#new name',
+      ':CE_age': 3,
+      ':CE_status_0': 'active',
+      ':CE_status_1': 'standby',
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    ConditionExpression:
+      '(#CE_age >= :CE_age) AND (#CE_status IN (:CE_status_0, :CE_status_1))',
+  });
+});
+
 /**
  * @group toDynamoDeleteItem
  */
 test('transforms delete item request', () => {
-  const deleteItemInput = transformer.toDynamoDeleteItem<UserPrimaryKey, User>(
+  const deleteItemInput = transformer.toDynamoDeleteItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -437,10 +713,41 @@ test('transforms delete item request', () => {
   });
 });
 
+test('transforms delete item request with condition options', () => {
+  const deleteItemInput = transformer.toDynamoDeleteItem<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      where: {
+        age: {
+          BETWEEN: [1, 9],
+        },
+      },
+    }
+  );
+  expect(deleteItemInput).toEqual({
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    TableName: 'test-table',
+    ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
+    ExpressionAttributeNames: {
+      '#CE_age': 'age',
+    },
+    ExpressionAttributeValues: {
+      ':CE_age_end': 9,
+      ':CE_age_start': 1,
+    },
+  });
+});
+
 test('transforms delete item request with unique attributes', () => {
   const deleteItemInput = transformer.toDynamoDeleteItem<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >(UserUniqueEmail, {
     id: '1',
   });
@@ -484,11 +791,75 @@ test('transforms delete item request with unique attributes', () => {
   ]);
 });
 
+test('transforms delete item request with unique attributes and condition options', () => {
+  const deleteItemInput = transformer.toDynamoDeleteItem<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      where: {
+        email: {
+          NE: 'admin@user.com',
+        },
+      },
+    }
+  );
+  expect(deleteItemInput).toMatchObject({
+    entityClass: UserUniqueEmail,
+    primaryKeyAttributes: {
+      id: '1',
+    },
+  });
+
+  const lazyWriteItemListLoader = (deleteItemInput as any)
+    .lazyLoadTransactionWriteItems;
+
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  const deleteItemList = lazyWriteItemListLoader({
+    id: '1',
+    name: 'new name',
+    email: 'old@email.com',
+  });
+
+  expect(deleteItemList).toEqual([
+    {
+      Delete: {
+        TableName: 'test-table',
+        Key: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+        },
+        ConditionExpression: '#CE_email <> :CE_email',
+        ExpressionAttributeNames: {
+          '#CE_email': 'email',
+        },
+        ExpressionAttributeValues: {
+          ':CE_email': 'admin@user.com',
+        },
+      },
+    },
+    {
+      Delete: {
+        TableName: 'test-table',
+        Key: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+        },
+      },
+    },
+  ]);
+});
+
 /**
  * @group toDynamoQueryItem
  */
 test('transforms simple query item request', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(User, {
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(User, {
     id: '1',
   });
   expect(queryItem).toEqual({
@@ -503,8 +874,34 @@ test('transforms simple query item request', () => {
   });
 });
 
+test('transforms simple query item request with projection expression', () => {
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      select: ['status', 'name'],
+    }
+  );
+  expect(queryItem).toEqual({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#PE_name': 'name',
+      '#PE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#1',
+    },
+    ScanIndexForward: true,
+    KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
+    TableName: 'test-table',
+    ProjectionExpression: '#PE_status, #PE_name',
+  });
+});
+
 test('transforms query item request with filter input', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -534,7 +931,7 @@ test('transforms query item request with filter input', () => {
 });
 
 test('transforms complex query item request', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserPrimaryKey, User>(
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
     User,
     {
       id: '1',
@@ -565,7 +962,7 @@ test('transforms complex query item request', () => {
 });
 
 test('transforms index based query item request', () => {
-  const queryItem = transformer.toDynamoQueryItem<UserGSI1, User>(
+  const queryItem = transformer.toDynamoQueryItem<User, UserGSI1>(
     User,
     {
       status: '13',

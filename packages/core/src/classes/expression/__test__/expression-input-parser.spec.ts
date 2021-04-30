@@ -1,8 +1,10 @@
 import {ATTRIBUTE_TYPE} from '@typedorm/common';
 import {User, UserPrimaryKey} from '@typedorm/core/__mocks__/user';
+import {Condition} from '../condition';
 import {ExpressionInputParser} from '../expression-input-parser';
 import {Filter} from '../filter';
 import {KeyCondition} from '../key-condition';
+import {Projection} from '../projection';
 
 let expInputParser: ExpressionInputParser;
 beforeEach(() => {
@@ -27,7 +29,7 @@ test('parses keyCondition input', () => {
  * @group parseToFilter
  */
 test('parses simple filter input', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     age: {
       EQ: 12,
     },
@@ -38,7 +40,7 @@ test('parses simple filter input', () => {
 });
 
 test('parses filter with range operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     name: {
       CONTAINS: 'tes',
     },
@@ -49,7 +51,7 @@ test('parses filter with range operator', () => {
 });
 
 test('parses filter with key only operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     status: 'ATTRIBUTE_EXISTS',
   });
 
@@ -58,7 +60,7 @@ test('parses filter with key only operator', () => {
 });
 
 test('parses filter with attribute type operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     status: {
       ATTRIBUTE_TYPE: ATTRIBUTE_TYPE.BOOLEAN,
     },
@@ -71,10 +73,10 @@ test('parses filter with attribute type operator', () => {
 });
 
 test('parses filter with size operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     status: {
       SIZE: {
-        EQ: 1,
+        EQ: '1',
       },
     },
   });
@@ -84,7 +86,7 @@ test('parses filter with size operator', () => {
 });
 
 test('parses filter with single logical operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     AND: {
       age: {
         BETWEEN: [1, 3],
@@ -108,10 +110,10 @@ test('parses filter with single logical operator', () => {
 });
 
 test('parses filter with `NOT` logical operator', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     NOT: {
       age: {
-        BEGINS_WITH: '1',
+        BEGINS_WITH: 1,
       },
     },
   });
@@ -124,8 +126,8 @@ test('parses filter with `NOT` logical operator', () => {
 
 test('parses nester object property', () => {
   const parsedFilter = expInputParser.parseToFilter<
-    UserPrimaryKey,
-    User & {'profile.name.firstName': string}
+    User & {'profile.name.firstName': string},
+    UserPrimaryKey
   >({
     'profile.name.firstName': {
       EQ: 'sam',
@@ -147,7 +149,7 @@ test('parses nester object property', () => {
 });
 
 test('parses filter with complex nested logical operators', () => {
-  const parsedFilter = expInputParser.parseToFilter<UserPrimaryKey, User>({
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     OR: {
       AND: {
         age: {
@@ -180,4 +182,51 @@ test('parses filter with complex nested logical operators', () => {
     ':FE_name': 'admin',
     ':FE_status': 'SS',
   });
+});
+
+test('parses deep nested condition', () => {
+  const parsedCondition = expInputParser.parseToCondition<User>({
+    NOT: {
+      NOT: {
+        OR: {
+          AND: {
+            age: 'ATTRIBUTE_EXISTS',
+            name: 'ATTRIBUTE_NOT_EXISTS',
+          },
+          status: {
+            LE: '1',
+          },
+        },
+      },
+    },
+  });
+
+  expect(parsedCondition).toBeInstanceOf(Condition);
+  expect(parsedCondition?.expression).toEqual(
+    'NOT (NOT (((attribute_exists(#CE_age)) AND (attribute_not_exists(#CE_name))) OR (#CE_status <= :CE_status)))'
+  );
+  expect(parsedCondition?.names).toEqual({
+    '#CE_age': 'age',
+    '#CE_name': 'name',
+    '#CE_status': 'status',
+  });
+  expect(parsedCondition?.values).toEqual({
+    ':CE_status': '1',
+  });
+});
+
+/**
+ * @group parseToProjection
+ */
+test('parses options to valid projection', () => {
+  const projection = expInputParser.parseToProjection<User>([
+    'id',
+    'name',
+    'status.active',
+  ]);
+
+  expect(projection).toBeInstanceOf(Projection);
+  expect(projection.expression).toEqual(
+    '#PE_id, #PE_name, #PE_status.#PE_status_active'
+  );
 });

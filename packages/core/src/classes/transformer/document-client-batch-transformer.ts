@@ -69,7 +69,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       simpleBatchRequestItems,
       transactionListItems,
       metadata,
-    } = this.transformBatchWriteItems(items);
+    } = this.innerTransformBatchWriteItems(items);
 
     // organize all requests in "tableName - requestItem" format
     const sorted = this.getWriteRequestsSortedByTable(simpleBatchRequestItems);
@@ -287,7 +287,9 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
    * - transactionListItems: items that must be processed in a transaction instead of batch (i.e items with unique attributes)
    * - LazyTransactionWriteItemListLoaderItems: items that are must be processed in transaction but also requires other requests to be made first (i.e delete of unique items)
    */
-  private transformBatchWriteItems(batchItems: WriteBatchItem<any, any>[]) {
+  private innerTransformBatchWriteItems(
+    batchItems: WriteBatchItem<any, any>[]
+  ) {
     const namespaceId = v4();
     const itemTransformHashMap = new Map<string, WriteBatchItem<any, any>>();
 

@@ -77,6 +77,88 @@ test('creates entity', async () => {
   });
 });
 
+test('creates entity with possible overwrite', async () => {
+  dcMock.put.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const user = new User();
+  user.id = '1';
+  user.name = 'Test User';
+  user.status = 'active';
+
+  const userEntity = await manager.create(user, {
+    overwriteIfExists: true,
+  });
+  expect(dcMock.put).toHaveBeenCalledTimes(1);
+  expect(dcMock.put).toHaveBeenCalledWith({
+    Item: {
+      GSI1PK: 'USER#STATUS#active',
+      GSI1SK: 'USER#Test User',
+      PK: 'USER#1',
+      SK: 'USER#1',
+      id: '1',
+      __en: 'user',
+      name: 'Test User',
+      status: 'active',
+    },
+    TableName: 'test-table',
+  });
+  expect(userEntity).toEqual({
+    id: '1',
+    name: 'Test User',
+    status: 'active',
+  });
+});
+
+test('creates entity with possible overwrite and given condition', async () => {
+  dcMock.put.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const user = new User();
+  user.id = '1';
+  user.name = 'Test User';
+  user.status = 'active';
+
+  const userEntity = await manager.create<User>(user, {
+    overwriteIfExists: true,
+    where: {
+      NOT: {
+        id: {
+          EQ: '1',
+        },
+      },
+    },
+  });
+  expect(dcMock.put).toHaveBeenCalledTimes(1);
+  expect(dcMock.put).toHaveBeenCalledWith({
+    Item: {
+      GSI1PK: 'USER#STATUS#active',
+      GSI1SK: 'USER#Test User',
+      PK: 'USER#1',
+      SK: 'USER#1',
+      id: '1',
+      __en: 'user',
+      name: 'Test User',
+      status: 'active',
+    },
+    ConditionExpression: 'NOT (#CE_id = :CE_id)',
+    ExpressionAttributeNames: {
+      '#CE_id': 'id',
+    },
+    ExpressionAttributeValues: {
+      ':CE_id': '1',
+    },
+    TableName: 'test-table',
+  });
+  expect(userEntity).toEqual({
+    id: '1',
+    name: 'Test User',
+    status: 'active',
+  });
+});
+
 /**
  * Issue: #11
  */
@@ -132,7 +214,7 @@ test('finds one entity by given primary key', async () => {
     }),
   });
 
-  const userEntity = await manager.findOne<UserPrimaryKey, User>(User, {
+  const userEntity = await manager.findOne<User, UserPrimaryKey>(User, {
     id: '1',
   });
   expect(dcMock.get).toHaveBeenCalledTimes(1);
@@ -249,7 +331,7 @@ test('updates item and return all new attributes', async () => {
       },
     }),
   });
-  const updatedItem = await manager.update<UserPrimaryKey, User>(
+  const updatedItem = await manager.update<User, UserPrimaryKey>(
     User,
     {id: '1'},
     {
@@ -301,8 +383,8 @@ test('updates item and attributes marked to be autoUpdated', async () => {
   });
 
   const updatedItem = await manager.update<
-    UserAutoGenerateAttributesPrimaryKey,
-    UserAutoGenerateAttributes
+    UserAutoGenerateAttributes,
+    UserAutoGenerateAttributesPrimaryKey
   >(
     UserAutoGenerateAttributes,
     {id: '1'},
@@ -359,8 +441,8 @@ test('updates item with unique attributes and returns all updated attributes', a
   });
 
   const updatedItem = await manager.update<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >(
     UserUniqueEmail,
     {
@@ -423,11 +505,76 @@ test('updates item with unique attributes and returns all updated attributes', a
   });
 });
 
+test('updates item and return all new attributes with given condition', async () => {
+  dcMock.update.mockReturnValue({
+    promise: () => ({
+      Attributes: {
+        PK: 'USER#1',
+        SK: 'USER#1',
+        GSI1PK: 'USER#STATUS#active',
+        GSI1SK: 'USER#Me',
+        id: '1',
+        name: 'user',
+        status: 'active',
+        age: 4,
+      },
+    }),
+  });
+  const updatedItem = await manager.update<User, UserPrimaryKey>(
+    User,
+    {id: '1'},
+    {
+      name: 'user',
+      status: 'active',
+    },
+    {
+      where: {
+        age: {
+          BETWEEN: [1, 11],
+        },
+      },
+    }
+  );
+
+  expect(dcMock.update).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#attr0': 'name',
+      '#attr1': 'status',
+      '#attr2': 'GSI1SK',
+      '#attr3': 'GSI1PK',
+      '#CE_age': 'age',
+    },
+    ExpressionAttributeValues: {
+      ':val0': 'user',
+      ':val1': 'active',
+      ':val2': 'USER#user',
+      ':val3': 'USER#STATUS#active',
+      ':CE_age_end': 11,
+      ':CE_age_start': 1,
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression:
+      'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2, #attr3 = :val3',
+    ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
+  });
+  expect(updatedItem).toEqual({
+    id: '1',
+    name: 'user',
+    status: 'active',
+    age: 4,
+  });
+});
+
 test('does not update an item when failed to get item by key', async () => {
   manager.findOne = jest.fn();
 
   const updatedItem = async () =>
-    await manager.update<UserUniqueEmailPrimaryKey, UserUniqueEmail>(
+    await manager.update<UserUniqueEmail, UserUniqueEmailPrimaryKey>(
       UserUniqueEmail,
       {
         id: '1',
@@ -452,7 +599,7 @@ test('deletes item by primary key', async () => {
     }),
   });
 
-  const result = await manager.delete<UserPrimaryKey, User>(User, {
+  const result = await manager.delete<User, UserPrimaryKey>(User, {
     id: '1',
   });
 
@@ -462,6 +609,46 @@ test('deletes item by primary key', async () => {
       SK: 'USER#1',
     },
     TableName: 'test-table',
+  });
+  expect(result).toEqual({
+    success: true,
+  });
+});
+
+test('deletes item by primary key and given condition', async () => {
+  dcMock.delete.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      Attributes: {},
+    }),
+  });
+
+  const result = await manager.delete<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      where: {
+        status: {
+          NE: 'active',
+        },
+      },
+    }
+  );
+
+  expect(dcMock.delete).toHaveBeenCalledWith({
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    TableName: 'test-table',
+    ConditionExpression: '#CE_status <> :CE_status',
+    ExpressionAttributeNames: {
+      '#CE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':CE_status': 'active',
+    },
   });
   expect(result).toEqual({
     success: true,
@@ -496,8 +683,8 @@ test('deletes an item with unique attributes', async () => {
   });
 
   const deletedResponse = await manager.delete<
-    UserUniqueEmailPrimaryKey,
-    UserUniqueEmail
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
   >(UserUniqueEmail, {
     id: '1',
   });
