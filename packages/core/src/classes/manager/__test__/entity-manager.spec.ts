@@ -232,6 +232,27 @@ test('finds one entity by given primary key', async () => {
   });
 });
 
+// issue: 110
+test('returns undefined when no item was found with given primary key', async () => {
+  dcMock.get.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const userEntity = await manager.findOne<User, UserPrimaryKey>(User, {
+    id: '1',
+  });
+
+  expect(dcMock.get).toHaveBeenCalledTimes(1);
+  expect(dcMock.get).toHaveBeenCalledWith({
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    TableName: 'test-table',
+  });
+  expect(userEntity).toBeUndefined();
+});
+
 test('throws an error when trying to do a get request with non primary key attributes', async () => {
   await expect(
     manager.findOne(User, {
@@ -277,7 +298,39 @@ test('checks if given item exists', async () => {
   expect(userEntity).toEqual(true);
 });
 
+// issue: 110
+test('returns correct value when trying check existence of item that does not exist', async () => {
+  dcMock.get.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const userEntity = await manager.exists<User, UserUniqueEmailPrimaryKey>(
+    User,
+    {
+      id: '1',
+    }
+  );
+
+  expect(dcMock.get).toHaveBeenCalledWith({
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    TableName: 'test-table',
+  });
+  expect(userEntity).toEqual(false);
+});
+
 test('checks if item with given unique attribute exists', async () => {
+  dcMock.get.mockReturnValue({
+    promise: () => ({
+      Item: {
+        PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+        SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#user@example.com',
+      },
+    }),
+  });
+
   const userEntity = await manager.exists<UserUniqueEmail>(UserUniqueEmail, {
     email: 'user@example.com',
   });
