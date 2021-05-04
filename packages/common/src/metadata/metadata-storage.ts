@@ -1,7 +1,8 @@
 import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, EntityTarget} from '@typedorm/common';
-import {IndexOptions, Table} from '../table';
+import {Table} from '../table';
 import {AttributeOptionsUniqueType} from '../decorators/attribute.decorator';
 import {ScalarType} from '../helpers/scalar-type';
+import {IndexOptionsWithAlias} from '../index-options';
 
 export const IsAutoGenerateAttributeRawMetadataOptions = (
   attr: any
@@ -17,15 +18,15 @@ export type CompositePrimaryKey = {
   sortKey: string;
 };
 
-export type Indexes = {
-  [key: string]: IndexOptions;
+export type Indexes<Entity = any> = {
+  [key: string]: IndexOptionsWithAlias<Entity>;
 };
 
-export interface EntityRawMetadataOptions {
+export interface EntityRawMetadataOptions<Entity = any> {
   name: string;
-  target: EntityTarget<any>;
+  target: EntityTarget<Entity>;
   primaryKey: PrimaryKey;
-  indexes?: Indexes;
+  indexes?: Indexes<Entity>;
   table?: Table;
 }
 

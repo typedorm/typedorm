@@ -135,6 +135,7 @@ export class EntityMetadata extends BaseMetadata {
 
       const currentIndex = indexes[key];
 
+      // FIXME: check for index type before trying to parse it.
       validateKey(currentIndex.sortKey, attributes);
       // validates and gets and fill set indexes interpolations of sort key
       const sortKeyInterpolations = getInterpolatedKeys(currentIndex.sortKey);
