@@ -150,10 +150,16 @@ export class EntityManager {
       .get(dynamoGetItem)
       .promise();
 
+    // return early when not found
+    if (!response.Item) {
+      return;
+    }
+
     const entity = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
-      response.Item ?? {}
+      response.Item
     );
+
     return entity;
   }
 
