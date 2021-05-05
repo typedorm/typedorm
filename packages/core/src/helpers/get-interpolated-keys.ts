@@ -1,6 +1,13 @@
+import {EntityAliasOrString} from '@typedorm/common';
 import {regexInterpolatedWord} from './constants';
+import {isKeyOfTypeAliasSchema} from './is-key-of-type-alias-schema';
 
-export function getInterpolatedKeys(key: string) {
+export function getInterpolatedKeys(key: EntityAliasOrString<any>) {
+  // early return when referenced key is of type alias schema
+  if (isKeyOfTypeAliasSchema(key)) {
+    return [key.alias as string];
+  }
+
   const matchIterator = key.matchAll(regexInterpolatedWord);
   const interpolatedKeys = [] as string[];
   recursiveFindInterpolatedKeys(key, matchIterator, interpolatedKeys);
