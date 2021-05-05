@@ -11,6 +11,7 @@ import {
   Table,
 } from '@typedorm/common';
 import {table} from '../../../../__mocks__/table';
+import {UserAttrAlias} from '@typedorm/core/__mocks__/user-with-attribute-alias';
 
 jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('12-3-1-23-12'),
@@ -62,6 +63,58 @@ test('builds simple entity metadata', () => {
           },
           _name: 'GSI1',
           type: 'GLOBAL_SECONDARY_INDEX',
+        },
+      },
+    },
+    primaryKey: {
+      attributes: {
+        PK: 'USER#{{id}}',
+        SK: 'USER#{{id}}',
+      },
+      metadata: {
+        _interpolations: {
+          PK: ['id'],
+          SK: ['id'],
+        },
+      },
+    },
+  });
+});
+
+test('builds entity metadata with aliased attributes', () => {
+  const [metadata] = metadataBuilder.build([UserAttrAlias]);
+  expect(metadata.schema).toEqual({
+    indexes: {
+      GSI1: {
+        attributes: {
+          GSI1PK: {
+            alias: 'status',
+          },
+          GSI1SK: 'USER#{{name}}',
+        },
+        metadata: {
+          _interpolations: {
+            GSI1PK: ['status'],
+            GSI1SK: ['name'],
+          },
+          _name: 'GSI1',
+          isSparse: true,
+          type: 'GLOBAL_SECONDARY_INDEX',
+        },
+      },
+      LSI1: {
+        attributes: {
+          LSI1SK: {
+            alias: 'age',
+          },
+        },
+        metadata: {
+          _interpolations: {
+            LSI1SK: ['age'],
+          },
+          _name: 'LSI1',
+          isSparse: true,
+          type: 'LOCAL_SECONDARY_INDEX',
         },
       },
     },

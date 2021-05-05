@@ -13,6 +13,7 @@ import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityTransformer} from '../entity-transformer';
 import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
 import {table} from '@typedorm/core/__mocks__/table';
+import {UserAttrAlias} from '@typedorm/core/__mocks__/user-with-attribute-alias';
 
 let transformer: EntityTransformer;
 beforeEach(() => {
@@ -22,6 +23,7 @@ beforeEach(() => {
       Organisation,
       UserAutoGenerateAttributes,
       UserSparseIndexes,
+      UserAttrAlias,
     ],
   });
   transformer = new EntityTransformer(connection);
@@ -49,6 +51,27 @@ test('transforms dynamo entity to entity model', () => {
     id: '1',
     name: 'Me',
     status: 'active',
+  });
+});
+
+test('transforms dynamo entity with aliased attributes to entity model', () => {
+  const dynamoEntity = {
+    PK: 'USER#1',
+    SK: 'USER#1',
+    GSI1PK: 'USER#STATUS#active',
+    GSI1SK: 'USER#Me',
+    id: '1',
+    name: 'Me',
+    age: 1,
+  };
+  const transformed = transformer.fromDynamoEntity(
+    UserSparseIndexes,
+    dynamoEntity
+  );
+  expect(transformed).toEqual({
+    id: '1',
+    name: 'Me',
+    age: 1,
   });
 });
 
@@ -156,6 +179,43 @@ test('transforms simple model to dynamo entity', () => {
     id: '111',
     name: 'Test User',
     status: 'inactive',
+  });
+});
+
+test('transforms entity with attribute alias to dynamo entity', () => {
+  const user = new UserAttrAlias();
+  user.id = '111';
+  user.name = 'Test User';
+  user.status = 'inactive';
+  user.age = 10;
+
+  const response = transformer.toDynamoEntity(user);
+  expect(response).toEqual({
+    GSI1PK: 'inactive',
+    GSI1SK: 'USER#Test User',
+    PK: 'USER#111',
+    SK: 'USER#111',
+    LSI1SK: 10, // <-- aliased indexes are correctly persisting attribute types
+    age: 10,
+    id: '111',
+    name: 'Test User',
+    status: 'inactive',
+  });
+});
+
+test('transforms entity with attribute alias to dynamo entity', () => {
+  const user = new UserAttrAlias();
+  user.id = '111';
+
+  user.age = 10;
+
+  const response = transformer.toDynamoEntity(user);
+  expect(response).toEqual({
+    PK: 'USER#111',
+    SK: 'USER#111',
+    LSI1SK: 10, // <-- aliased indexes are correctly persisting attribute types
+    age: 10,
+    id: '111',
   });
 });
 
@@ -292,6 +352,20 @@ test('returns all affected indexes for simple attributes', () => {
   });
   expect(affectedIndexes).toEqual({
     GSI1SK: 'USER#new updated name',
+  });
+});
+
+test('returns all affected indexes for alias attributes', () => {
+  const affectedIndexes = transformer.getAffectedIndexesForAttributes(
+    UserAttrAlias,
+    {
+      age: 10,
+      status: 'inactive',
+    }
+  );
+  expect(affectedIndexes).toEqual({
+    LSI1SK: 10, // <-- aliased indexes are correctly persisting attribute types
+    GSI1PK: 'inactive',
   });
 });
 
