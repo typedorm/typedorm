@@ -21,7 +21,10 @@ export interface LSIIndexOptions {
 }
 export type IndexOptions = GSIIndexOptions | LSIIndexOptions;
 
-type EntityAliasOrString<Entity> = string | {$alias: keyof Entity};
+export type KeyAliasSchema<Entity> = {
+  alias: keyof Entity extends infer R ? R : never;
+};
+export type EntityAliasOrString<Entity> = string | KeyAliasSchema<Entity>;
 
 export type IndexOptionsWithAlias<Entity> =
   | Replace<
@@ -36,6 +39,6 @@ export type IndexOptionsWithAlias<Entity> =
       LSIIndexOptions,
       'sortKey',
       {
-        sortKey: string;
+        sortKey: EntityAliasOrString<Entity>;
       }
     >;

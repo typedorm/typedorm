@@ -8,3 +8,5 @@ export * from './invalid-transaction-write-item-error';
 export * from './write-transaction-item-limit-exceeded-error';
 export * from './invalid-transaction-read-item-error';
 export * from './read-transaction-item-limit-exceeded-error';
+export * from './invalid-attribute-alias-schema-error';
+export * from './no-such-attribute-exists-error';
