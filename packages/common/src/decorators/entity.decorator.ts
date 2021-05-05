@@ -18,7 +18,7 @@ export function Entity<E>({
     MetadataManager.metadataStorage.addRawEntity({
       name,
       table,
-      target: target as any,
+      target,
       primaryKey,
       indexes,
     });
