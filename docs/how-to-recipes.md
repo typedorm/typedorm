@@ -3,6 +3,9 @@
 This page will walk you through some of the unique recipes to enhance your development workflow when working with TypeDORM.
 
 - [How to recipes](#how-to-recipes)
+  - [Entity configuration](#entity-configuration)
+    - [Define a simple entity](#define-a-simple-entity)
+    - [Define an entity with index](#define-an-entity-with-index)
   - [Define default values](#define-default-values)
     - [Static Default values](#static-default-values)
     - [Dynamic Default values](#dynamic-default-values)
@@ -20,6 +23,60 @@ This page will walk you through some of the unique recipes to enhance your devel
   - [Read items in batches](#read-items-in-batches)
     - [Read items](#read-items)
     - [Retry unprocessed read items in batches](#retry-unprocessed-read-items-in-batches)
+
+## Entity configuration
+
+For any class to be a valid TypeDORM entity, it must be annotated with `@Entity`. While annotating with `@Entity` different
+configs can be provided to customize how the entity is parsed and treated by TypeDORM.
+
+### Define a simple entity
+
+```Typescript
+@Entity(
+  name: 'user', // name of the entity that will be added to each item as an attribute
+  // primary key
+  primaryKey: {
+    partitionKey: 'USER#{{id}}',
+    sortKey: 'USER#{{id}}',
+  }
+)
+class User {
+  @Attribute()
+  id: string  // <- this attribute is required as it is referenced by primary key
+
+  // ... other optional attributes
+}
+```
+
+### Define an entity with index
+
+```Typescript
+@Entity(
+  name: 'user', // name of the entity that will be added to each item as an attribute
+  // primary key
+  primaryKey: {
+    partitionKey: 'USER#{{id}}',
+    sortKey: 'USER#{{id}}',
+  },
+  indexes: {
+    GSI1: {
+      type: INDEX_TYPE.GSI
+      partitionKey: {
+        alias: 'age' // <- this tells TypeDORM to auto infer "type" and "value" for partition key from age attribute.
+      },
+      sortKey: 'USER#{{age}}', // <- here, interpolated "value" will be auto inferred by TypeDORM at runtime based on the value of age
+    }
+  }
+)
+class User {
+  @Attribute()
+  id: string  // <- this attribute is required as it is referenced by primary key
+
+  @Attribute()
+  age: number
+
+}
+```
 
 ## Define default values
 
