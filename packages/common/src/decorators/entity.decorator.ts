@@ -1,16 +1,18 @@
 import {MetadataManager} from '../metadata/metadata-manager';
 import {EntityRawMetadataOptions} from '../metadata/metadata-storage';
 
-export function Entity({
+type Constructor = {new (...args: any[]): {}};
+
+export function Entity<E>({
   table,
   primaryKey,
   indexes,
   name,
 }: Pick<
-  EntityRawMetadataOptions,
+  EntityRawMetadataOptions<E>,
   'name' | 'table' | 'indexes' | 'primaryKey'
->): ClassDecorator {
-  return target => {
+>) {
+  return function <E extends Constructor>(target: E) {
     const originalTarget = target;
 
     MetadataManager.metadataStorage.addRawEntity({

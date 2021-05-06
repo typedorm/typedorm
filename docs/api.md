@@ -110,12 +110,12 @@ Declare an entity to be registered in TypeDORM domain
   indexes: {
     // Each index specified here can only exist if it is also declared on attached table instance
     [indexName] : {
-      // Partition key attribute name for this entity
+      // Partition key attribute pattern or alias schema for this entity
       // @optional
       // Required when index type is GSI
       partitionKey
 
-      // Sort key attribute name for this entity
+      // Sort key attribute pattern or alias schema for this entity
       sortKey
 
       // Type of index: INDEX_TYPE

@@ -1,3 +1,4 @@
+import {NoSuchAttributeExistsError} from '@typedorm/common';
 import {validateKey} from '../validate-key';
 
 describe('validateKey()', () => {
@@ -7,6 +8,34 @@ describe('validateKey()', () => {
         id: 'String',
       })
     ).not.toThrowError();
+  });
+
+  it('should validate key of type alias schema', () => {
+    expect(() =>
+      validateKey(
+        {
+          alias: 'name',
+        },
+        {
+          id: 'String',
+          name: 'Number',
+        }
+      )
+    ).not.toThrowError();
+  });
+
+  it('should validate key of type alias schema and return appropriate error when referencing unknown attribute', () => {
+    expect(() =>
+      validateKey(
+        {
+          alias: 'someRandomAttribute',
+        },
+        {
+          id: 'String',
+          name: 'Number',
+        }
+      )
+    ).toThrow(NoSuchAttributeExistsError);
   });
 
   it('should validate string with multiple args', () => {

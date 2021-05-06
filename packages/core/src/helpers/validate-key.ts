@@ -1,13 +1,38 @@
+import {
+  EntityAliasOrString,
+  InvalidAttributeAliasSchemaError,
+  NoSuchAttributeExistsError,
+} from '@typedorm/common';
 import {regexInterpolatedWord} from './constants';
+import {isKeyOfTypeAliasSchema} from './is-key-of-type-alias-schema';
 
 /**
  *
  * @param key key to validate
  * @param dict dictionary to validate key against, dictionary of attribute { name: type }
  */
-export function validateKey(key: string, dict: {[key: string]: string}) {
+export function validateKey(
+  key: EntityAliasOrString<any>,
+  dict: {[key: string]: string},
+  entityName?: string
+) {
+  // validate aliases
+  if (isKeyOfTypeAliasSchema(key)) {
+    if (typeof key.alias !== 'string') {
+      throw new InvalidAttributeAliasSchemaError(key.alias as any);
+    }
+
+    const aliasType = dict[key.alias];
+
+    if (!aliasType) {
+      throw new NoSuchAttributeExistsError(key.alias, entityName);
+    }
+    // return when successfully validated
+    return;
+  }
   const matchIterator = key.matchAll(regexInterpolatedWord);
   validateMatch(key, matchIterator, dict);
+  return;
 }
 
 function validateMatch(

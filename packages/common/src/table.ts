@@ -1,4 +1,4 @@
-import {INDEX_TYPE} from './enums';
+import {IndexOptions} from './index-options';
 import {CompositePrimaryKey} from './metadata/metadata-storage';
 
 export const IsCompositePrimaryKey = (
@@ -17,27 +17,6 @@ export interface TableOptions {
     [key: string]: IndexOptions;
   };
 }
-
-export interface GSIIndexOptions {
-  type: INDEX_TYPE.GSI;
-  partitionKey: string;
-  sortKey: string;
-  /**
-   * DynamoDB only adds item to index if both Partition Key and Sort Key defined
-   * for any given GSI contains value
-   *
-   * Indexes missing sort key value will not be added to index.
-   */
-  isSparse?: boolean;
-}
-
-export interface LSIIndexOptions {
-  type: INDEX_TYPE.LSI;
-  sortKey: string;
-  isSparse?: boolean;
-}
-
-export type IndexOptions = GSIIndexOptions | LSIIndexOptions;
 
 export class Table {
   constructor(private options: TableOptions) {}
