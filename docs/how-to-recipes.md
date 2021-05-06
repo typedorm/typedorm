@@ -51,7 +51,7 @@ class User {
 ### Define an entity with index
 
 ```Typescript
-@Entity(
+@Entity<User>(
   name: 'user', // name of the entity that will be added to each item as an attribute
   // primary key
   primaryKey: {
