@@ -6,6 +6,7 @@ setup_ts_build(
     module_name = "@typedorm/common",
     deps = [
         "@npm//reflect-metadata",
+        "@npm//uuid",
         "@npm//debug",
         "@npm//@types/debug",
         "@npm//chalk"
