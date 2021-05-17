@@ -25,6 +25,10 @@ export enum TRANSFORM_BATCH_TYPE {
   BATCH_READ = 'BATCH_READ',
 }
 
+export enum STATS_TYPE {
+  CONSUMED_CAPACITY = 'CONSUMED_CAPACITY',
+}
+
 export class DebugLogger {
   // log
   private debugTransformLog = debug('typedorm:transform:log');
@@ -38,15 +42,24 @@ export class DebugLogger {
   private debugInfoLog = debug('typedorm:info:log');
   private debugWarnLog = debug('typedorm:warn:log');
   private debugErrorLog = debug('typedorm:error:log');
+  // stats logger
+  private debugStatsLog = debug('typedorm:stats:log');
 
-  logTransform(
-    operation: TRANSFORM_TYPE,
-    prefix: string,
-    entityName: string,
-    primaryKey: any,
-    body?: any,
-    options?: any
-  ) {
+  logTransform({
+    operation,
+    prefix,
+    entityName,
+    primaryKey,
+    body,
+    options,
+  }: {
+    operation: TRANSFORM_TYPE;
+    prefix: string;
+    entityName: string;
+    primaryKey: any;
+    body?: any;
+    options?: any;
+  }) {
     if (this.debugTransformLog.enabled) {
       this.debugTransformLog(
         `${chalk.green(operation)} ${chalk.blue(entityName)} ${chalk.magenta(
@@ -74,12 +87,17 @@ export class DebugLogger {
     }
   }
 
-  logTransformBatch(
-    operation: TRANSFORM_BATCH_TYPE,
-    prefix: string,
-    body?: any,
-    options?: any
-  ) {
+  logTransformBatch({
+    operation,
+    prefix,
+    body,
+    options,
+  }: {
+    operation: TRANSFORM_BATCH_TYPE;
+    prefix: string;
+    body?: any;
+    options?: any;
+  }) {
     if (this.debugTransformBatchLog.enabled) {
       this.debugTransformBatchLog(
         `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
@@ -99,12 +117,17 @@ export class DebugLogger {
     }
   }
 
-  logTransformTransaction(
-    operation: TRANSFORM_TRANSACTION_TYPE,
-    prefix: string,
-    body?: any,
-    options?: any
-  ) {
+  logTransformTransaction({
+    operation,
+    prefix,
+    body,
+    options,
+  }: {
+    operation: TRANSFORM_TRANSACTION_TYPE;
+    prefix: string;
+    body?: any;
+    options?: any;
+  }) {
     if (this.debugTransformTransactionLog.enabled) {
       this.debugTransformTransactionLog(
         `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
@@ -124,7 +147,22 @@ export class DebugLogger {
     }
   }
 
-  logInfo(scope: MANAGER_NAME, log: string) {
+  logStats({
+    statsType,
+    consumedCapacityData,
+  }: {
+    statsType: STATS_TYPE;
+    consumedCapacityData: any;
+  }) {
+    if (this.debugStatsLog.enabled) {
+      this.debugStatsLog(
+        `${chalk.green(statsType)}:`,
+        chalk.white(this.ensurePrintable(consumedCapacityData))
+      );
+    }
+  }
+
+  logInfo({scope, log}: {scope: MANAGER_NAME; log: string}) {
     if (this.debugInfoLog.enabled) {
       this.debugInfoLog(
         `${chalk.green(scope)}:`,
@@ -133,7 +171,7 @@ export class DebugLogger {
     }
   }
 
-  logWarn(scope: MANAGER_NAME, log: string) {
+  logWarn({scope, log}: {scope: MANAGER_NAME; log: string}) {
     if (this.debugWarnLog.enabled) {
       this.debugWarnLog(
         `${chalk.green(scope)}:`,
@@ -142,7 +180,7 @@ export class DebugLogger {
     }
   }
 
-  logError(scope: MANAGER_NAME, log: any) {
+  logError({scope, log}: {scope: MANAGER_NAME; log: any}) {
     if (this.debugErrorLog.enabled) {
       this.debugErrorLog(
         `${chalk.green(scope)}:`,
