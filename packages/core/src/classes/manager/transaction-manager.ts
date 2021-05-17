@@ -33,10 +33,10 @@ export class TransactionManager {
       transaction
     );
 
-    this.connection.logger.logInfo(
-      MANAGER_NAME.TRANSACTION_MANAGER,
-      `Requested to write transaction for total ${transaction.items.length} items.`
-    );
+    this.connection.logger.logInfo({
+      scope: MANAGER_NAME.TRANSACTION_MANAGER,
+      log: `Requested to write transaction for total ${transaction.items.length} items.`,
+    });
 
     const lazyTransactionItems = (
       await Promise.all(
@@ -63,11 +63,11 @@ export class TransactionManager {
     }
 
     if (itemsToWriteInTransaction.length > transaction.items.length) {
-      this.connection.logger.logInfo(
-        MANAGER_NAME.TRANSACTION_MANAGER,
-        `Original items count ${transaction.items.length} expanded 
-        to ${itemsToWriteInTransaction.length} to accommodate unique attributes.`
-      );
+      this.connection.logger.logInfo({
+        scope: MANAGER_NAME.TRANSACTION_MANAGER,
+        log: `Original items count ${transaction.items.length} expanded 
+        to ${itemsToWriteInTransaction.length} to accommodate unique attributes.`,
+      });
     }
 
     return this.writeRaw(itemsToWriteInTransaction);
@@ -90,10 +90,10 @@ export class TransactionManager {
       );
     }
 
-    this.connection.logger.logInfo(
-      MANAGER_NAME.TRANSACTION_MANAGER,
-      `Running a transaction read ${transactionItemList.length} items..`
-    );
+    this.connection.logger.logInfo({
+      scope: MANAGER_NAME.TRANSACTION_MANAGER,
+      log: `Running a transaction read ${transactionItemList.length} items..`,
+    });
 
     const transactionInput: DynamoDB.DocumentClient.TransactGetItemsInput = {
       TransactItems: transactionItemList,
@@ -133,10 +133,10 @@ export class TransactionManager {
       TransactItems: transactItems,
     };
 
-    this.connection.logger.logInfo(
-      MANAGER_NAME.TRANSACTION_MANAGER,
-      `Running a transaction write request for ${transactItems.length} items.`
-    );
+    this.connection.logger.logInfo({
+      scope: MANAGER_NAME.TRANSACTION_MANAGER,
+      log: `Running a transaction write request for ${transactItems.length} items.`,
+    });
 
     const transactionRequest = this.connection.documentClient.transactWrite(
       transactionInput

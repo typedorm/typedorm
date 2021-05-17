@@ -35,38 +35,38 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
   toDynamoWriteTransactionItems(writeTransaction: WriteTransaction) {
     const {items} = writeTransaction;
 
-    this.connection.logger.logTransformTransaction(
-      TRANSFORM_TRANSACTION_TYPE.TRANSACTION_WRITE,
-      'Before',
-      items
-    );
+    this.connection.logger.logTransformTransaction({
+      operation: TRANSFORM_TRANSACTION_TYPE.TRANSACTION_WRITE,
+      prefix: 'Before',
+      body: items,
+    });
 
     const transformed = this.innerTransformTransactionWriteItems(items);
 
-    this.connection.logger.logTransformTransaction(
-      TRANSFORM_TRANSACTION_TYPE.TRANSACTION_WRITE,
-      'After',
-      transformed
-    );
+    this.connection.logger.logTransformTransaction({
+      operation: TRANSFORM_TRANSACTION_TYPE.TRANSACTION_WRITE,
+      prefix: 'After',
+      body: transformed,
+    });
     return transformed;
   }
 
   toDynamoReadTransactionItems(readTransaction: ReadTransaction) {
     const {items} = readTransaction;
 
-    this.connection.logger.logTransformTransaction(
-      TRANSFORM_TRANSACTION_TYPE.TRANSACTION_READ,
-      'Before',
-      items
-    );
+    this.connection.logger.logTransformTransaction({
+      operation: TRANSFORM_TRANSACTION_TYPE.TRANSACTION_READ,
+      prefix: 'Before',
+      body: items,
+    });
 
     const transformed = this.innerTransformTransactionReadItems(items);
 
-    this.connection.logger.logTransformTransaction(
-      TRANSFORM_TRANSACTION_TYPE.TRANSACTION_READ,
-      'After',
-      transformed
-    );
+    this.connection.logger.logTransformTransaction({
+      operation: TRANSFORM_TRANSACTION_TYPE.TRANSACTION_READ,
+      prefix: 'After',
+      body: transformed,
+    });
 
     return transformed;
   }

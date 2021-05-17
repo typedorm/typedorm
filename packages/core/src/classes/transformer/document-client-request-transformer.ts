@@ -113,14 +113,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       attributes,
     } = this.connection.getEntityByTarget(entityClass);
 
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.PUT,
-      'Before',
-      name,
-      null,
-      entity,
-      options
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.PUT,
+      prefix: 'Before',
+      entityName: name,
+      primaryKey: null,
+      body: entity,
+      options,
+    });
 
     const uniqueAttributes = this.connection.getUniqueAttributesForEntity(
       entityClass
@@ -213,13 +213,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // no unique attributes exist, so return early
     if (!uniqueAttributes.length) {
-      this.connection.logger.logTransform(
-        TRANSFORM_TYPE.PUT,
-        'After',
-        name,
-        null,
-        dynamoPutItem
-      );
+      this.connection.logger.logTransform({
+        operation: TRANSFORM_TYPE.PUT,
+        prefix: 'After',
+        entityName: name,
+        primaryKey: null,
+        body: dynamoPutItem,
+      });
 
       return dynamoPutItem;
     }
@@ -263,13 +263,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ...uniqueAttributePutItems,
     ];
 
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.PUT,
-      'After',
-      name,
-      null,
-      uniqueAttributesPutItems
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.PUT,
+      prefix: 'After',
+      entityName: name,
+      primaryKey: null,
+      body: uniqueAttributesPutItems,
+    });
 
     return uniqueAttributesPutItems;
   }
@@ -281,12 +281,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   ): DynamoDB.DocumentClient.GetItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.GET,
-      'Before',
-      metadata.name,
-      primaryKey
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.GET,
+      prefix: 'Before',
+      entityName: metadata.name,
+      primaryKey,
+    });
 
     const tableName = this.getTableNameForEntity(entityClass);
 
@@ -309,13 +309,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // early return if no options were provided
     if (!options || isEmptyObject(options)) {
-      this.connection.logger.logTransform(
-        TRANSFORM_TYPE.GET,
-        'After',
-        metadata.name,
-        null,
-        transformBody
-      );
+      this.connection.logger.logTransform({
+        operation: TRANSFORM_TYPE.GET,
+        prefix: 'After',
+        entityName: metadata.name,
+        primaryKey: null,
+        body: transformBody,
+      });
       return transformBody;
     }
 
@@ -347,13 +347,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
     }
 
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.GET,
-      'After',
-      metadata.name,
-      null,
-      transformBody
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.GET,
+      prefix: 'After',
+      entityName: metadata.name,
+      primaryKey: null,
+      body: transformBody,
+    });
     return transformBody;
   }
 
@@ -373,14 +373,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     const metadata = this.connection.getEntityByTarget(entityClass);
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.UPDATE,
-      'Before',
-      metadata.name,
-      primaryKeyAttributes,
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.UPDATE,
+      prefix: 'Before',
+      entityName: metadata.name,
+      primaryKey: primaryKeyAttributes,
       body,
-      options
-    );
+      options,
+    });
     const tableName = metadata.table.name;
 
     const parsedPrimaryKey = this.getParsedPrimaryKey(
@@ -476,13 +476,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // when item does not have any unique attributes to update, return putItemInput
     if (!uniqueAttributesToUpdate.length) {
-      this.connection.logger.logTransform(
-        TRANSFORM_TYPE.UPDATE,
-        'After',
-        metadata.name,
-        null,
-        itemToUpdate
-      );
+      this.connection.logger.logTransform({
+        operation: TRANSFORM_TYPE.UPDATE,
+        prefix: 'After',
+        entityName: metadata.name,
+        primaryKey: null,
+        body: itemToUpdate,
+      });
       return itemToUpdate;
     }
 
@@ -513,12 +513,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     | DynamoDB.DocumentClient.DeleteItemInput
     | LazyTransactionWriteItemListLoader {
     const metadata = this.connection.getEntityByTarget(entityClass);
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.DELETE,
-      'Before',
-      metadata.name,
-      primaryKey
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.DELETE,
+      prefix: 'Before',
+      entityName: metadata.name,
+      primaryKey,
+    });
     const tableName = metadata.table.name;
 
     const parsedPrimaryKey = this.getParsedPrimaryKey(
@@ -575,12 +575,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     if (!uniqueAttributesToRemove?.length) {
       // if item does not have any unique attributes return it as is
-      this.connection.logger.logTransform(
-        TRANSFORM_TYPE.DELETE,
-        'After',
-        metadata.name,
-        primaryKey
-      );
+      this.connection.logger.logTransform({
+        operation: TRANSFORM_TYPE.DELETE,
+        prefix: 'After',
+        entityName: metadata.name,
+        primaryKey,
+      });
       return mainItemToRemove;
     }
 
@@ -607,13 +607,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const {table, schema, name} = this.connection.getEntityByTarget(
       entityClass
     );
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.QUERY,
-      'Before',
-      name,
-      partitionKeyAttributes,
-      queryOptions
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.QUERY,
+      prefix: 'Before',
+      entityName: name,
+      primaryKey: partitionKeyAttributes,
+      body: queryOptions,
+    });
     const queryIndexName = queryOptions?.queryIndex;
     let indexToQuery: IndexOptions | undefined;
     if (queryIndexName) {
@@ -682,13 +682,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ...partitionKeyConditionExpression,
       };
 
-      this.connection.logger.logTransform(
-        TRANSFORM_TYPE.QUERY,
-        'After',
-        name,
-        null,
-        transformedQueryItem
-      );
+      this.connection.logger.logTransform({
+        operation: TRANSFORM_TYPE.QUERY,
+        prefix: 'After',
+        entityName: name,
+        primaryKey: null,
+        body: transformedQueryItem,
+      });
 
       return transformedQueryItem;
     }
@@ -808,13 +808,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
     }
 
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.QUERY,
-      'After',
-      name,
-      null,
-      queryInputParams
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.QUERY,
+      prefix: 'After',
+      entityName: name,
+      primaryKey: null,
+      body: queryInputParams,
+    });
 
     return queryInputParams;
   }
@@ -885,13 +885,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         {Update: mainItem},
         ...uniqueAttributeInputs,
       ] as DynamoDB.DocumentClient.TransactWriteItem[];
-      this.connection.logger.logTransform(
-        TRANSFORM_TYPE.UPDATE,
-        'After',
+      this.connection.logger.logTransform({
+        operation: TRANSFORM_TYPE.UPDATE,
+        prefix: 'After',
         entityName,
-        null,
-        updateTransactionItems
-      );
+        primaryKey: null,
+        body: updateTransactionItems,
+      });
       return updateTransactionItems;
     };
   }
@@ -939,13 +939,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ...uniqueAttributeInputs,
       ] as DynamoDB.DocumentClient.TransactWriteItem[];
 
-      this.connection.logger.logTransform(
-        TRANSFORM_TYPE.DELETE,
-        'After',
+      this.connection.logger.logTransform({
+        operation: TRANSFORM_TYPE.DELETE,
+        prefix: 'After',
         entityName,
-        null,
-        deleteTransactionItems
-      );
+        primaryKey: null,
+        body: deleteTransactionItems,
+      });
 
       return deleteTransactionItems;
     };

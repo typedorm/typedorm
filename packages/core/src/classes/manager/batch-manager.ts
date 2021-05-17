@@ -79,10 +79,10 @@ export class BatchManager {
       this.limit = pLimit(options?.requestsConcurrencyLimit);
     }
 
-    this.connection.logger.logInfo(
-      MANAGER_NAME.BATCH_MANAGER,
-      `Running a batch write request for ${batch.items.length} items`
-    );
+    this.connection.logger.logInfo({
+      scope: MANAGER_NAME.BATCH_MANAGER,
+      log: `Running a batch write request for ${batch.items.length} items`,
+    });
 
     // 0. transform batch request
     const {
@@ -223,10 +223,10 @@ export class BatchManager {
       this.limit = pLimit(options?.requestsConcurrencyLimit);
     }
 
-    this.connection.logger.logInfo(
-      MANAGER_NAME.BATCH_MANAGER,
-      `Running a batch read request for ${batch.items.length} items`
-    );
+    this.connection.logger.logInfo({
+      scope: MANAGER_NAME.BATCH_MANAGER,
+      log: `Running a batch read request for ${batch.items.length} items`,
+    });
 
     // 0. transform batch request
     const {
@@ -265,12 +265,12 @@ export class BatchManager {
     const transformedItems = items.map(item => {
       const entityPhysicalName = item[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME];
       if (!entityPhysicalName) {
-        this.connection.logger.logWarn(
-          MANAGER_NAME.ENTITY_MANAGER,
-          `Item ${JSON.stringify(
+        this.connection.logger.logWarn({
+          scope: MANAGER_NAME.ENTITY_MANAGER,
+          log: `Item ${JSON.stringify(
             item
-          )} is not known to TypeDORM there for transform was not run`
-        );
+          )} is not known to TypeDORM there for transform was not run`,
+        });
         return item;
       }
 
@@ -288,7 +288,10 @@ export class BatchManager {
 
     // 4.3 transform failed items
     const failedTransformedItems = this._errorQueue.flatMap(item => {
-      this.connection.logger.logError(MANAGER_NAME.BATCH_MANAGER, item.error);
+      this.connection.logger.logError({
+        scope: MANAGER_NAME.BATCH_MANAGER,
+        log: item.error,
+      });
       return this._dcBatchTransformer.toReadBatchInputList(
         item.requestInput,
         metadata
@@ -330,10 +333,10 @@ export class BatchManager {
       totalAttemptsSoFar ===
       (options?.maxRetryAttempts ?? BATCH_WRITE_MAX_ALLOWED_ATTEMPTS)
     ) {
-      this.connection.logger.logInfo(
-        MANAGER_NAME.BATCH_MANAGER,
-        `Reached max allowed attempts ${totalAttemptsSoFar}, aborting...`
-      );
+      this.connection.logger.logInfo({
+        scope: MANAGER_NAME.BATCH_MANAGER,
+        log: `Reached max allowed attempts ${totalAttemptsSoFar}, aborting...`,
+      });
       return unProcessedListItems;
     }
 
@@ -429,10 +432,10 @@ export class BatchManager {
       totalAttemptsSoFar ===
       (options?.maxRetryAttempts ?? BATCH_READ_MAX_ALLOWED_ATTEMPTS)
     ) {
-      this.connection.logger.logInfo(
-        MANAGER_NAME.BATCH_MANAGER,
-        `Reached max allowed attempts ${totalAttemptsSoFar}, aborting...`
-      );
+      this.connection.logger.logInfo({
+        scope: MANAGER_NAME.BATCH_MANAGER,
+        log: `Reached max allowed attempts ${totalAttemptsSoFar}, aborting...`,
+      });
 
       return {
         items: responsesStore,
@@ -543,10 +546,10 @@ export class BatchManager {
         attempts,
         multiplicationFactor
       );
-      this.connection.logger.logInfo(
-        MANAGER_NAME.BATCH_MANAGER,
-        `${attempts} attempts so far, sleeping ${backoffTime}ms before retrying...`
-      );
+      this.connection.logger.logInfo({
+        scope: MANAGER_NAME.BATCH_MANAGER,
+        log: `${attempts} attempts so far, sleeping ${backoffTime}ms before retrying...`,
+      });
       setTimeout(resolve, backoffTime);
     });
   }
