@@ -1,5 +1,6 @@
 import debug from 'debug';
 import chalk from 'chalk';
+import {v4} from 'uuid';
 
 export enum TRANSFORM_TYPE {
   GET = 'GET',
@@ -45,7 +46,17 @@ export class DebugLogger {
   // stats logger
   private debugStatsLog = debug('typedorm:stats:log');
 
+  /**
+   * Get unique request id for each request, and include it in each log
+   * this allows for easy debugging
+   * @returns unique request uuid
+   */
+  getRequestId() {
+    return v4();
+  }
+
   logTransform({
+    requestId,
     operation,
     prefix,
     entityName,
@@ -53,6 +64,7 @@ export class DebugLogger {
     body,
     options,
   }: {
+    requestId?: string;
     operation: TRANSFORM_TYPE;
     prefix: string;
     entityName: string;
@@ -62,9 +74,9 @@ export class DebugLogger {
   }) {
     if (this.debugTransformLog.enabled) {
       this.debugTransformLog(
-        `${chalk.green(operation)} ${chalk.blue(entityName)} ${chalk.magenta(
-          prefix
-        )}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
+          operation
+        )} ${chalk.blue(entityName)} ${chalk.magenta(prefix)}:`,
         ...(primaryKey
           ? [
               chalk.blueBright('\nPrimary key: '),
@@ -88,11 +100,13 @@ export class DebugLogger {
   }
 
   logTransformBatch({
+    requestId,
     operation,
     prefix,
     body,
     options,
   }: {
+    requestId?: string;
     operation: TRANSFORM_BATCH_TYPE;
     prefix: string;
     body?: any;
@@ -100,7 +114,9 @@ export class DebugLogger {
   }) {
     if (this.debugTransformBatchLog.enabled) {
       this.debugTransformBatchLog(
-        `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
+          operation
+        )} ${chalk.magenta(prefix)}:`,
         ...(body
           ? [
               chalk.blueBright('\nBody: '),
@@ -118,11 +134,13 @@ export class DebugLogger {
   }
 
   logTransformTransaction({
+    requestId,
     operation,
     prefix,
     body,
     options,
   }: {
+    requestId?: string;
     operation: TRANSFORM_TRANSACTION_TYPE;
     prefix: string;
     body?: any;
@@ -130,7 +148,9 @@ export class DebugLogger {
   }) {
     if (this.debugTransformTransactionLog.enabled) {
       this.debugTransformTransactionLog(
-        `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
+          operation
+        )} ${chalk.magenta(prefix)}:`,
         ...(body
           ? [
               chalk.blueBright('\nBody: '),
@@ -148,42 +168,68 @@ export class DebugLogger {
   }
 
   logStats({
+    requestId,
     statsType,
     consumedCapacityData,
   }: {
+    requestId?: string;
     statsType: STATS_TYPE;
     consumedCapacityData: any;
   }) {
     if (this.debugStatsLog.enabled) {
       this.debugStatsLog(
-        `${chalk.green(statsType)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(statsType)}:`,
         chalk.white(this.ensurePrintable(consumedCapacityData))
       );
     }
   }
 
-  logInfo({scope, log}: {scope: MANAGER_NAME; log: string}) {
+  logInfo({
+    requestId,
+    scope,
+    log,
+  }: {
+    requestId?: string;
+    scope: MANAGER_NAME;
+    log: string;
+  }) {
     if (this.debugInfoLog.enabled) {
       this.debugInfoLog(
-        `${chalk.green(scope)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(scope)}:`,
         chalk.white(this.ensurePrintable(log))
       );
     }
   }
 
-  logWarn({scope, log}: {scope: MANAGER_NAME; log: string}) {
+  logWarn({
+    requestId,
+    scope,
+    log,
+  }: {
+    requestId?: string;
+    scope: MANAGER_NAME;
+    log: string;
+  }) {
     if (this.debugWarnLog.enabled) {
       this.debugWarnLog(
-        `${chalk.green(scope)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(scope)}:`,
         chalk.yellow(this.ensurePrintable(log))
       );
     }
   }
 
-  logError({scope, log}: {scope: MANAGER_NAME; log: any}) {
+  logError({
+    requestId,
+    scope,
+    log,
+  }: {
+    requestId?: string;
+    scope: MANAGER_NAME;
+    log: any;
+  }) {
     if (this.debugErrorLog.enabled) {
       this.debugErrorLog(
-        `${chalk.green(scope)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(scope)}:`,
         chalk.red(this.ensurePrintable(log))
       );
     }

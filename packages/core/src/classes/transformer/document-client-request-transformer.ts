@@ -81,6 +81,10 @@ export interface ManagerToDynamoGetItemOptions {
   select?: any[];
 }
 
+interface MetadataOptions {
+  requestId: string;
+}
+
 export class DocumentClientRequestTransformer extends BaseTransformer {
   protected _expressionBuilder: ExpressionBuilder;
   protected _expressionInputParser: ExpressionInputParser;
@@ -101,7 +105,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
   toDynamoPutItem<Entity>(
     entity: Entity,
-    options?: ManagerToDynamoPutItemOptions
+    options?: ManagerToDynamoPutItemOptions,
+    metadataOptions?: MetadataOptions
   ):
     | DynamoDB.DocumentClient.PutItemInput
     | DynamoDB.DocumentClient.TransactWriteItemList {
@@ -114,6 +119,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     } = this.connection.getEntityByTarget(entityClass);
 
     this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.PUT,
       prefix: 'Before',
       entityName: name,
@@ -214,6 +220,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     // no unique attributes exist, so return early
     if (!uniqueAttributes.length) {
       this.connection.logger.logTransform({
+        requestId: metadataOptions?.requestId,
         operation: TRANSFORM_TYPE.PUT,
         prefix: 'After',
         entityName: name,
@@ -264,6 +271,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     ];
 
     this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.PUT,
       prefix: 'After',
       entityName: name,
@@ -277,11 +285,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   toDynamoGetItem<Entity, PrimaryKey>(
     entityClass: EntityTarget<Entity>,
     primaryKey: PrimaryKey,
-    options?: ManagerToDynamoGetItemOptions
+    options?: ManagerToDynamoGetItemOptions,
+    metadataOptions?: MetadataOptions
   ): DynamoDB.DocumentClient.GetItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
     this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.GET,
       prefix: 'Before',
       entityName: metadata.name,
@@ -310,6 +320,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     // early return if no options were provided
     if (!options || isEmptyObject(options)) {
       this.connection.logger.logTransform({
+        requestId: metadataOptions?.requestId,
         operation: TRANSFORM_TYPE.GET,
         prefix: 'After',
         entityName: metadata.name,
@@ -348,6 +359,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.GET,
       prefix: 'After',
       entityName: metadata.name,
@@ -361,7 +373,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
     body: UpdateAttributes<Entity, PrimaryKey>,
-    options: ManagerToDynamoUpdateItemsOptions = {}
+    options: ManagerToDynamoUpdateItemsOptions = {},
+    metadataOptions?: MetadataOptions
   ):
     | DynamoDB.DocumentClient.UpdateItemInput
     | LazyTransactionWriteItemListLoader {
@@ -374,6 +387,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     const metadata = this.connection.getEntityByTarget(entityClass);
     this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.UPDATE,
       prefix: 'Before',
       entityName: metadata.name,
@@ -477,6 +491,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     // when item does not have any unique attributes to update, return putItemInput
     if (!uniqueAttributesToUpdate.length) {
       this.connection.logger.logTransform({
+        requestId: metadataOptions?.requestId,
         operation: TRANSFORM_TYPE.UPDATE,
         prefix: 'After',
         entityName: metadata.name,
@@ -508,12 +523,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   toDynamoDeleteItem<Entity, PrimaryKey>(
     entityClass: EntityTarget<Entity>,
     primaryKey: PrimaryKey,
-    options?: ManagerToDynamoDeleteItemsOptions
+    options?: ManagerToDynamoDeleteItemsOptions,
+    metadataOptions?: MetadataOptions
   ):
     | DynamoDB.DocumentClient.DeleteItemInput
     | LazyTransactionWriteItemListLoader {
     const metadata = this.connection.getEntityByTarget(entityClass);
     this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.DELETE,
       prefix: 'Before',
       entityName: metadata.name,
@@ -576,6 +593,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     if (!uniqueAttributesToRemove?.length) {
       // if item does not have any unique attributes return it as is
       this.connection.logger.logTransform({
+        requestId: metadataOptions?.requestId,
         operation: TRANSFORM_TYPE.DELETE,
         prefix: 'After',
         entityName: metadata.name,
@@ -602,17 +620,19 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
   toDynamoQueryItem<Entity, PartitionKeyAttributes>(
     entityClass: EntityTarget<Entity>,
     partitionKeyAttributes: PartitionKeyAttributes | string,
-    queryOptions?: ManagerToDynamoQueryItemsOptions
+    queryOptions?: ManagerToDynamoQueryItemsOptions,
+    metadataOptions?: MetadataOptions
   ): DynamoDB.DocumentClient.QueryInput {
     const {table, schema, name} = this.connection.getEntityByTarget(
       entityClass
     );
     this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.QUERY,
       prefix: 'Before',
       entityName: name,
       primaryKey: partitionKeyAttributes,
-      body: queryOptions,
+      options: queryOptions,
     });
     const queryIndexName = queryOptions?.queryIndex;
     let indexToQuery: IndexOptions | undefined;
@@ -683,6 +703,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
 
       this.connection.logger.logTransform({
+        requestId: metadataOptions?.requestId,
         operation: TRANSFORM_TYPE.QUERY,
         prefix: 'After',
         entityName: name,
@@ -809,6 +830,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.QUERY,
       prefix: 'After',
       entityName: name,
@@ -836,7 +858,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       }
     >[],
     mainItem: DynamoDB.DocumentClient.UpdateItemInput,
-    newBody: UpdateAttributes<Entity, PrimaryKey>
+    newBody: UpdateAttributes<Entity, PrimaryKey>,
+    metadataOptions?: MetadataOptions
   ) {
     // returns transact write item list
     return (previousItemBody: any) => {
@@ -886,6 +909,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ...uniqueAttributeInputs,
       ] as DynamoDB.DocumentClient.TransactWriteItem[];
       this.connection.logger.logTransform({
+        requestId: metadataOptions?.requestId,
         operation: TRANSFORM_TYPE.UPDATE,
         prefix: 'After',
         entityName,
@@ -912,7 +936,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         unique: DynamoEntitySchemaPrimaryKey;
       }
     >[],
-    mainItem: DynamoDB.DocumentClient.DeleteItemInput
+    mainItem: DynamoDB.DocumentClient.DeleteItemInput,
+    metadataOptions?: MetadataOptions
   ) {
     return (existingItemBody: any) => {
       const uniqueAttributeInputs: DynamoDB.DocumentClient.TransactWriteItemList = uniqueAttributesToRemove.map(
@@ -940,6 +965,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ] as DynamoDB.DocumentClient.TransactWriteItem[];
 
       this.connection.logger.logTransform({
+        requestId: metadataOptions?.requestId,
         operation: TRANSFORM_TYPE.DELETE,
         prefix: 'After',
         entityName,
