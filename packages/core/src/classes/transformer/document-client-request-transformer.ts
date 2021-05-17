@@ -87,6 +87,10 @@ export interface ManagerToDynamoGetItemOptions {
   select?: any[];
 }
 
+interface MetadataOptions {
+  requestId: string;
+}
+
 export class DocumentClientRequestTransformer extends BaseTransformer {
   protected _expressionBuilder: ExpressionBuilder;
 
