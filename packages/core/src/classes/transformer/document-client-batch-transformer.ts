@@ -58,11 +58,11 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     };
   } {
     const {items} = writeBatch;
-    this.connection.logger.logTransformBatch(
-      TRANSFORM_BATCH_TYPE.BATCH_WRITE,
-      'Before',
-      items
-    );
+    this.connection.logger.logTransformBatch({
+      operation: TRANSFORM_BATCH_TYPE.BATCH_WRITE,
+      prefix: 'Before',
+      body: items,
+    });
 
     const {
       lazyTransactionWriteItemListLoaderItems,
@@ -87,11 +87,11 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       metadata,
     };
 
-    this.connection.logger.logTransformBatch(
-      TRANSFORM_BATCH_TYPE.BATCH_WRITE,
-      'After',
-      transformed
-    );
+    this.connection.logger.logTransformBatch({
+      operation: TRANSFORM_BATCH_TYPE.BATCH_WRITE,
+      prefix: 'After',
+      body: transformed,
+    });
 
     return transformed;
   }
@@ -107,11 +107,11 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   } {
     const {items} = readBatch;
 
-    this.connection.logger.logTransformBatch(
-      TRANSFORM_BATCH_TYPE.BATCH_READ,
-      'Before',
-      items
-    );
+    this.connection.logger.logTransformBatch({
+      operation: TRANSFORM_BATCH_TYPE.BATCH_READ,
+      prefix: 'Before',
+      body: items,
+    });
 
     const {metadata, batchReadRequestItems} = this.transformBatchReadItems(
       items
@@ -133,11 +133,11 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       metadata,
     };
 
-    this.connection.logger.logTransformBatch(
-      TRANSFORM_BATCH_TYPE.BATCH_READ,
-      'After',
-      transformed
-    );
+    this.connection.logger.logTransformBatch({
+      operation: TRANSFORM_BATCH_TYPE.BATCH_READ,
+      prefix: 'After',
+      body: transformed,
+    });
     return transformed;
   }
 

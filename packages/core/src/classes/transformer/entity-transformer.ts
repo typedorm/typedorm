@@ -21,13 +21,13 @@ export class EntityTransformer extends BaseTransformer {
     dynamoEntity: DynamoEntity<Entity>
   ): Entity {
     const entityMetadata = this.connection.getEntityByTarget(entityClass);
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.RESPONSE,
-      'Before',
-      entityMetadata.name,
-      null,
-      dynamoEntity
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.RESPONSE,
+      prefix: 'Before',
+      entityName: entityMetadata.name,
+      primaryKey: null,
+      body: dynamoEntity,
+    });
 
     const entityPrimaryKeys = Object.keys(
       entityMetadata.schema.primaryKey.attributes
@@ -61,13 +61,13 @@ export class EntityTransformer extends BaseTransformer {
       return acc;
     }, {} as Entity);
 
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.RESPONSE,
-      'After',
-      entityMetadata.name,
-      null,
-      transformedEntity
-    );
+    this.connection.logger.logTransform({
+      operation: TRANSFORM_TYPE.RESPONSE,
+      prefix: 'After',
+      entityName: entityMetadata.name,
+      primaryKey: null,
+      body: transformedEntity,
+    });
 
     return transformedEntity;
   }
