@@ -28,7 +28,8 @@ export interface MetadataOptions {
 }
 
 export interface MetadataOptions {
-  requestId: string;
+  requestId?: string;
+  returnConsumedCapacity?: CONSUMED_CAPACITY_TYPE;
 }
 
 export abstract class BaseTransformer {
