@@ -7,6 +7,7 @@ import {
   Table,
   SparseIndexParseError,
   UpdateAttributes,
+  CONSUMED_CAPACITY_TYPE,
 } from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
@@ -19,7 +20,8 @@ import {isDynamoEntityKeySchema} from '../../helpers/is-dynamo-entity-key-schema
 import {isKeyOfTypeAliasSchema} from '../../helpers/is-key-of-type-alias-schema';
 
 export interface MetadataOptions {
-  requestId: string;
+  requestId?: string;
+  returnConsumedCapacity?: CONSUMED_CAPACITY_TYPE;
 }
 
 export abstract class BaseTransformer {
