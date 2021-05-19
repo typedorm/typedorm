@@ -129,7 +129,9 @@ export class EntityManager {
     // dynamoPutItemInput is a transact item list, meaning that it contains one or more unique attributes, which also
     // needs to be created along with original item
 
-    await this.connection.transactionManger.writeRaw(dynamoPutItemInput);
+    await this.connection.transactionManger.writeRaw(dynamoPutItemInput, {
+      requestId,
+    });
 
     const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
@@ -344,7 +346,9 @@ export class EntityManager {
       existingItem
     );
 
-    await this.connection.transactionManger.writeRaw(updateItemList);
+    await this.connection.transactionManger.writeRaw(updateItemList, {
+      requestId,
+    });
     return this.findOne<Entity, PrimaryKey>(
       entityClass,
       primaryKeyAttributes,
@@ -401,7 +405,9 @@ export class EntityManager {
     );
 
     // delete main item and all it's unique attributes as part of single transaction
-    await this.connection.transactionManger.writeRaw(deleteItemList);
+    await this.connection.transactionManger.writeRaw(deleteItemList, {
+      requestId,
+    });
     return {
       success: true,
     };
