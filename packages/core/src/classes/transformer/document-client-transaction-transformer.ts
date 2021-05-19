@@ -26,16 +26,21 @@ import {
   ReadTransaction,
   ReadTransactionItem,
 } from '../transaction/read-transaction';
+import {MetadataOptions} from './base-transformer';
 
 export class DocumentClientTransactionTransformer extends LowOrderTransformers {
   constructor(connection: Connection) {
     super(connection);
   }
 
-  toDynamoWriteTransactionItems(writeTransaction: WriteTransaction) {
+  toDynamoWriteTransactionItems(
+    writeTransaction: WriteTransaction,
+    metadataOptions?: MetadataOptions
+  ) {
     const {items} = writeTransaction;
 
     this.connection.logger.logTransformTransaction({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TRANSACTION_TYPE.TRANSACTION_WRITE,
       prefix: 'Before',
       body: items,
@@ -44,6 +49,7 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
     const transformed = this.innerTransformTransactionWriteItems(items);
 
     this.connection.logger.logTransformTransaction({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TRANSACTION_TYPE.TRANSACTION_WRITE,
       prefix: 'After',
       body: transformed,
@@ -51,10 +57,14 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
     return transformed;
   }
 
-  toDynamoReadTransactionItems(readTransaction: ReadTransaction) {
+  toDynamoReadTransactionItems(
+    readTransaction: ReadTransaction,
+    metadataOptions?: MetadataOptions
+  ) {
     const {items} = readTransaction;
 
     this.connection.logger.logTransformTransaction({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TRANSACTION_TYPE.TRANSACTION_READ,
       prefix: 'Before',
       body: items,
@@ -63,6 +73,7 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
     const transformed = this.innerTransformTransactionReadItems(items);
 
     this.connection.logger.logTransformTransaction({
+      requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TRANSACTION_TYPE.TRANSACTION_READ,
       prefix: 'After',
       body: transformed,
@@ -76,7 +87,8 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
    * - transactionItemList: items that must be processed in a transaction
    */
   private innerTransformTransactionReadItems(
-    transactionItems: ReadTransactionItem<any, any>[]
+    transactionItems: ReadTransactionItem<any, any>[],
+    metadataOptions?: MetadataOptions
   ) {
     return transactionItems.reduce(
       (acc, transactionItem) => {
@@ -88,7 +100,8 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
           const dynamoGetItemInput = this.toDynamoGetItem(
             item,
             primaryKey,
-            options
+            options,
+            metadataOptions
           );
 
           acc.transactionItemList.push({
@@ -111,7 +124,8 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
    * - lazyTransactionWriteItemListLoaderItems: items that are must be processed in transaction but also requires other requests to be made first (i.e delete of unique items)
    */
   private innerTransformTransactionWriteItems(
-    transactionItems: WriteTransactionItem<any, any>[]
+    transactionItems: WriteTransactionItem<any, any>[],
+    metadataOptions?: MetadataOptions
   ) {
     return transactionItems.reduce(
       (acc, transactionItem) => {
@@ -120,7 +134,11 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
             create: {item, options},
           } = transactionItem;
 
-          const dynamoPutItemInput = this.toDynamoPutItem(item, options); // update
+          const dynamoPutItemInput = this.toDynamoPutItem(
+            item,
+            options,
+            metadataOptions
+          ); // update
 
           if (!isWriteTransactionItemList(dynamoPutItemInput)) {
             acc.transactionItemList.push({
@@ -138,7 +156,8 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
             item,
             primaryKey,
             body,
-            options
+            options,
+            metadataOptions
           );
           if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItemInput)) {
             acc.transactionItemList.push({
@@ -158,7 +177,8 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
           const dynamoDeleteItemInput = this.toDynamoDeleteItem(
             item,
             primaryKey,
-            options
+            options,
+            metadataOptions
           );
           if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItemInput)) {
             acc.transactionItemList.push({
