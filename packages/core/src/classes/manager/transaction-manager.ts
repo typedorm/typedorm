@@ -11,6 +11,8 @@ import {
 import {DynamoDB} from 'aws-sdk';
 import {handleTransactionResult} from '../../helpers/handle-transaction-result';
 import {ReadTransaction} from '../transaction/read-transaction';
+import {MetadataOptions} from '../transformer/base-transformer';
+import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 
 export class TransactionManager {
   private _dcTransactionTransformer: DocumentClientTransactionTransformer;
@@ -25,12 +27,19 @@ export class TransactionManager {
    * Processes transactions over document client's transaction api
    * @param transaction Write transaction to process
    */
-  async write(transaction: WriteTransaction) {
+  async write(
+    transaction: WriteTransaction,
+    metadataOptions?: MetadataOptions
+  ) {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
     const {
       transactionItemList,
       lazyTransactionWriteItemListLoader,
     } = this._dcTransactionTransformer.toDynamoWriteTransactionItems(
-      transaction
+      transaction,
+      {
+        requestId,
+      }
     );
 
     this.connection.logger.logInfo({
@@ -44,7 +53,11 @@ export class TransactionManager {
           // if updating/removing unique attribute in transaction, get previous value of attributes
           const existingItem = await this.connection.entityManager.findOne(
             item.entityClass,
-            item.primaryKeyAttributes
+            item.primaryKeyAttributes,
+            undefined,
+            {
+              requestId,
+            }
           );
           return item.lazyLoadTransactionWriteItems(existingItem);
         })
@@ -77,11 +90,16 @@ export class TransactionManager {
    * Processes transactions over document client's transaction api
    * @param transaction read transaction to process
    */
-  async read(transaction: ReadTransaction) {
+  async read(transaction: ReadTransaction, metadataOptions?: MetadataOptions) {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const {
       transactionItemList,
     } = this._dcTransactionTransformer.toDynamoReadTransactionItems(
-      transaction
+      transaction,
+      {
+        requestId,
+      }
     );
 
     if (transactionItemList.length > TRANSACTION_READ_ITEMS_LIMIT) {
@@ -117,7 +135,10 @@ export class TransactionManager {
       const originalRequest = transaction.items[index];
       return this._dcTransactionTransformer.fromDynamoEntity(
         originalRequest.get.item,
-        response.Item
+        response.Item,
+        {
+          requestId,
+        }
       );
     });
   }
