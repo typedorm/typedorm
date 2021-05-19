@@ -19,7 +19,7 @@ import {Connection} from '../connection/connection';
 import {ExpressionBuilder} from '../expression/expression-builder';
 import {AttributeMetadata} from '../metadata/attribute-metadata';
 import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
-import {BaseTransformer} from './base-transformer';
+import {BaseTransformer, MetadataOptions} from './base-transformer';
 import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
 import {
   ExpressionInputParser,
@@ -79,10 +79,6 @@ export interface ManagerToDynamoQueryItemsOptions {
 
 export interface ManagerToDynamoGetItemOptions {
   select?: any[];
-}
-
-interface MetadataOptions {
-  requestId: string;
 }
 
 export class DocumentClientRequestTransformer extends BaseTransformer {

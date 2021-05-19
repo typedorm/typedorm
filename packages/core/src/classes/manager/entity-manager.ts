@@ -19,6 +19,8 @@ import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-trans
 import {FilterOptions} from '../expression/filter-options-type';
 import {ConditionOptions} from '../expression/condition-options-type';
 import {ProjectionKeys} from '../expression/expression-input-parser';
+import {MetadataOptions} from '../transformer/base-transformer';
+import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 
 export interface EntityManagerCreateOptions<Entity> {
   /**
@@ -95,11 +97,17 @@ export class EntityManager {
    */
   async create<Entity>(
     entity: Entity,
-    options?: EntityManagerCreateOptions<Entity>
+    options?: EntityManagerCreateOptions<Entity>,
+    metadataOptions?: MetadataOptions
   ): Promise<Entity> {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(
       entity,
-      options
+      options,
+      {
+        requestId,
+      }
     );
     const entityClass = getConstructorForInstance(entity);
 
@@ -109,7 +117,10 @@ export class EntityManager {
       // by default dynamodb does not return attributes on create operation, so return one
       const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
-        dynamoPutItemInput.Item
+        dynamoPutItemInput.Item,
+        {
+          requestId,
+        }
       );
 
       return itemToReturn;
@@ -123,7 +134,10 @@ export class EntityManager {
     const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
       // if create operation contains multiple items, first one will the original item
-      dynamoPutItemInput[0]?.Put?.Item ?? {}
+      dynamoPutItemInput[0]?.Put?.Item ?? {},
+      {
+        requestId,
+      }
     );
 
     return itemToReturn;
@@ -138,12 +152,18 @@ export class EntityManager {
   async findOne<Entity, PrimaryKey = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
-    options?: EntityManagerFindOneOptions<Entity>
+    options?: EntityManagerFindOneOptions<Entity>,
+    metadataOptions?: MetadataOptions
   ): Promise<Entity | undefined> {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoGetItem = this._dcReqTransformer.toDynamoGetItem(
       entityClass,
       primaryKeyAttributes,
-      options
+      options,
+      {
+        requestId,
+      }
     );
 
     const response = await this.connection.documentClient
@@ -157,7 +177,10 @@ export class EntityManager {
 
     const entity = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
-      response.Item
+      response.Item,
+      {
+        requestId,
+      }
     );
 
     return entity;
@@ -170,7 +193,8 @@ export class EntityManager {
    */
   async exists<Entity, KeyAttributes = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
-    attributes: KeyAttributes
+    attributes: KeyAttributes,
+    metadataOptions?: MetadataOptions
   ) {
     if (isEmptyObject(attributes)) {
       throw new Error("Attributes are required to check it's existence.");
@@ -219,7 +243,12 @@ export class EntityManager {
 
     // find item by primary key if it can be resolved
     if (!isEmptyObject(primaryKeyAttributes)) {
-      return !!(await this.findOne(entityClass, attributes));
+      return !!(await this.findOne(
+        entityClass,
+        attributes,
+        undefined,
+        metadataOptions
+      ));
     }
 
     // try finding entity by unique attribute
@@ -268,12 +297,17 @@ export class EntityManager {
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
     body: UpdateAttributes<Entity, PrimaryKey>,
-    options?: EntityManagerUpdateOptions<Entity>
+    options?: EntityManagerUpdateOptions<Entity>,
+    metadataOptions?: MetadataOptions
   ): Promise<Entity | undefined> {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoUpdateItem = this._dcReqTransformer.toDynamoUpdateItem<
       Entity,
       PrimaryKey
-    >(entityClass, primaryKeyAttributes, body, options);
+    >(entityClass, primaryKeyAttributes, body, options, {
+      requestId,
+    });
 
     if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
       const response = await this.connection.documentClient
@@ -283,14 +317,19 @@ export class EntityManager {
       return this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
         // return all new attributes
-        response.Attributes ?? {}
+        response.Attributes ?? {},
+        {
+          requestId,
+        }
       );
     }
 
     // first get existing item, so that we can safely clear previous unique attributes
     const existingItem = await this.findOne<Entity, PrimaryKey>(
       entityClass,
-      primaryKeyAttributes
+      primaryKeyAttributes,
+      undefined,
+      metadataOptions
     );
 
     if (!existingItem) {
@@ -306,7 +345,12 @@ export class EntityManager {
     );
 
     await this.connection.transactionManger.writeRaw(updateItemList);
-    return this.findOne<Entity, PrimaryKey>(entityClass, primaryKeyAttributes);
+    return this.findOne<Entity, PrimaryKey>(
+      entityClass,
+      primaryKeyAttributes,
+      undefined,
+      metadataOptions
+    );
   }
 
   /**
@@ -317,12 +361,17 @@ export class EntityManager {
   async delete<Entity, PrimaryKeyAttributes = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKeyAttributes,
-    options?: EntityManagerDeleteOptions<Entity>
+    options?: EntityManagerDeleteOptions<Entity>,
+    metadataOptions?: MetadataOptions
   ) {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoDeleteItem = this._dcReqTransformer.toDynamoDeleteItem<
       Entity,
       PrimaryKeyAttributes
-    >(entityClass, primaryKeyAttributes, options);
+    >(entityClass, primaryKeyAttributes, options, {
+      requestId,
+    });
 
     if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
       await this.connection.documentClient.delete(dynamoDeleteItem).promise();
@@ -334,7 +383,9 @@ export class EntityManager {
     // first get existing item, so that we can safely clear previous unique attributes
     const existingItem = await this.findOne<Entity, PrimaryKeyAttributes>(
       entityClass,
-      primaryKeyAttributes
+      primaryKeyAttributes,
+      undefined,
+      metadataOptions
     );
 
     if (!existingItem) {
@@ -366,15 +417,20 @@ export class EntityManager {
   async find<Entity, PartitionKey = Partial<EntityAttributes<Entity>> | string>(
     entityClass: EntityTarget<Entity>,
     partitionKey: PartitionKey,
-    queryOptions?: EntityManagerQueryOptions<Entity, PartitionKey>
+    queryOptions?: EntityManagerQueryOptions<Entity, PartitionKey>,
+    metadataOptions?: MetadataOptions
   ): Promise<{
     items: DynamoDB.DocumentClient.ItemList;
     cursor?: DynamoDB.DocumentClient.Key | undefined;
   }> {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoQueryItem = this._dcReqTransformer.toDynamoQueryItem<
       Entity,
       PartitionKey
-    >(entityClass, partitionKey, queryOptions);
+    >(entityClass, partitionKey, queryOptions, {
+      requestId,
+    });
 
     const response = await this._internalRecursiveQuery({
       queryInput: dynamoQueryItem,
@@ -386,7 +442,9 @@ export class EntityManager {
     return {
       ...response,
       items: response.items.map(item =>
-        this._entityTransformer.fromDynamoEntity<Entity>(entityClass, item)
+        this._entityTransformer.fromDynamoEntity<Entity>(entityClass, item, {
+          requestId,
+        })
       ),
     };
   }
