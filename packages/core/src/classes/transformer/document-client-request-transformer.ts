@@ -156,6 +156,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ...dynamoEntity,
       },
       TableName: table.name,
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     } as DynamoDB.DocumentClient.PutItemInput;
 
     // apply attribute not exist condition when creating unique
@@ -311,6 +312,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       Key: {
         ...parsedPrimaryKey,
       },
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     } as DynamoDB.DocumentClient.GetItemInput;
 
     // early return if no options were provided
@@ -445,6 +447,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       Key: {
         ...parsedPrimaryKey,
       },
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
       UpdateExpression,
       // request all new attributes
       ReturnValues: RETURN_VALUES.ALL_NEW,
@@ -553,6 +556,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       Key: {
         ...parsedPrimaryKey,
       },
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
 
     if (options?.where && !isEmptyObject(options.where)) {
@@ -695,6 +699,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       const transformedQueryItem = {
         TableName: table.name,
         IndexName: queryIndexName,
+        ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
         ...partitionKeyConditionExpression,
       };
 
@@ -730,6 +735,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     let queryInputParams = {
       TableName: table.name,
       IndexName: queryIndexName,
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
       Limit: limit,
       ScanIndexForward: !order || order === QUERY_ORDER.ASC,
       ...partitionKeyConditionExpression,

@@ -10,6 +10,7 @@ import {
 } from '@typedorm/core/__mocks__/user-unique-email';
 import {Organisation} from '@typedorm/core/__mocks__/organisation';
 import {ReadTransaction} from '../../transaction/read-transaction';
+import {CONSUMED_CAPACITY_TYPE} from '@typedorm/common';
 
 let manager: TransactionManager;
 const dcMock = {
@@ -79,10 +80,13 @@ test('performs write transactions for simple writes', async () => {
       },
     ]);
 
-  const response = await manager.write(transaction);
+  const response = await manager.write(transaction, {
+    returnConsumedCapacity: CONSUMED_CAPACITY_TYPE.TOTAL,
+  });
 
   expect(dcMock.transactWrite).toHaveBeenCalledTimes(1);
   expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    ReturnConsumedCapacity: 'TOTAL',
     TransactItems: [
       {
         Put: {
