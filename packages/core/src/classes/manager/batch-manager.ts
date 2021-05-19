@@ -8,6 +8,7 @@ import {
   BATCH_WRITE_MAX_ALLOWED_ATTEMPTS,
   INTERNAL_ENTITY_ATTRIBUTE,
   MANAGER_NAME,
+  STATS_TYPE,
 } from '@typedorm/common';
 import {
   BatchGetResponseMap,
@@ -110,6 +111,7 @@ export class BatchManager {
           () =>
             this.connection.transactionManger.writeRaw(transformedInput, {
               requestId,
+              returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
             }),
           // return original item when failed to process
           rawInput,
@@ -130,6 +132,7 @@ export class BatchManager {
               undefined,
               {
                 requestId,
+                returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
               }
             );
 
@@ -151,6 +154,7 @@ export class BatchManager {
               deleteTransactionItemList,
               {
                 requestId,
+                returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
               }
             );
           },
@@ -169,6 +173,7 @@ export class BatchManager {
           this.connection.documentClient
             .batchWrite({
               RequestItems: {...batchRequestMap},
+              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
             })
             .promise(),
         // for batch requests this returning item will be transformed to
@@ -189,6 +194,18 @@ export class BatchManager {
     // 2. wait for all promises to finish
     const responses = await Promise.all(allRequests);
 
+    // log stats
+    responses.forEach((response, index) => {
+      if (response.ConsumedCapacity) {
+        this.connection.logger.logStats({
+          requestId,
+          requestSegment: index,
+          statsType: STATS_TYPE.CONSUMED_CAPACITY,
+          consumedCapacityData: response.ConsumedCapacity,
+        });
+      }
+    });
+
     // 3. run retry attempts
     // process all unprocessed items recursively until all are either done
     // or reached the retry limit
@@ -198,6 +215,7 @@ export class BatchManager {
       options,
       {
         requestId,
+        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
       }
     );
 
@@ -272,6 +290,7 @@ export class BatchManager {
           this.connection.documentClient
             .batchGet({
               RequestItems: {...batchRequestItems},
+              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
             })
             .promise(),
         batchRequestItems,
@@ -281,6 +300,18 @@ export class BatchManager {
 
     // 2. wait for all promises to finish, either failed or hit the limit
     const initialResponses = await Promise.all(batchRequests);
+
+    // log stats
+    initialResponses.forEach((response, index) => {
+      if (response.ConsumedCapacity) {
+        this.connection.logger.logStats({
+          requestId,
+          requestSegment: index,
+          statsType: STATS_TYPE.CONSUMED_CAPACITY,
+          consumedCapacityData: response.ConsumedCapacity,
+        });
+      }
+    });
 
     // 3. run retries
     const {
@@ -293,6 +324,7 @@ export class BatchManager {
       [],
       {
         requestId,
+        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
       }
     );
 
@@ -416,6 +448,8 @@ export class BatchManager {
           this.connection.documentClient
             .batchWrite({
               RequestItems: {...batchRequestMap},
+              ReturnItemCollectionMetrics:
+                metadataOptions?.returnConsumedCapacity,
             })
             .promise(),
         batchRequestMap,
@@ -426,6 +460,19 @@ export class BatchManager {
     const batchRequestsResponses = (await Promise.all(
       batchRequests
     )) as DocumentClient.BatchWriteItemOutput[];
+
+    // log stats
+    batchRequestsResponses.forEach((response, index) => {
+      if (response.ConsumedCapacity) {
+        this.connection.logger.logStats({
+          requestId: metadataOptions?.requestId,
+          requestSegment: index,
+          statsType: STATS_TYPE.CONSUMED_CAPACITY,
+          consumedCapacityData: response.ConsumedCapacity,
+        });
+      }
+    });
+
     return this.recursiveHandleBatchWriteItemsResponse(
       batchRequestsResponses,
       ++totalAttemptsSoFar,
@@ -529,6 +576,7 @@ export class BatchManager {
           this.connection.documentClient
             .batchGet({
               RequestItems: {...batchRequestMap},
+              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
             })
             .promise(),
         batchRequestMap,
@@ -539,6 +587,18 @@ export class BatchManager {
     const batchRequestsResponses = (await Promise.all(
       batchRequests
     )) as DocumentClient.BatchGetItemOutput[];
+
+    // log stats
+    batchRequestsResponses.forEach((response, index) => {
+      if (response.ConsumedCapacity) {
+        this.connection.logger.logStats({
+          requestId: metadataOptions?.requestId,
+          requestSegment: index,
+          statsType: STATS_TYPE.CONSUMED_CAPACITY,
+          consumedCapacityData: response.ConsumedCapacity,
+        });
+      }
+    });
 
     return this.recursiveHandleBatchReadItemsResponse(
       batchRequestsResponses,

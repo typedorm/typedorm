@@ -19,7 +19,7 @@ export class EntityTransformer extends BaseTransformer {
   fromDynamoEntity<Entity>(
     entityClass: EntityTarget<Entity>,
     dynamoEntity: DynamoEntity<Entity>,
-    metadataOptions?: MetadataOptions
+    metadataOptions?: Pick<MetadataOptions, 'requestId'>
   ): Entity {
     const entityMetadata = this.connection.getEntityByTarget(entityClass);
     this.connection.logger.logTransform({
