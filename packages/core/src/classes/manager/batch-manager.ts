@@ -87,6 +87,7 @@ export class BatchManager {
     }
 
     this.connection.logger.logInfo({
+      requestId,
       scope: MANAGER_NAME.BATCH_MANAGER,
       log: `Running a batch write request for ${batch.items.length} items`,
     });
@@ -106,7 +107,10 @@ export class BatchManager {
       ({rawInput, transformedInput}) => {
         // make all promises in pLimitable so their concurrency can be controlled properly
         return this.toLimited(
-          () => this.connection.transactionManger.writeRaw(transformedInput),
+          () =>
+            this.connection.transactionManger.writeRaw(transformedInput, {
+              requestId,
+            }),
           // return original item when failed to process
           rawInput,
           REQUEST_TYPE.TRANSACT_WRITE
@@ -144,7 +148,10 @@ export class BatchManager {
             );
 
             return this.connection.transactionManger.writeRaw(
-              deleteTransactionItemList
+              deleteTransactionItemList,
+              {
+                requestId,
+              }
             );
           },
 
@@ -188,7 +195,10 @@ export class BatchManager {
     const unprocessedItems = await this.recursiveHandleBatchWriteItemsResponse(
       responses,
       0, // initially set the attempts counter to 0,
-      options
+      options,
+      {
+        requestId,
+      }
     );
 
     // 4.1. reverse parse all failed inputs to original user inputs
@@ -242,6 +252,7 @@ export class BatchManager {
     }
 
     this.connection.logger.logInfo({
+      requestId,
       scope: MANAGER_NAME.BATCH_MANAGER,
       log: `Running a batch read request for ${batch.items.length} items`,
     });
@@ -278,7 +289,11 @@ export class BatchManager {
     } = await this.recursiveHandleBatchReadItemsResponse(
       initialResponses,
       0,
-      options
+      options,
+      [],
+      {
+        requestId,
+      }
     );
 
     // 4.1 transform responses to look like model
@@ -286,6 +301,7 @@ export class BatchManager {
       const entityPhysicalName = item[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME];
       if (!entityPhysicalName) {
         this.connection.logger.logWarn({
+          requestId,
           scope: MANAGER_NAME.ENTITY_MANAGER,
           log: `Item ${JSON.stringify(
             item
@@ -311,6 +327,7 @@ export class BatchManager {
     // 4.3 transform failed items
     const failedTransformedItems = this._errorQueue.flatMap(item => {
       this.connection.logger.logError({
+        requestId,
         scope: MANAGER_NAME.BATCH_MANAGER,
         log: item.error,
       });
@@ -335,7 +352,8 @@ export class BatchManager {
   private async recursiveHandleBatchWriteItemsResponse(
     batchWriteItemOutputItems: DocumentClient.BatchWriteItemOutput[],
     totalAttemptsSoFar: number,
-    options?: BatchManagerWriteOptions
+    options?: BatchManagerWriteOptions,
+    metadataOptions?: MetadataOptions
   ): Promise<DocumentClient.BatchWriteItemRequestMap[]> {
     const unProcessedListItems = batchWriteItemOutputItems
       .filter(
@@ -358,12 +376,17 @@ export class BatchManager {
       this.connection.logger.logInfo({
         scope: MANAGER_NAME.BATCH_MANAGER,
         log: `Reached max allowed attempts ${totalAttemptsSoFar}, aborting...`,
+        requestId: metadataOptions?.requestId,
       });
       return unProcessedListItems;
     }
 
     // backoff for x ms before retrying for unprocessed items
-    await this.waitForExponentialBackoff(totalAttemptsSoFar);
+    await this.waitForExponentialBackoff(
+      totalAttemptsSoFar,
+      undefined,
+      metadataOptions
+    );
 
     // organize unprocessed items into single "tableName-item" map
     const sortedUnprocessedItems = unProcessedListItems.reduce(
@@ -406,7 +429,8 @@ export class BatchManager {
     return this.recursiveHandleBatchWriteItemsResponse(
       batchRequestsResponses,
       ++totalAttemptsSoFar,
-      options
+      options,
+      metadataOptions
     );
   }
 
@@ -414,7 +438,8 @@ export class BatchManager {
     batchReadItemOutputList: DocumentClient.BatchGetItemOutput[],
     totalAttemptsSoFar: number,
     options?: BatchManagerReadOptions,
-    responsesStore: DocumentClient.ItemList = []
+    responsesStore: DocumentClient.ItemList = [],
+    metadataOptions?: MetadataOptions
   ): Promise<{
     items: DocumentClient.ItemList;
     unprocessedItemsList?: DocumentClient.BatchGetRequestMap[];
@@ -455,6 +480,7 @@ export class BatchManager {
       (options?.maxRetryAttempts ?? BATCH_READ_MAX_ALLOWED_ATTEMPTS)
     ) {
       this.connection.logger.logInfo({
+        requestId: metadataOptions?.requestId,
         scope: MANAGER_NAME.BATCH_MANAGER,
         log: `Reached max allowed attempts ${totalAttemptsSoFar}, aborting...`,
       });
@@ -468,7 +494,11 @@ export class BatchManager {
     }
 
     // backoff before retrying
-    await this.waitForExponentialBackoff(totalAttemptsSoFar);
+    await this.waitForExponentialBackoff(
+      totalAttemptsSoFar,
+      undefined,
+      metadataOptions
+    );
 
     // aggregate all requests by table name
     const sortedUnprocessedItems = unprocessedItemsList.reduce(
@@ -515,7 +545,8 @@ export class BatchManager {
       ++totalAttemptsSoFar,
       options,
       // responses store containing responses from all requests
-      responsesStore
+      responsesStore,
+      metadataOptions
     );
   }
 
@@ -560,7 +591,8 @@ export class BatchManager {
 
   private waitForExponentialBackoff(
     attempts: number,
-    multiplicationFactor = 1
+    multiplicationFactor = 1,
+    metadataOptions?: MetadataOptions
   ) {
     multiplicationFactor = multiplicationFactor < 1 ? 1 : multiplicationFactor;
     return new Promise(resolve => {
@@ -569,6 +601,7 @@ export class BatchManager {
         multiplicationFactor
       );
       this.connection.logger.logInfo({
+        requestId: metadataOptions?.requestId,
         scope: MANAGER_NAME.BATCH_MANAGER,
         log: `${attempts} attempts so far, sleeping ${backoffTime}ms before retrying...`,
       });

@@ -43,6 +43,7 @@ export class TransactionManager {
     );
 
     this.connection.logger.logInfo({
+      requestId,
       scope: MANAGER_NAME.TRANSACTION_MANAGER,
       log: `Requested to write transaction for total ${transaction.items.length} items.`,
     });
@@ -77,13 +78,16 @@ export class TransactionManager {
 
     if (itemsToWriteInTransaction.length > transaction.items.length) {
       this.connection.logger.logInfo({
+        requestId,
         scope: MANAGER_NAME.TRANSACTION_MANAGER,
         log: `Original items count ${transaction.items.length} expanded 
         to ${itemsToWriteInTransaction.length} to accommodate unique attributes.`,
       });
     }
 
-    return this.writeRaw(itemsToWriteInTransaction);
+    return this.writeRaw(itemsToWriteInTransaction, {
+      requestId,
+    });
   }
 
   /**
@@ -109,6 +113,7 @@ export class TransactionManager {
     }
 
     this.connection.logger.logInfo({
+      requestId,
       scope: MANAGER_NAME.TRANSACTION_MANAGER,
       log: `Running a transaction read ${transactionItemList.length} items..`,
     });
@@ -149,12 +154,16 @@ export class TransactionManager {
    * Writes items to dynamodb over document client's transact write API without performing any pre transforming
    * You would almost never need to use this.
    */
-  async writeRaw(transactItems: DynamoDB.DocumentClient.TransactWriteItem[]) {
+  async writeRaw(
+    transactItems: DynamoDB.DocumentClient.TransactWriteItem[],
+    metadataOptions: MetadataOptions
+  ) {
     const transactionInput: DynamoDB.DocumentClient.TransactWriteItemsInput = {
       TransactItems: transactItems,
     };
 
     this.connection.logger.logInfo({
+      requestId: metadataOptions?.requestId,
       scope: MANAGER_NAME.TRANSACTION_MANAGER,
       log: `Running a transaction write request for ${transactItems.length} items.`,
     });
