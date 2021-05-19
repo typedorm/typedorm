@@ -18,6 +18,10 @@ import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {isDynamoEntityKeySchema} from '../../helpers/is-dynamo-entity-key-schema';
 import {isKeyOfTypeAliasSchema} from '../../helpers/is-key-of-type-alias-schema';
 
+export interface MetadataOptions {
+  requestId: string;
+}
+
 export abstract class BaseTransformer {
   constructor(protected connection: Connection) {}
   /**

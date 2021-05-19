@@ -16,6 +16,8 @@ import {
 } from 'aws-sdk/clients/dynamodb';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {ReadBatch} from '../batch/read-batch';
+import {MetadataOptions} from '../transformer/base-transformer';
+import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 
 export enum REQUEST_TYPE {
   TRANSACT_WRITE = 'TRANSACT_WRITE',
@@ -72,8 +74,13 @@ export class BatchManager {
    * _Note_: Transaction api is always used when item being written is using a unique attribute
    * @param batch
    */
-  async write(batch: WriteBatch, options?: BatchManagerWriteOptions) {
+  async write(
+    batch: WriteBatch,
+    options?: BatchManagerWriteOptions,
+    metadataOptions?: MetadataOptions
+  ) {
     this.resetErrorQueue();
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
     if (options?.requestsConcurrencyLimit) {
       this.limit = pLimit(options?.requestsConcurrencyLimit);
@@ -90,7 +97,9 @@ export class BatchManager {
       lazyTransactionWriteItemListLoaderItems,
       transactionListItems,
       metadata,
-    } = this._dcBatchTransformer.toDynamoWriteBatchItems(batch);
+    } = this._dcBatchTransformer.toDynamoWriteBatchItems(batch, {
+      requestId,
+    });
 
     // 1.1. get transaction write items limits
     const transactionRequests = transactionListItems.map(
@@ -113,7 +122,11 @@ export class BatchManager {
           async () => {
             const existingItem = await this.connection.entityManager.findOne(
               transformedInput.entityClass,
-              transformedInput.primaryKeyAttributes
+              transformedInput.primaryKeyAttributes,
+              undefined,
+              {
+                requestId,
+              }
             );
 
             if (!existingItem) {
@@ -216,8 +229,13 @@ export class BatchManager {
    * Reads all items given in batch with default eventually consistent read type
    * _Note_: Returned items are not guaranteed to be in the same sequence as requested
    */
-  async read(batch: ReadBatch, options?: BatchManagerReadOptions) {
+  async read(
+    batch: ReadBatch,
+    options?: BatchManagerReadOptions,
+    metadataOptions?: MetadataOptions
+  ) {
     this.resetErrorQueue();
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
     if (options?.requestsConcurrencyLimit) {
       this.limit = pLimit(options?.requestsConcurrencyLimit);
@@ -232,7 +250,9 @@ export class BatchManager {
     const {
       batchRequestItemsList,
       metadata,
-    } = this._dcBatchTransformer.toDynamoReadBatchItems(batch);
+    } = this._dcBatchTransformer.toDynamoReadBatchItems(batch, {
+      requestId,
+    });
 
     // 1. get items requests with concurrency applied
     const batchRequests = batchRequestItemsList.map(batchRequestItems => {
@@ -277,7 +297,9 @@ export class BatchManager {
       const {target} = this.connection.getEntityByPhysicalName(
         entityPhysicalName
       );
-      return this._dcBatchTransformer.fromDynamoEntity(target, item);
+      return this._dcBatchTransformer.fromDynamoEntity(target, item, {
+        requestId,
+      });
     }) as unknown[];
 
     // 4.2 transform unprocessed items
