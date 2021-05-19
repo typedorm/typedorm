@@ -4,6 +4,7 @@ import {DocumentClientTransactionTransformer} from '../transformer/document-clie
 import {
   MANAGER_NAME,
   ReadTransactionItemLimitExceededError,
+  STATS_TYPE,
   TRANSACTION_READ_ITEMS_LIMIT,
   TRANSACTION_WRITE_ITEMS_LIMIT,
   WriteTransactionItemLimitExceededError,
@@ -58,6 +59,7 @@ export class TransactionManager {
             undefined,
             {
               requestId,
+              returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
             }
           );
           return item.lazyLoadTransactionWriteItems(existingItem);
@@ -87,6 +89,7 @@ export class TransactionManager {
 
     return this.writeRaw(itemsToWriteInTransaction, {
       requestId,
+      returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     });
   }
 
@@ -120,6 +123,7 @@ export class TransactionManager {
 
     const transactionInput: DynamoDB.DocumentClient.TransactGetItemsInput = {
       TransactItems: transactionItemList,
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
 
     const transactionResult = this.connection.documentClient.transactGet(
@@ -127,6 +131,15 @@ export class TransactionManager {
     );
 
     const response = await handleTransactionResult(transactionResult);
+
+    // log stats
+    if (response?.ConsumedCapacity) {
+      this.connection.logger.logStats({
+        requestId,
+        statsType: STATS_TYPE.CONSUMED_CAPACITY,
+        consumedCapacityData: response.ConsumedCapacity,
+      });
+    }
 
     // Items are always returned in the same as they were requested.
     // An ordered array of up to 25 ItemResponse objects, each of which corresponds to the
@@ -160,6 +173,7 @@ export class TransactionManager {
   ) {
     const transactionInput: DynamoDB.DocumentClient.TransactWriteItemsInput = {
       TransactItems: transactItems,
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
 
     this.connection.logger.logInfo({
@@ -172,7 +186,16 @@ export class TransactionManager {
       transactionInput
     );
 
-    await handleTransactionResult(transactionRequest);
+    const response = await handleTransactionResult(transactionRequest);
+
+    // log stats
+    if (response?.ConsumedCapacity) {
+      this.connection.logger.logStats({
+        requestId: metadataOptions?.returnConsumedCapacity,
+        statsType: STATS_TYPE.CONSUMED_CAPACITY,
+        consumedCapacityData: response.ConsumedCapacity,
+      });
+    }
 
     // return success when successfully processed all items in a transaction
     return {success: true};

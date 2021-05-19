@@ -169,16 +169,22 @@ export class DebugLogger {
 
   logStats({
     requestId,
+    requestSegment,
     statsType,
     consumedCapacityData,
   }: {
     requestId?: string;
+    requestSegment?: number; // if for any reason, request was segmented into multiple request, this indicates segment index
     statsType: STATS_TYPE;
     consumedCapacityData: any;
   }) {
     if (this.debugStatsLog.enabled) {
       this.debugStatsLog(
-        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(statsType)}:`,
+        `${
+          chalk.bold.bgCyanBright(requestId) + requestSegment
+            ? ':' + chalk.bold.bgCyanBright(requestId)
+            : ''
+        } ${chalk.green(statsType)}:`,
         chalk.white(this.ensurePrintable(consumedCapacityData))
       );
     }

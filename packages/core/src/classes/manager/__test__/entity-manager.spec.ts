@@ -12,6 +12,7 @@ import {
   UserAutoGenerateAttributes,
 } from '../../../../__mocks__/user-auto-generate-attributes';
 import {Connection} from '../../connection/connection';
+import {CONSUMED_CAPACITY_TYPE} from '@typedorm/common';
 
 let manager: EntityManager;
 let connection: Connection;
@@ -49,7 +50,9 @@ test('creates entity', async () => {
   user.name = 'Test User';
   user.status = 'active';
 
-  const userEntity = await manager.create(user);
+  const userEntity = await manager.create(user, undefined, {
+    returnConsumedCapacity: CONSUMED_CAPACITY_TYPE.TOTAL,
+  });
   expect(dcMock.put).toHaveBeenCalledTimes(1);
   expect(dcMock.put).toHaveBeenCalledWith({
     Item: {
@@ -63,6 +66,7 @@ test('creates entity', async () => {
       status: 'active',
     },
     TableName: 'test-table',
+    ReturnConsumedCapacity: 'TOTAL',
     ConditionExpression:
       '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
@@ -285,6 +289,9 @@ test('checks if given item exists', async () => {
     User,
     {
       id: '1',
+    },
+    {
+      returnConsumedCapacity: CONSUMED_CAPACITY_TYPE.INDEXES,
     }
   );
 
@@ -294,6 +301,7 @@ test('checks if given item exists', async () => {
       SK: 'USER#1',
     },
     TableName: 'test-table',
+    ReturnConsumedCapacity: 'INDEXES',
   });
   expect(userEntity).toEqual(true);
 });
