@@ -73,7 +73,13 @@ test('processes batch write request with simple request items', async () => {
   const largeBatchOfUsers = mockSimpleBatchWriteData(60);
   const writeBatch = new WriteBatch().add(largeBatchOfUsers);
 
-  const result = await manager.write(writeBatch);
+  const result = await manager.write(
+    writeBatch,
+    {},
+    {
+      requestId: 'MY_UNIQUE_CUSTOM_REQUEST_ID',
+    }
+  );
   expect(originalPromiseAll).toHaveBeenCalledTimes(1);
   expect(documentClientMock.batchWrite).toHaveBeenCalledTimes(3);
   expect(entityManager.findOne).not.toHaveBeenCalled();
