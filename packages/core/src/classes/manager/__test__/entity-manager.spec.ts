@@ -475,7 +475,7 @@ test('updates item and attributes marked to be autoUpdated', async () => {
   expect(updatedItem).toEqual({id: '1', name: 'Me', status: 'active'});
 });
 
-test('updates item with unique attributes and returns all updated attributes', async () => {
+test.only('updates item with unique attributes and returns all updated attributes', async () => {
   manager.findOne = jest
     .fn()
     // mock first call to return existing item, this will be called before update is performed
@@ -495,7 +495,12 @@ test('updates item with unique attributes and returns all updated attributes', a
     on: jest.fn(),
     send: jest.fn().mockImplementation(cb => {
       cb(null, {
-        ConsumedCapacity: [{}],
+        ConsumedCapacity: [
+          {
+            TableName: 'my-table',
+            CapacityUnits: 123.3,
+          },
+        ],
         ItemCollectionMetrics: [{}],
       });
     }),
@@ -511,6 +516,10 @@ test('updates item with unique attributes and returns all updated attributes', a
     },
     {
       email: 'new@examil.com',
+    },
+    {},
+    {
+      requestId: 'MY_CUSTOM_UNIQUE_REQUEST_ID',
     }
   );
 
