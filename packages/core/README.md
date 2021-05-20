@@ -1,6 +1,6 @@
 # TypeDORM - Core
 
-[![NPM Release](https://img.shields.io/npm/v/@typedorm/core?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core) [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)
+[![NPM Release](https://img.shields.io/npm/v/@typedorm/core?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core) [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core) [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)
 
 Contains Core classes and types
 

@@ -11,18 +11,19 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 
 ## Packages
 
-| Package           | Latest Stable                                                                                                                         | Recent Beta                                                                                                                                |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| @typedorm/common  | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   |
-| @typedorm/core    | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       |
-| @typedorm/testing | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) |
+| Package           | Latest Stable                                                                                                                         | Recent Beta                                                                                                                                | Recent Alpha                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| @typedorm/common  | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   |
+| @typedorm/core    | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       |
+| @typedorm/testing | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) |
 
 ## Branches
 
-| Branches | Stability                                                                                    |
-| -------- | -------------------------------------------------------------------------------------------- |
-| Main     | ![Stability](https://img.shields.io/badge/Stability-stable-blue?style=for-the-badge)         |
-| Beta     | ![Stability](https://img.shields.io/badge/Stability-experimental-orange?style=for-the-badge) |
+| Branches | Stability                                                                                 |
+| -------- | ----------------------------------------------------------------------------------------- |
+| main     | ![Stability](https://img.shields.io/badge/Stability-stable-blue?style=for-the-badge)      |
+| beta     | ![Stability](https://img.shields.io/badge/Stability-preview-orange?style=for-the-badge)   |
+| alpha    | ![Stability](https://img.shields.io/badge/Stability-experimental-red?style=for-the-badge) |
 
 ## Features
 

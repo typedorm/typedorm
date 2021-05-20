@@ -1,6 +1,6 @@
 # TypeDORM - Common
 
-[![NPM Release](https://img.shields.io/npm/v/@typedorm/common?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common) [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)
+[![NPM Release](https://img.shields.io/npm/v/@typedorm/common?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common) [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common) [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)
 
 Decorators and basic types used by typeDORM
 
