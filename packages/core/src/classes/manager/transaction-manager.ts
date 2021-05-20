@@ -136,6 +136,7 @@ export class TransactionManager {
     if (response?.ConsumedCapacity) {
       this.connection.logger.logStats({
         requestId,
+        scope: MANAGER_NAME.TRANSACTION_MANAGER,
         statsType: STATS_TYPE.CONSUMED_CAPACITY,
         consumedCapacityData: response.ConsumedCapacity,
       });
@@ -191,7 +192,8 @@ export class TransactionManager {
     // log stats
     if (response?.ConsumedCapacity) {
       this.connection.logger.logStats({
-        requestId: metadataOptions?.returnConsumedCapacity,
+        requestId: metadataOptions?.requestId,
+        scope: MANAGER_NAME.TRANSACTION_MANAGER,
         statsType: STATS_TYPE.CONSUMED_CAPACITY,
         consumedCapacityData: response.ConsumedCapacity,
       });
