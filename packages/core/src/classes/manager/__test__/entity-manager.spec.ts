@@ -592,7 +592,7 @@ test('updates item and attributes marked to be autoUpdated', async () => {
   expect(updatedItem).toEqual({id: '1', name: 'Me', status: 'active'});
 });
 
-test.only('updates item with unique attributes and returns all updated attributes', async () => {
+test('updates item with unique attributes and returns all updated attributes', async () => {
   manager.findOne = jest
     .fn()
     // mock first call to return existing item, this will be called before update is performed
