@@ -198,6 +198,7 @@ export class BatchManager {
     responses.forEach((response, index) => {
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
+          scope: MANAGER_NAME.BATCH_MANAGER,
           requestId,
           requestSegment: index,
           statsType: STATS_TYPE.CONSUMED_CAPACITY,
@@ -305,6 +306,7 @@ export class BatchManager {
     initialResponses.forEach((response, index) => {
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
+          scope: MANAGER_NAME.BATCH_MANAGER,
           requestId,
           requestSegment: index,
           statsType: STATS_TYPE.CONSUMED_CAPACITY,
@@ -466,6 +468,7 @@ export class BatchManager {
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
           requestId: metadataOptions?.requestId,
+          scope: MANAGER_NAME.BATCH_MANAGER,
           requestSegment: index,
           statsType: STATS_TYPE.CONSUMED_CAPACITY,
           consumedCapacityData: response.ConsumedCapacity,
@@ -593,6 +596,7 @@ export class BatchManager {
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
           requestId: metadataOptions?.requestId,
+          scope: MANAGER_NAME.BATCH_MANAGER,
           requestSegment: index,
           statsType: STATS_TYPE.CONSUMED_CAPACITY,
           consumedCapacityData: response.ConsumedCapacity,

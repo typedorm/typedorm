@@ -2,6 +2,7 @@ import {DynamoDB} from 'aws-sdk';
 import {
   EntityAttributes,
   EntityTarget,
+  MANAGER_NAME,
   STATS_TYPE,
   UpdateAttributes,
 } from '@typedorm/common';
@@ -122,6 +123,7 @@ export class EntityManager {
       if (response?.ConsumedCapacity) {
         this.connection.logger.logStats({
           requestId,
+          scope: MANAGER_NAME.ENTITY_MANAGER,
           statsType: STATS_TYPE.CONSUMED_CAPACITY,
           consumedCapacityData: response.ConsumedCapacity,
         });
@@ -191,6 +193,7 @@ export class EntityManager {
     if (response?.ConsumedCapacity) {
       this.connection.logger.logStats({
         requestId,
+        scope: MANAGER_NAME.ENTITY_MANAGER,
         statsType: STATS_TYPE.CONSUMED_CAPACITY,
         consumedCapacityData: response.ConsumedCapacity,
       });
@@ -312,6 +315,7 @@ export class EntityManager {
       if (response?.ConsumedCapacity) {
         this.connection.logger.logStats({
           requestId,
+          scope: MANAGER_NAME.ENTITY_MANAGER,
           statsType: STATS_TYPE.CONSUMED_CAPACITY,
           consumedCapacityData: response.ConsumedCapacity,
         });
@@ -356,6 +360,7 @@ export class EntityManager {
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
           requestId,
+          scope: MANAGER_NAME.ENTITY_MANAGER,
           statsType: STATS_TYPE.CONSUMED_CAPACITY,
           consumedCapacityData: response.ConsumedCapacity,
         });
@@ -433,6 +438,7 @@ export class EntityManager {
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
           requestId,
+          scope: MANAGER_NAME.ENTITY_MANAGER,
           statsType: STATS_TYPE.CONSUMED_CAPACITY,
           consumedCapacityData: response.ConsumedCapacity,
         });
@@ -552,6 +558,7 @@ export class EntityManager {
     if (ConsumedCapacity) {
       this.connection.logger.logStats({
         requestId: metadataOptions?.requestId,
+        scope: MANAGER_NAME.ENTITY_MANAGER,
         statsType: STATS_TYPE.CONSUMED_CAPACITY,
         consumedCapacityData: ConsumedCapacity,
       });

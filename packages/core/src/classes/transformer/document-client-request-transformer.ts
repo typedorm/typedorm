@@ -509,7 +509,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       metadata.name,
       uniqueAttributesToUpdate,
       dropProp(itemToUpdate, 'ReturnValues'),
-      body
+      body,
+      metadataOptions
     );
 
     return {
@@ -607,7 +608,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       metadata.table,
       metadata.name,
       uniqueAttributesToRemove,
-      mainItemToRemove
+      mainItemToRemove,
+      metadataOptions
     );
 
     return {
