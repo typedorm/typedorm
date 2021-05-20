@@ -199,6 +199,19 @@ create(
     // condition based creates
     // when present, it must evaluate to true in order for operation to succeed.
     where
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -222,6 +235,19 @@ findOne(
     // Specify attributes to get, only selected attributes are fetched
     // @default `ALL`
     select
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -236,7 +262,20 @@ exists(
   entityClass
 
   // Primary key attributes or unique attributes referenced in schemas
-  attributes
+  attributes,
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
 )
 ```
 
@@ -245,7 +284,7 @@ exists(
 Update item with magically generated set operation
 
 ```Typescript
-exists(
+update(
   // Entity class to resolve schema against
   entityClass
 
@@ -268,6 +307,19 @@ exists(
     // condition based updates
     // when present, it must evaluate to true in order for operation to succeed.
     where
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 
 )
@@ -292,6 +344,19 @@ delete(
     // condition based creates
     // when present, it must evaluate to true in order for operation to succeed.
     where
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -347,6 +412,19 @@ find(
     // Specify attributes to get, only selected attributes are fetched
     // @default `ALL`
     select
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -383,6 +461,19 @@ write(
     // Used to increase wait times between retries
     // @default `1`
     backoffMultiplicationFactor
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -414,6 +505,19 @@ read(
     // Used to increase wait times between retries
     // @default `1`
     backoffMultiplicationFactor
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 
@@ -431,7 +535,20 @@ Writes entities to dynamodb over document client transaction api.
 write(
   // Write request input
   // Must be an instance of `WriteTransaction` class
-  transaction
+  transaction,
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
 )
 ```
 
@@ -443,6 +560,19 @@ Reads entities to from dynamodb over document client transaction api.
 read(
   // Read request input
   // Must be an instance of `ReadTransaction` class
-  transaction
+  transaction,
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
 )
 ```
