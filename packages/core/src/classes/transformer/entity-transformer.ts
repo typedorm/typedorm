@@ -2,7 +2,7 @@ import {DynamoEntity, EntityTarget, TRANSFORM_TYPE} from '@typedorm/common';
 import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {unParseKey} from '../../helpers/unparse-key';
 import {Connection} from '../connection/connection';
-import {BaseTransformer} from './base-transformer';
+import {BaseTransformer, MetadataOptions} from './base-transformer';
 
 /**
  * Note: To use any of the base transformer methods, this default entity transformer should be used
@@ -18,16 +18,18 @@ export class EntityTransformer extends BaseTransformer {
    */
   fromDynamoEntity<Entity>(
     entityClass: EntityTarget<Entity>,
-    dynamoEntity: DynamoEntity<Entity>
+    dynamoEntity: DynamoEntity<Entity>,
+    metadataOptions?: Pick<MetadataOptions, 'requestId'>
   ): Entity {
     const entityMetadata = this.connection.getEntityByTarget(entityClass);
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.RESPONSE,
-      'Before',
-      entityMetadata.name,
-      null,
-      dynamoEntity
-    );
+    this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_TYPE.RESPONSE,
+      prefix: 'Before',
+      entityName: entityMetadata.name,
+      primaryKey: null,
+      body: dynamoEntity,
+    });
 
     const entityPrimaryKeys = Object.keys(
       entityMetadata.schema.primaryKey.attributes
@@ -61,13 +63,14 @@ export class EntityTransformer extends BaseTransformer {
       return acc;
     }, {} as Entity);
 
-    this.connection.logger.logTransform(
-      TRANSFORM_TYPE.RESPONSE,
-      'After',
-      entityMetadata.name,
-      null,
-      transformedEntity
-    );
+    this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_TYPE.RESPONSE,
+      prefix: 'After',
+      entityName: entityMetadata.name,
+      primaryKey: null,
+      body: transformedEntity,
+    });
 
     return transformedEntity;
   }

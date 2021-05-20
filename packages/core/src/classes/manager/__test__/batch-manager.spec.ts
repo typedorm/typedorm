@@ -1,4 +1,4 @@
-import {Replace} from '@typedorm/common';
+import {CONSUMED_CAPACITY_TYPE, Replace} from '@typedorm/common';
 import {User} from '@typedorm/core/__mocks__/user';
 import {UserUniqueEmail} from '@typedorm/core/__mocks__/user-unique-email';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
@@ -73,7 +73,13 @@ test('processes batch write request with simple request items', async () => {
   const largeBatchOfUsers = mockSimpleBatchWriteData(60);
   const writeBatch = new WriteBatch().add(largeBatchOfUsers);
 
-  const result = await manager.write(writeBatch);
+  const result = await manager.write(
+    writeBatch,
+    {},
+    {
+      requestId: 'MY_UNIQUE_CUSTOM_REQUEST_ID',
+    }
+  );
   expect(originalPromiseAll).toHaveBeenCalledTimes(1);
   expect(documentClientMock.batchWrite).toHaveBeenCalledTimes(3);
   expect(entityManager.findOne).not.toHaveBeenCalled();
@@ -371,7 +377,13 @@ test('processes simple batch read request', async () => {
       },
     },
   ]);
-  const response = await manager.read(readTestBatch);
+  const response = await manager.read(
+    readTestBatch,
+    {},
+    {
+      returnConsumedCapacity: CONSUMED_CAPACITY_TYPE.TOTAL,
+    }
+  );
 
   expect(originalPromiseAll).toHaveBeenCalledTimes(1);
   expect(originalPromiseAll).toHaveBeenCalledWith([expect.any(Promise)]);

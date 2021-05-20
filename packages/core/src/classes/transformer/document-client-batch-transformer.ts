@@ -12,6 +12,7 @@ import {isBatchAddCreateItem, isBatchAddDeleteItem} from '../batch/type-guards';
 import {WriteBatchItem, WriteBatch} from '../batch/write-batch';
 import {Connection} from '../connection/connection';
 import {isWriteTransactionItemList} from '../transaction/type-guards';
+import {MetadataOptions} from './base-transformer';
 import {
   isLazyTransactionWriteItemListLoader,
   LazyTransactionWriteItemListLoader,
@@ -43,7 +44,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   }
 
   toDynamoWriteBatchItems(
-    writeBatch: WriteBatch
+    writeBatch: WriteBatch,
+    metadataOptions?: MetadataOptions
   ): {
     batchWriteRequestMapItems: DocumentClient.BatchWriteItemRequestMap[];
     transactionListItems: BatchWriteItemTransform<
@@ -58,18 +60,19 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     };
   } {
     const {items} = writeBatch;
-    this.connection.logger.logTransformBatch(
-      TRANSFORM_BATCH_TYPE.BATCH_WRITE,
-      'Before',
-      items
-    );
+    this.connection.logger.logTransformBatch({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_BATCH_TYPE.BATCH_WRITE,
+      prefix: 'Before',
+      body: items,
+    });
 
     const {
       lazyTransactionWriteItemListLoaderItems,
       simpleBatchRequestItems,
       transactionListItems,
       metadata,
-    } = this.innerTransformBatchWriteItems(items);
+    } = this.innerTransformBatchWriteItems(items, metadataOptions);
 
     // organize all requests in "tableName - requestItem" format
     const sorted = this.getWriteRequestsSortedByTable(simpleBatchRequestItems);
@@ -87,17 +90,19 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       metadata,
     };
 
-    this.connection.logger.logTransformBatch(
-      TRANSFORM_BATCH_TYPE.BATCH_WRITE,
-      'After',
-      transformed
-    );
+    this.connection.logger.logTransformBatch({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_BATCH_TYPE.BATCH_WRITE,
+      prefix: 'After',
+      body: transformed,
+    });
 
     return transformed;
   }
 
   toDynamoReadBatchItems(
-    readBatch: ReadBatch
+    readBatch: ReadBatch,
+    metadataOptions?: MetadataOptions
   ): {
     batchRequestItemsList: DocumentClient.BatchGetRequestMap[];
     metadata: {
@@ -107,11 +112,12 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   } {
     const {items} = readBatch;
 
-    this.connection.logger.logTransformBatch(
-      TRANSFORM_BATCH_TYPE.BATCH_READ,
-      'Before',
-      items
-    );
+    this.connection.logger.logTransformBatch({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_BATCH_TYPE.BATCH_READ,
+      prefix: 'Before',
+      body: items,
+    });
 
     const {metadata, batchReadRequestItems} = this.transformBatchReadItems(
       items
@@ -133,11 +139,12 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       metadata,
     };
 
-    this.connection.logger.logTransformBatch(
-      TRANSFORM_BATCH_TYPE.BATCH_READ,
-      'After',
-      transformed
-    );
+    this.connection.logger.logTransformBatch({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_BATCH_TYPE.BATCH_READ,
+      prefix: 'After',
+      body: transformed,
+    });
     return transformed;
   }
 
@@ -288,7 +295,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
    * - LazyTransactionWriteItemListLoaderItems: items that are must be processed in transaction but also requires other requests to be made first (i.e delete of unique items)
    */
   private innerTransformBatchWriteItems(
-    batchItems: WriteBatchItem<any, any>[]
+    batchItems: WriteBatchItem<any, any>[],
+    metadataOptions?: MetadataOptions
   ) {
     const namespaceId = v4();
     const itemTransformHashMap = new Map<string, WriteBatchItem<any, any>>();
@@ -298,7 +306,11 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
         // is create
         if (isBatchAddCreateItem(batchItem)) {
           // transform put item
-          const dynamoPutItem = this.toDynamoPutItem(batchItem.create.item);
+          const dynamoPutItem = this.toDynamoPutItem(
+            batchItem.create.item,
+            undefined,
+            metadataOptions
+          );
           if (!isWriteTransactionItemList(dynamoPutItem)) {
             const transformedWriteRequest = {
               PutRequest: {
@@ -328,7 +340,12 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
             delete: {item, primaryKey},
           } = batchItem;
           // transform delete item
-          const itemToRemove = this.toDynamoDeleteItem(item, primaryKey);
+          const itemToRemove = this.toDynamoDeleteItem(
+            item,
+            primaryKey,
+            undefined,
+            metadataOptions
+          );
           if (!isLazyTransactionWriteItemListLoader(itemToRemove)) {
             const transformedItemRequest = {
               DeleteRequest: {
@@ -372,7 +389,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     );
   }
 
-  private transformBatchReadItems(batchItems: ReadBatchItem<any, any>[]) {
+  private transformBatchReadItems(
+    batchItems: ReadBatchItem<any, any>[],
+    metadataOptions?: MetadataOptions
+  ) {
     const namespaceId = v4();
     const itemTransformHashMap = new Map<string, ReadBatchItem<any, any>>();
     return batchItems.reduce(
@@ -380,7 +400,12 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
         const {item, primaryKey} = batchItem;
 
         // TODO: add read options support
-        const itemToGet = this.toDynamoGetItem(item, primaryKey);
+        const itemToGet = this.toDynamoGetItem(
+          item,
+          primaryKey,
+          undefined,
+          metadataOptions
+        );
         acc.batchReadRequestItems.push({
           readRequest: itemToGet.Key,
           tableName: itemToGet.TableName,

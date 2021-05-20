@@ -2,6 +2,8 @@ import {DynamoDB} from 'aws-sdk';
 import {
   EntityAttributes,
   EntityTarget,
+  MANAGER_NAME,
+  STATS_TYPE,
   UpdateAttributes,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
@@ -19,6 +21,8 @@ import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-trans
 import {FilterOptions} from '../expression/filter-options-type';
 import {ConditionOptions} from '../expression/condition-options-type';
 import {ProjectionKeys} from '../expression/expression-input-parser';
+import {MetadataOptions} from '../transformer/base-transformer';
+import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 
 export interface EntityManagerCreateOptions<Entity> {
   /**
@@ -95,21 +99,43 @@ export class EntityManager {
    */
   async create<Entity>(
     entity: Entity,
-    options?: EntityManagerCreateOptions<Entity>
+    options?: EntityManagerCreateOptions<Entity>,
+    metadataOptions?: MetadataOptions
   ): Promise<Entity> {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(
       entity,
-      options
+      options,
+      {
+        requestId,
+        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+      }
     );
     const entityClass = getConstructorForInstance(entity);
 
     if (!isWriteTransactionItemList(dynamoPutItemInput)) {
-      await this.connection.documentClient.put(dynamoPutItemInput).promise();
+      const response = await this.connection.documentClient
+        .put(dynamoPutItemInput)
+        .promise();
+
+      // log stats
+      if (response?.ConsumedCapacity) {
+        this.connection.logger.logStats({
+          requestId,
+          scope: MANAGER_NAME.ENTITY_MANAGER,
+          statsType: STATS_TYPE.CONSUMED_CAPACITY,
+          consumedCapacityData: response.ConsumedCapacity,
+        });
+      }
 
       // by default dynamodb does not return attributes on create operation, so return one
       const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
-        dynamoPutItemInput.Item
+        dynamoPutItemInput.Item,
+        {
+          requestId,
+        }
       );
 
       return itemToReturn;
@@ -118,12 +144,18 @@ export class EntityManager {
     // dynamoPutItemInput is a transact item list, meaning that it contains one or more unique attributes, which also
     // needs to be created along with original item
 
-    await this.connection.transactionManger.writeRaw(dynamoPutItemInput);
+    await this.connection.transactionManger.writeRaw(dynamoPutItemInput, {
+      requestId,
+      returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+    });
 
     const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
       // if create operation contains multiple items, first one will the original item
-      dynamoPutItemInput[0]?.Put?.Item ?? {}
+      dynamoPutItemInput[0]?.Put?.Item ?? {},
+      {
+        requestId,
+      }
     );
 
     return itemToReturn;
@@ -138,17 +170,34 @@ export class EntityManager {
   async findOne<Entity, PrimaryKey = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
-    options?: EntityManagerFindOneOptions<Entity>
+    options?: EntityManagerFindOneOptions<Entity>,
+    metadataOptions?: MetadataOptions
   ): Promise<Entity | undefined> {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoGetItem = this._dcReqTransformer.toDynamoGetItem(
       entityClass,
       primaryKeyAttributes,
-      options
+      options,
+      {
+        requestId,
+        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+      }
     );
 
     const response = await this.connection.documentClient
       .get(dynamoGetItem)
       .promise();
+
+    // stats
+    if (response?.ConsumedCapacity) {
+      this.connection.logger.logStats({
+        requestId,
+        scope: MANAGER_NAME.ENTITY_MANAGER,
+        statsType: STATS_TYPE.CONSUMED_CAPACITY,
+        consumedCapacityData: response.ConsumedCapacity,
+      });
+    }
 
     // return early when not found
     if (!response.Item) {
@@ -157,7 +206,10 @@ export class EntityManager {
 
     const entity = this._entityTransformer.fromDynamoEntity<Entity>(
       entityClass,
-      response.Item
+      response.Item,
+      {
+        requestId,
+      }
     );
 
     return entity;
@@ -170,7 +222,8 @@ export class EntityManager {
    */
   async exists<Entity, KeyAttributes = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
-    attributes: KeyAttributes
+    attributes: KeyAttributes,
+    metadataOptions?: MetadataOptions
   ) {
     if (isEmptyObject(attributes)) {
       throw new Error("Attributes are required to check it's existence.");
@@ -219,11 +272,17 @@ export class EntityManager {
 
     // find item by primary key if it can be resolved
     if (!isEmptyObject(primaryKeyAttributes)) {
-      return !!(await this.findOne(entityClass, attributes));
+      return !!(await this.findOne(
+        entityClass,
+        attributes,
+        undefined,
+        metadataOptions
+      ));
     }
 
     // try finding entity by unique attribute
     if (!isEmptyObject(uniqueAttributes)) {
+      const requestId = getUniqueRequestId(metadataOptions?.requestId);
       if (Object.keys(uniqueAttributes).length > 1) {
         throw new Error('Can only query one unique attribute at a time.');
       }
@@ -244,14 +303,25 @@ export class EntityManager {
         {[attrName]: attrValue}
       );
 
-      return !!(
-        await this.connection.documentClient
-          .get({
-            Key: {...parsedPrimaryKey},
-            TableName: metadata.table.name,
-          })
-          .promise()
-      ).Item;
+      const response = await this.connection.documentClient
+        .get({
+          Key: {...parsedPrimaryKey},
+          TableName: metadata.table.name,
+          ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+        })
+        .promise();
+
+      // stats
+      if (response?.ConsumedCapacity) {
+        this.connection.logger.logStats({
+          requestId,
+          scope: MANAGER_NAME.ENTITY_MANAGER,
+          statsType: STATS_TYPE.CONSUMED_CAPACITY,
+          consumedCapacityData: response.ConsumedCapacity,
+        });
+      }
+
+      return !!response.Item;
     }
     // if none of the above, item does not exist
     return false;
@@ -268,29 +338,50 @@ export class EntityManager {
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
     body: UpdateAttributes<Entity, PrimaryKey>,
-    options?: EntityManagerUpdateOptions<Entity>
+    options?: EntityManagerUpdateOptions<Entity>,
+    metadataOptions?: MetadataOptions
   ): Promise<Entity | undefined> {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoUpdateItem = this._dcReqTransformer.toDynamoUpdateItem<
       Entity,
       PrimaryKey
-    >(entityClass, primaryKeyAttributes, body, options);
+    >(entityClass, primaryKeyAttributes, body, options, {
+      requestId,
+      returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+    });
 
     if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
       const response = await this.connection.documentClient
         .update(dynamoUpdateItem)
         .promise();
 
+      // stats
+      if (response.ConsumedCapacity) {
+        this.connection.logger.logStats({
+          requestId,
+          scope: MANAGER_NAME.ENTITY_MANAGER,
+          statsType: STATS_TYPE.CONSUMED_CAPACITY,
+          consumedCapacityData: response.ConsumedCapacity,
+        });
+      }
+
       return this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
         // return all new attributes
-        response.Attributes ?? {}
+        response.Attributes ?? {},
+        {
+          requestId,
+        }
       );
     }
 
     // first get existing item, so that we can safely clear previous unique attributes
     const existingItem = await this.findOne<Entity, PrimaryKey>(
       entityClass,
-      primaryKeyAttributes
+      primaryKeyAttributes,
+      undefined,
+      metadataOptions
     );
 
     if (!existingItem) {
@@ -305,8 +396,16 @@ export class EntityManager {
       existingItem
     );
 
-    await this.connection.transactionManger.writeRaw(updateItemList);
-    return this.findOne<Entity, PrimaryKey>(entityClass, primaryKeyAttributes);
+    await this.connection.transactionManger.writeRaw(updateItemList, {
+      requestId,
+      returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+    });
+    return this.findOne<Entity, PrimaryKey>(
+      entityClass,
+      primaryKeyAttributes,
+      undefined,
+      metadataOptions
+    );
   }
 
   /**
@@ -317,15 +416,34 @@ export class EntityManager {
   async delete<Entity, PrimaryKeyAttributes = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKeyAttributes,
-    options?: EntityManagerDeleteOptions<Entity>
+    options?: EntityManagerDeleteOptions<Entity>,
+    metadataOptions?: MetadataOptions
   ) {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoDeleteItem = this._dcReqTransformer.toDynamoDeleteItem<
       Entity,
       PrimaryKeyAttributes
-    >(entityClass, primaryKeyAttributes, options);
+    >(entityClass, primaryKeyAttributes, options, {
+      requestId,
+      returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+    });
 
     if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
-      await this.connection.documentClient.delete(dynamoDeleteItem).promise();
+      const response = await this.connection.documentClient
+        .delete(dynamoDeleteItem)
+        .promise();
+
+      // stats
+      if (response.ConsumedCapacity) {
+        this.connection.logger.logStats({
+          requestId,
+          scope: MANAGER_NAME.ENTITY_MANAGER,
+          statsType: STATS_TYPE.CONSUMED_CAPACITY,
+          consumedCapacityData: response.ConsumedCapacity,
+        });
+      }
+
       return {
         success: true,
       };
@@ -334,7 +452,9 @@ export class EntityManager {
     // first get existing item, so that we can safely clear previous unique attributes
     const existingItem = await this.findOne<Entity, PrimaryKeyAttributes>(
       entityClass,
-      primaryKeyAttributes
+      primaryKeyAttributes,
+      undefined,
+      metadataOptions
     );
 
     if (!existingItem) {
@@ -350,7 +470,10 @@ export class EntityManager {
     );
 
     // delete main item and all it's unique attributes as part of single transaction
-    await this.connection.transactionManger.writeRaw(deleteItemList);
+    await this.connection.transactionManger.writeRaw(deleteItemList, {
+      requestId,
+      returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+    });
     return {
       success: true,
     };
@@ -366,27 +489,39 @@ export class EntityManager {
   async find<Entity, PartitionKey = Partial<EntityAttributes<Entity>> | string>(
     entityClass: EntityTarget<Entity>,
     partitionKey: PartitionKey,
-    queryOptions?: EntityManagerQueryOptions<Entity, PartitionKey>
+    queryOptions?: EntityManagerQueryOptions<Entity, PartitionKey>,
+    metadataOptions?: MetadataOptions
   ): Promise<{
     items: DynamoDB.DocumentClient.ItemList;
     cursor?: DynamoDB.DocumentClient.Key | undefined;
   }> {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const dynamoQueryItem = this._dcReqTransformer.toDynamoQueryItem<
       Entity,
       PartitionKey
-    >(entityClass, partitionKey, queryOptions);
+    >(entityClass, partitionKey, queryOptions, {
+      requestId,
+      returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+    });
 
     const response = await this._internalRecursiveQuery({
       queryInput: dynamoQueryItem,
       // if no explicit limit is set, always fall back to imposing implicit limit
       limit: queryOptions?.limit ?? getDynamoQueryItemsLimit(),
       cursor: queryOptions?.cursor,
+      metadataOptions: {
+        requestId,
+        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+      },
     });
 
     return {
       ...response,
       items: response.items.map(item =>
-        this._entityTransformer.fromDynamoEntity<Entity>(entityClass, item)
+        this._entityTransformer.fromDynamoEntity<Entity>(entityClass, item, {
+          requestId,
+        })
       ),
     };
   }
@@ -400,11 +535,13 @@ export class EntityManager {
     limit,
     cursor,
     itemsFetched = [],
+    metadataOptions,
   }: {
     queryInput: DynamoDB.DocumentClient.QueryInput;
     limit: number;
     cursor?: DynamoDB.DocumentClient.Key;
     itemsFetched?: DynamoDB.DocumentClient.ItemList;
+    metadataOptions?: MetadataOptions;
   }): Promise<{
     items: DynamoDB.DocumentClient.ItemList;
     cursor?: DynamoDB.DocumentClient.Key;
@@ -412,9 +549,21 @@ export class EntityManager {
     const {
       LastEvaluatedKey,
       Items = [],
+      ConsumedCapacity,
     } = await this.connection.documentClient
       .query({...queryInput, ExclusiveStartKey: cursor})
       .promise();
+
+    // stats
+    if (ConsumedCapacity) {
+      this.connection.logger.logStats({
+        requestId: metadataOptions?.requestId,
+        scope: MANAGER_NAME.ENTITY_MANAGER,
+        statsType: STATS_TYPE.CONSUMED_CAPACITY,
+        consumedCapacityData: ConsumedCapacity,
+      });
+    }
+
     itemsFetched = [...itemsFetched, ...Items];
 
     if (itemsFetched.length < limit && LastEvaluatedKey) {
@@ -423,6 +572,7 @@ export class EntityManager {
         limit,
         cursor: LastEvaluatedKey,
         itemsFetched,
+        metadataOptions,
       });
     }
     return {items: itemsFetched, cursor: LastEvaluatedKey};

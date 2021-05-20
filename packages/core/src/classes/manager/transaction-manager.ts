@@ -4,6 +4,7 @@ import {DocumentClientTransactionTransformer} from '../transformer/document-clie
 import {
   MANAGER_NAME,
   ReadTransactionItemLimitExceededError,
+  STATS_TYPE,
   TRANSACTION_READ_ITEMS_LIMIT,
   TRANSACTION_WRITE_ITEMS_LIMIT,
   WriteTransactionItemLimitExceededError,
@@ -11,6 +12,8 @@ import {
 import {DynamoDB} from 'aws-sdk';
 import {handleTransactionResult} from '../../helpers/handle-transaction-result';
 import {ReadTransaction} from '../transaction/read-transaction';
+import {MetadataOptions} from '../transformer/base-transformer';
+import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 
 export class TransactionManager {
   private _dcTransactionTransformer: DocumentClientTransactionTransformer;
@@ -25,18 +28,26 @@ export class TransactionManager {
    * Processes transactions over document client's transaction api
    * @param transaction Write transaction to process
    */
-  async write(transaction: WriteTransaction) {
+  async write(
+    transaction: WriteTransaction,
+    metadataOptions?: MetadataOptions
+  ) {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
     const {
       transactionItemList,
       lazyTransactionWriteItemListLoader,
     } = this._dcTransactionTransformer.toDynamoWriteTransactionItems(
-      transaction
+      transaction,
+      {
+        requestId,
+      }
     );
 
-    this.connection.logger.logInfo(
-      MANAGER_NAME.TRANSACTION_MANAGER,
-      `Requested to write transaction for total ${transaction.items.length} items.`
-    );
+    this.connection.logger.logInfo({
+      requestId,
+      scope: MANAGER_NAME.TRANSACTION_MANAGER,
+      log: `Requested to write transaction for total ${transaction.items.length} items.`,
+    });
 
     const lazyTransactionItems = (
       await Promise.all(
@@ -44,7 +55,12 @@ export class TransactionManager {
           // if updating/removing unique attribute in transaction, get previous value of attributes
           const existingItem = await this.connection.entityManager.findOne(
             item.entityClass,
-            item.primaryKeyAttributes
+            item.primaryKeyAttributes,
+            undefined,
+            {
+              requestId,
+              returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+            }
           );
           return item.lazyLoadTransactionWriteItems(existingItem);
         })
@@ -63,25 +79,34 @@ export class TransactionManager {
     }
 
     if (itemsToWriteInTransaction.length > transaction.items.length) {
-      this.connection.logger.logInfo(
-        MANAGER_NAME.TRANSACTION_MANAGER,
-        `Original items count ${transaction.items.length} expanded 
-        to ${itemsToWriteInTransaction.length} to accommodate unique attributes.`
-      );
+      this.connection.logger.logInfo({
+        requestId,
+        scope: MANAGER_NAME.TRANSACTION_MANAGER,
+        log: `Original items count ${transaction.items.length} expanded 
+        to ${itemsToWriteInTransaction.length} to accommodate unique attributes.`,
+      });
     }
 
-    return this.writeRaw(itemsToWriteInTransaction);
+    return this.writeRaw(itemsToWriteInTransaction, {
+      requestId,
+      returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+    });
   }
 
   /**
    * Processes transactions over document client's transaction api
    * @param transaction read transaction to process
    */
-  async read(transaction: ReadTransaction) {
+  async read(transaction: ReadTransaction, metadataOptions?: MetadataOptions) {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
     const {
       transactionItemList,
     } = this._dcTransactionTransformer.toDynamoReadTransactionItems(
-      transaction
+      transaction,
+      {
+        requestId,
+      }
     );
 
     if (transactionItemList.length > TRANSACTION_READ_ITEMS_LIMIT) {
@@ -90,13 +115,15 @@ export class TransactionManager {
       );
     }
 
-    this.connection.logger.logInfo(
-      MANAGER_NAME.TRANSACTION_MANAGER,
-      `Running a transaction read ${transactionItemList.length} items..`
-    );
+    this.connection.logger.logInfo({
+      requestId,
+      scope: MANAGER_NAME.TRANSACTION_MANAGER,
+      log: `Running a transaction read ${transactionItemList.length} items..`,
+    });
 
     const transactionInput: DynamoDB.DocumentClient.TransactGetItemsInput = {
       TransactItems: transactionItemList,
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
 
     const transactionResult = this.connection.documentClient.transactGet(
@@ -104,6 +131,16 @@ export class TransactionManager {
     );
 
     const response = await handleTransactionResult(transactionResult);
+
+    // log stats
+    if (response?.ConsumedCapacity) {
+      this.connection.logger.logStats({
+        requestId,
+        scope: MANAGER_NAME.TRANSACTION_MANAGER,
+        statsType: STATS_TYPE.CONSUMED_CAPACITY,
+        consumedCapacityData: response.ConsumedCapacity,
+      });
+    }
 
     // Items are always returned in the same as they were requested.
     // An ordered array of up to 25 ItemResponse objects, each of which corresponds to the
@@ -117,7 +154,10 @@ export class TransactionManager {
       const originalRequest = transaction.items[index];
       return this._dcTransactionTransformer.fromDynamoEntity(
         originalRequest.get.item,
-        response.Item
+        response.Item,
+        {
+          requestId,
+        }
       );
     });
   }
@@ -128,21 +168,36 @@ export class TransactionManager {
    * Writes items to dynamodb over document client's transact write API without performing any pre transforming
    * You would almost never need to use this.
    */
-  async writeRaw(transactItems: DynamoDB.DocumentClient.TransactWriteItem[]) {
+  async writeRaw(
+    transactItems: DynamoDB.DocumentClient.TransactWriteItem[],
+    metadataOptions: MetadataOptions
+  ) {
     const transactionInput: DynamoDB.DocumentClient.TransactWriteItemsInput = {
       TransactItems: transactItems,
+      ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
 
-    this.connection.logger.logInfo(
-      MANAGER_NAME.TRANSACTION_MANAGER,
-      `Running a transaction write request for ${transactItems.length} items.`
-    );
+    this.connection.logger.logInfo({
+      requestId: metadataOptions?.requestId,
+      scope: MANAGER_NAME.TRANSACTION_MANAGER,
+      log: `Running a transaction write request for ${transactItems.length} items.`,
+    });
 
     const transactionRequest = this.connection.documentClient.transactWrite(
       transactionInput
     );
 
-    await handleTransactionResult(transactionRequest);
+    const response = await handleTransactionResult(transactionRequest);
+
+    // log stats
+    if (response?.ConsumedCapacity) {
+      this.connection.logger.logStats({
+        requestId: metadataOptions?.requestId,
+        scope: MANAGER_NAME.TRANSACTION_MANAGER,
+        statsType: STATS_TYPE.CONSUMED_CAPACITY,
+        consumedCapacityData: response.ConsumedCapacity,
+      });
+    }
 
     // return success when successfully processed all items in a transaction
     return {success: true};
