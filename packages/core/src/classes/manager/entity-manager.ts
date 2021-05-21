@@ -55,7 +55,7 @@ export interface EntityManagerDeleteOptions<Entity> {
   where?: ConditionOptions<Entity>;
 }
 
-export interface EntityManagerQueryOptions<Entity, PrimaryKey>
+export interface EntityManagerFindOptions<Entity, PrimaryKey>
   extends ManagerToDynamoQueryItemsOptions {
   /**
    * Cursor to traverse from
@@ -489,7 +489,7 @@ export class EntityManager {
   async find<Entity, PartitionKey = Partial<EntityAttributes<Entity>> | string>(
     entityClass: EntityTarget<Entity>,
     partitionKey: PartitionKey,
-    queryOptions?: EntityManagerQueryOptions<Entity, PartitionKey>,
+    queryOptions?: EntityManagerFindOptions<Entity, PartitionKey>,
     metadataOptions?: MetadataOptions
   ): Promise<{
     items: DynamoDB.DocumentClient.ItemList;
