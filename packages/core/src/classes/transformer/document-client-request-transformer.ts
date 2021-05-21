@@ -8,6 +8,7 @@ import {
   UpdateAttributes,
   TRANSFORM_TYPE,
   IndexOptions,
+  QUERY_SELECT_TYPE,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {dropProp} from '../../helpers/drop-prop';
@@ -75,6 +76,8 @@ export interface ManagerToDynamoQueryItemsOptions {
   where?: any;
 
   select?: any[];
+
+  onlyCount?: boolean;
 }
 
 export interface ManagerToDynamoGetItemOptions {
@@ -328,7 +331,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return transformBody;
     }
 
-    if (options.select) {
+    if (options.select?.length) {
       const projection = this.expressionInputParser.parseToProjection(
         options.select
       );
@@ -732,7 +735,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // at this point we have resolved partition key and table to query
-    const {keyCondition, limit, orderBy: order, where, select} = queryOptions;
+    const {
+      keyCondition,
+      limit,
+      orderBy: order,
+      where,
+      select,
+      onlyCount,
+    } = queryOptions;
 
     let queryInputParams = {
       TableName: table.name,
@@ -804,6 +814,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           ...ExpressionAttributeValues,
         },
       };
+    }
+
+    // check if only the count was requested
+    if (onlyCount) {
+      // count and projection selection can not be used together
+      queryInputParams.Select = QUERY_SELECT_TYPE.COUNT;
     }
 
     // when projection keys are provided
