@@ -3,16 +3,14 @@ import {
   EntityAttributes,
   EntityTarget,
   MANAGER_NAME,
+  QUERY_ORDER,
   STATS_TYPE,
   UpdateAttributes,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
-import {
-  DocumentClientRequestTransformer,
-  ManagerToDynamoQueryItemsOptions,
-} from '../transformer/document-client-request-transformer';
+import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
@@ -20,7 +18,10 @@ import {isWriteTransactionItemList} from '../transaction/type-guards';
 import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 import {FilterOptions} from '../expression/filter-options-type';
 import {ConditionOptions} from '../expression/condition-options-type';
-import {ProjectionKeys} from '../expression/expression-input-parser';
+import {
+  KeyConditionOptions,
+  ProjectionKeys,
+} from '../expression/expression-input-parser';
 import {MetadataOptions} from '../transformer/base-transformer';
 import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 
@@ -55,8 +56,30 @@ export interface EntityManagerDeleteOptions<Entity> {
   where?: ConditionOptions<Entity>;
 }
 
-export interface EntityManagerFindOptions<Entity, PrimaryKey>
-  extends ManagerToDynamoQueryItemsOptions {
+export interface EntityManagerFindOptions<Entity, PartitionKey> {
+  /**
+   * Index to query, when omitted, query will be run against main table
+   */
+  queryIndex?: string;
+
+  /**
+   * Sort key condition
+   * @default none - no sort key condition is applied
+   */
+  keyCondition?: KeyConditionOptions;
+
+  /**
+   * Max number of records to query
+   * @default - implicit dynamo db query limit is applied
+   */
+  limit?: number;
+
+  /**
+   * Order to query items in
+   * @default ASC
+   */
+  orderBy?: QUERY_ORDER;
+
   /**
    * Cursor to traverse from
    */
@@ -67,13 +90,33 @@ export interface EntityManagerFindOptions<Entity, PrimaryKey>
    * Avoid using this where possible, since filters in dynamodb applies after items
    * are read
    */
-  where?: FilterOptions<Entity, PrimaryKey>;
+  where?: FilterOptions<Entity, PartitionKey>;
 
   /**
    * Specifies which attributes to fetch
    * @default all attributes are fetched
    */
   select?: ProjectionKeys<Entity>;
+}
+
+export interface EntityManagerCountOptions<Entity, PartitionKey> {
+  /**
+   * Index to query, when omitted, query will be run against main table
+   */
+  queryIndex?: string;
+
+  /**
+   * Sort key condition
+   * @default none - no sort key condition is applied
+   */
+  keyCondition?: KeyConditionOptions;
+
+  /**
+   * Specify filter to apply
+   * Avoid using this where possible, since filters in dynamodb applies after items
+   * are read
+   */
+  where?: FilterOptions<Entity, PartitionKey>;
 }
 
 export interface EntityManagerFindOneOptions<Entity> {
@@ -527,6 +570,48 @@ export class EntityManager {
   }
 
   /**
+   * Returns a count of total items matching ther query
+   * @param entityClass Entity to query
+   * @param partitionKey Partition key attributes, If querying an index,
+   * this is the partition key attributes of that index
+   * @param queryOptions Count Query Options
+   */
+  async count<
+    Entity,
+    PartitionKey = Partial<EntityAttributes<Entity>> | string
+  >(
+    entityClass: EntityTarget<Entity>,
+    partitionKey: PartitionKey,
+    queryOptions?: EntityManagerCountOptions<Entity, PartitionKey>,
+    metadataOptions?: MetadataOptions
+  ) {
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
+    const dynamoQueryItem = this._dcReqTransformer.toDynamoQueryItem<
+      Entity,
+      PartitionKey
+    >(
+      entityClass,
+      partitionKey,
+      {...queryOptions, onlyCount: true, select: undefined}, // select projection and count can not be used together
+      {
+        requestId,
+        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+      }
+    );
+
+    const count = await this._internalRecursiveCount({
+      queryInput: dynamoQueryItem,
+      metadataOptions: {
+        requestId,
+        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+      },
+    });
+
+    return count;
+  }
+
+  /**
    * Recursively queries all items from table
    * @param param Query params
    */
@@ -576,5 +661,51 @@ export class EntityManager {
       });
     }
     return {items: itemsFetched, cursor: LastEvaluatedKey};
+  }
+
+  /**
+   * Recursively counts all items from table
+   * @param param Query params
+   */
+  private async _internalRecursiveCount({
+    queryInput,
+    cursor,
+    currentCount = 0,
+    metadataOptions,
+  }: {
+    queryInput: DynamoDB.DocumentClient.QueryInput;
+    cursor?: DynamoDB.DocumentClient.Key;
+    currentCount?: number;
+    metadataOptions?: MetadataOptions;
+  }): Promise<number> {
+    const {
+      LastEvaluatedKey,
+      Count,
+      ConsumedCapacity,
+    } = await this.connection.documentClient
+      .query({...queryInput, ExclusiveStartKey: cursor})
+      .promise();
+
+    // stats
+    if (ConsumedCapacity) {
+      this.connection.logger.logStats({
+        requestId: metadataOptions?.requestId,
+        scope: MANAGER_NAME.ENTITY_MANAGER,
+        statsType: STATS_TYPE.CONSUMED_CAPACITY,
+        consumedCapacityData: ConsumedCapacity,
+      });
+    }
+
+    currentCount += Count || 0;
+
+    if (LastEvaluatedKey) {
+      return this._internalRecursiveCount({
+        queryInput,
+        cursor: LastEvaluatedKey,
+        currentCount,
+        metadataOptions,
+      });
+    }
+    return currentCount;
   }
 }
