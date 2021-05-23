@@ -1135,3 +1135,171 @@ test('queries items until limit is met', async () => {
   ]);
   expect(users.items.length).toEqual(2000);
 });
+
+/**
+ * @group count
+ */
+test('counts items matching given query params', async () => {
+  dcMock.query.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      Count: 132,
+    }),
+  });
+
+  const usersCount = await manager.count<User, UserPrimaryKey>(
+    User,
+    {
+      id: 'aaaa',
+    },
+    {
+      keyCondition: {
+        BEGINS_WITH: 'USER#',
+      },
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(1);
+  expect(dcMock.query).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#KY_CE_SK': 'SK',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#aaaa',
+      ':KY_CE_SK': 'USER#',
+    },
+    KeyConditionExpression:
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+    Select: 'COUNT',
+    ScanIndexForward: true,
+    TableName: 'test-table',
+  });
+  expect(usersCount).toEqual(132);
+});
+
+test('counts items with multiple requests', async () => {
+  dcMock.query
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 121,
+        LastEvaluatedKey: 'AAAA',
+      }),
+    }))
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 56,
+        LastEvaluatedKey: 'BB',
+      }),
+    }))
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 13,
+      }),
+    }));
+
+  const users = await manager.count<User, UserPrimaryKey>(
+    User,
+    {
+      id: 'aaaa',
+    },
+    {
+      keyCondition: {
+        BEGINS_WITH: 'USER#',
+      },
+      where: {
+        AND: {
+          age: {
+            BETWEEN: [1, 5],
+          },
+          name: {
+            EQ: 'Me',
+          },
+          status: 'ATTRIBUTE_EXISTS',
+        },
+      },
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(3);
+  expect(dcMock.query.mock.calls).toEqual([
+    [
+      {
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+    [
+      {
+        ExclusiveStartKey: 'AAAA',
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+    [
+      {
+        ExclusiveStartKey: 'BB',
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+  ]);
+
+  expect(users).toEqual(190);
+});
