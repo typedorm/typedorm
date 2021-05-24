@@ -13,6 +13,7 @@ export enum ATTRIBUTE_TYPE {
   MAP = 'M',
 }
 
+export type ArithmeticOperator = 'ADD' | 'SUB' | 'MPY' | 'DIV';
 /**
  * This is the single place where all the the document client supported
  * operators are listed

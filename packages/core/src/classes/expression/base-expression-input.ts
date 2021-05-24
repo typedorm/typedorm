@@ -1,10 +1,20 @@
-import {ATTRIBUTE_TYPE, ScalarType, SimpleOperator} from '@typedorm/common';
+import {
+  ArithmeticOperator,
+  ATTRIBUTE_TYPE,
+  ScalarType,
+  SimpleOperator,
+} from '@typedorm/common';
 
 const lastCharSpaceMatcher = /\s$/;
 export enum MERGE_STRATEGY {
   AND = 'AND',
   OR = 'OR',
 }
+
+export type ArithMeticOperationOptions = {
+  operand: ArithmeticOperator;
+  value: number;
+};
 
 export abstract class BaseExpressionInput {
   expression: string;
@@ -268,28 +278,52 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
-  equals(key: string, value: ScalarType): this {
-    return this.addBaseOperator('EQ', key, value);
+  equals(
+    key: string,
+    value: ScalarType,
+    arithmeticOp?: ArithMeticOperationOptions
+  ): this {
+    return this.addBaseOperator('EQ', key, value, arithmeticOp);
   }
 
-  lessThan(key: string, value: ScalarType): this {
-    return this.addBaseOperator('LT', key, value);
+  lessThan(
+    key: string,
+    value: ScalarType,
+    arithmeticOp?: ArithMeticOperationOptions
+  ): this {
+    return this.addBaseOperator('LT', key, value, arithmeticOp);
   }
 
-  lessThanAndEqualTo(key: string, value: ScalarType): this {
-    return this.addBaseOperator('LE', key, value);
+  lessThanAndEqualTo(
+    key: string,
+    value: ScalarType,
+    arithmeticOp?: ArithMeticOperationOptions
+  ): this {
+    return this.addBaseOperator('LE', key, value, arithmeticOp);
   }
 
-  greaterThan(key: string, value: ScalarType): this {
-    return this.addBaseOperator('GT', key, value);
+  greaterThan(
+    key: string,
+    value: ScalarType,
+    arithmeticOp?: ArithMeticOperationOptions
+  ): this {
+    return this.addBaseOperator('GT', key, value, arithmeticOp);
   }
 
-  greaterThanAndEqualTo(key: string, value: ScalarType): this {
-    return this.addBaseOperator('GE', key, value);
+  greaterThanAndEqualTo(
+    key: string,
+    value: ScalarType,
+    arithmeticOp?: ArithMeticOperationOptions
+  ): this {
+    return this.addBaseOperator('GE', key, value, arithmeticOp);
   }
 
-  notEquals(key: string, value: ScalarType): this {
-    return this.addBaseOperator('NE', key, value);
+  notEquals(
+    key: string,
+    value: ScalarType,
+    arithmeticOp?: ArithMeticOperationOptions
+  ): this {
+    return this.addBaseOperator('NE', key, value, arithmeticOp);
   }
 
   between(key: string, value: [ScalarType, ScalarType]): this {
@@ -346,16 +380,39 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
-  addBaseOperator(operator: SimpleOperator, key: string, value: any): this {
+  addBaseOperator(
+    operator: SimpleOperator,
+    key: string,
+    value: any,
+    arithmeticOp?: ArithMeticOperationOptions
+  ): this {
     const attrExpName = this.addExpressionName(key);
     const attrExpValue = this.addExpressionValue(key, value);
+
+    let expNameLeftSide = attrExpName;
+
+    // if there is a arithmetic operand provided
+    if (arithmeticOp && arithmeticOp && arithmeticOp.value) {
+      const arithOperatorValue = this.addExpressionValue(
+        `${key}_${arithmeticOp.operand}`,
+        arithmeticOp.value
+      );
+      expNameLeftSide = `${attrExpName} ${this.getSymbolForOperator(
+        arithmeticOp.operand
+      )} ${arithOperatorValue}`;
+    }
+
     this.appendToExpression(
-      `${attrExpName} ${this.getSymbolForOperator(operator)} ${attrExpValue}`
+      `${expNameLeftSide} ${this.getSymbolForOperator(
+        operator
+      )} ${attrExpValue}`
     );
     return this;
   }
 
-  private getSymbolForOperator(operator: SimpleOperator): string {
+  private getSymbolForOperator(
+    operator: SimpleOperator | ArithmeticOperator
+  ): string {
     const symbolMap = {
       EQ: '=',
       LE: '<=',
@@ -363,6 +420,10 @@ export abstract class BaseExpressionInput {
       GE: '>=',
       GT: '>',
       NE: '<>',
+      SUB: '-',
+      ADD: '+',
+      MPY: '*',
+      DIV: '/',
     };
     return symbolMap[operator];
   }

@@ -21,6 +21,19 @@ test('builds condition expression', () => {
   });
 });
 
+test('builds condition expression', () => {
+  const conditionExpression = expressionBuilder.buildConditionExpression(
+    new Condition().attributeNotExist('PK')
+  );
+
+  expect(conditionExpression).toEqual({
+    ConditionExpression: 'attribute_not_exists(#CE_PK)',
+    ExpressionAttributeNames: {
+      '#CE_PK': 'PK',
+    },
+  });
+});
+
 /**
  * @group buildUpdateExpression
  */
@@ -36,6 +49,22 @@ test('builds update expression', () => {
     },
     ExpressionAttributeValues: {
       ':val0': 'new name',
+    },
+  });
+});
+
+test('builds update expression with dynamic values', () => {
+  const item = {
+    balance: {$SUB: 20},
+  };
+  const expression = expressionBuilder.buildUpdateExpression(item);
+  expect(expression).toEqual({
+    UpdateExpression: 'SET #attr0 = #attr0 - :val0',
+    ExpressionAttributeNames: {
+      '#attr0': 'balance',
+    },
+    ExpressionAttributeValues: {
+      ':val0': 20,
     },
   });
 });
