@@ -904,7 +904,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           ];
 
           // if unique attribute previously existed, remove it as part of the same transaction
-          if (previousItemBody[attr.name]) {
+          if (previousItemBody && previousItemBody[attr.name]) {
             uniqueAttributeWriteItems.push({
               Delete: {
                 TableName: table.name,
@@ -960,8 +960,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     metadataOptions?: MetadataOptions
   ) {
     return (existingItemBody: any) => {
-      const uniqueAttributeInputs: DynamoDB.DocumentClient.TransactWriteItemList = uniqueAttributesToRemove.map(
-        attr => {
+      let uniqueAttributeInputs: DynamoDB.DocumentClient.TransactWriteItemList = [];
+      if (existingItemBody) {
+        uniqueAttributeInputs = uniqueAttributesToRemove.map(attr => {
           return {
             Delete: {
               TableName: table.name,
@@ -974,8 +975,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
               },
             },
           };
-        }
-      );
+        });
+      }
 
       const deleteTransactionItems = [
         {

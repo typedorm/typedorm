@@ -640,23 +640,83 @@ test('updates item and return all new attributes with given condition', async ()
   });
 });
 
-test('does not update an item when failed to get item by key', async () => {
-  manager.findOne = jest.fn();
+test('updates item and create new unique item when no previous record was found', async () => {
+  manager.findOne = jest
+    .fn()
+    .mockImplementationOnce(() => null)
+    .mockImplementationOnce(() => ({
+      id: '1',
+      name: 'user',
+      status: 'active',
+      age: 4,
+    }));
 
-  const updatedItem = async () =>
-    await manager.update<UserUniqueEmail, UserUniqueEmailPrimaryKey>(
-      UserUniqueEmail,
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const updatedItem = await manager.update<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      email: 'new@examil.com',
+    }
+  );
+
+  expect(manager.findOne).toHaveBeenCalledTimes(2);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    TransactItems: [
       {
-        id: '1',
+        Update: {
+          ExpressionAttributeNames: {
+            '#attr0': 'email',
+          },
+          ExpressionAttributeValues: {
+            ':val0': 'new@examil.com',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+          UpdateExpression: 'SET #attr0 = :val0',
+        },
       },
       {
-        email: 'new@examil.com',
-      }
-    );
+        Put: {
+          ConditionExpression:
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+          ExpressionAttributeNames: {
+            '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
+          },
+          Item: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@examil.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@examil.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
 
-  await expect(updatedItem).rejects.toThrow(
-    'Failed to update entity, could not find entity with primary key "{"id":"1"}"'
-  );
+  expect(updatedItem).toEqual({
+    age: 4,
+    id: '1',
+    name: 'user',
+    status: 'active',
+  });
 });
 
 /**
@@ -776,6 +836,47 @@ test('deletes an item with unique attributes', async () => {
           Key: {
             PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
             SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+  expect(deletedResponse).toEqual({
+    success: true,
+  });
+});
+
+test('deletes an item with unique attributes when no existing item is found', async () => {
+  // make find one return undefined
+  manager.findOne = jest.fn();
+
+  const deleteItemOperation = dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const deletedResponse = await manager.delete<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(UserUniqueEmail, {
+    id: '1',
+  });
+
+  expect(manager.findOne).toHaveBeenCalledTimes(1);
+  expect(deleteItemOperation).toHaveBeenCalledTimes(1);
+  expect(deleteItemOperation).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Delete: {
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
           },
           TableName: 'test-table',
         },

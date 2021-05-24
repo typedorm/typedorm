@@ -136,16 +136,6 @@ export class BatchManager {
               }
             );
 
-            if (!existingItem) {
-              throw new Error(
-                `Failed to batch write item ${
-                  transformedInput.entityClass.name
-                }. Could not find entity with primary key "${JSON.stringify(
-                  transformedInput.primaryKeyAttributes
-                )}"`
-              );
-            }
-
             const deleteTransactionItemList = transformedInput.lazyLoadTransactionWriteItems(
               existingItem
             );

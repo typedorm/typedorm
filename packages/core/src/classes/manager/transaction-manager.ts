@@ -62,10 +62,12 @@ export class TransactionManager {
               returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
             }
           );
+
           return item.lazyLoadTransactionWriteItems(existingItem);
         })
       )
     ).flat();
+
     const itemsToWriteInTransaction = [
       ...transactionItemList,
       ...lazyTransactionItems,
