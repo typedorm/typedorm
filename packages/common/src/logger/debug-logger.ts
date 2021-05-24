@@ -1,5 +1,6 @@
 import debug from 'debug';
 import chalk from 'chalk';
+import {v4} from 'uuid';
 
 export enum TRANSFORM_TYPE {
   GET = 'GET',
@@ -25,6 +26,10 @@ export enum TRANSFORM_BATCH_TYPE {
   BATCH_READ = 'BATCH_READ',
 }
 
+export enum STATS_TYPE {
+  CONSUMED_CAPACITY = 'CONSUMED_CAPACITY',
+}
+
 export class DebugLogger {
   // log
   private debugTransformLog = debug('typedorm:transform:log');
@@ -38,20 +43,40 @@ export class DebugLogger {
   private debugInfoLog = debug('typedorm:info:log');
   private debugWarnLog = debug('typedorm:warn:log');
   private debugErrorLog = debug('typedorm:error:log');
+  // stats logger
+  private debugStatsLog = debug('typedorm:stats:log');
 
-  logTransform(
-    operation: TRANSFORM_TYPE,
-    prefix: string,
-    entityName: string,
-    primaryKey: any,
-    body?: any,
-    options?: any
-  ) {
+  /**
+   * Get unique request id for each request, and include it in each log
+   * this allows for easy debugging
+   * @returns unique request uuid
+   */
+  getRequestId() {
+    return v4();
+  }
+
+  logTransform({
+    requestId,
+    operation,
+    prefix,
+    entityName,
+    primaryKey,
+    body,
+    options,
+  }: {
+    requestId?: string;
+    operation: TRANSFORM_TYPE;
+    prefix: string;
+    entityName: string;
+    primaryKey: any;
+    body?: any;
+    options?: any;
+  }) {
     if (this.debugTransformLog.enabled) {
       this.debugTransformLog(
-        `${chalk.green(operation)} ${chalk.blue(entityName)} ${chalk.magenta(
-          prefix
-        )}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
+          operation
+        )} ${chalk.blue(entityName)} ${chalk.magenta(prefix)}:`,
         ...(primaryKey
           ? [
               chalk.blueBright('\nPrimary key: '),
@@ -74,15 +99,24 @@ export class DebugLogger {
     }
   }
 
-  logTransformBatch(
-    operation: TRANSFORM_BATCH_TYPE,
-    prefix: string,
-    body?: any,
-    options?: any
-  ) {
+  logTransformBatch({
+    requestId,
+    operation,
+    prefix,
+    body,
+    options,
+  }: {
+    requestId?: string;
+    operation: TRANSFORM_BATCH_TYPE;
+    prefix: string;
+    body?: any;
+    options?: any;
+  }) {
     if (this.debugTransformBatchLog.enabled) {
       this.debugTransformBatchLog(
-        `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
+          operation
+        )} ${chalk.magenta(prefix)}:`,
         ...(body
           ? [
               chalk.blueBright('\nBody: '),
@@ -99,15 +133,24 @@ export class DebugLogger {
     }
   }
 
-  logTransformTransaction(
-    operation: TRANSFORM_TRANSACTION_TYPE,
-    prefix: string,
-    body?: any,
-    options?: any
-  ) {
+  logTransformTransaction({
+    requestId,
+    operation,
+    prefix,
+    body,
+    options,
+  }: {
+    requestId?: string;
+    operation: TRANSFORM_TRANSACTION_TYPE;
+    prefix: string;
+    body?: any;
+    options?: any;
+  }) {
     if (this.debugTransformTransactionLog.enabled) {
       this.debugTransformTransactionLog(
-        `${chalk.green(operation)} ${chalk.magenta(prefix)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
+          operation
+        )} ${chalk.magenta(prefix)}:`,
         ...(body
           ? [
               chalk.blueBright('\nBody: '),
@@ -124,28 +167,76 @@ export class DebugLogger {
     }
   }
 
-  logInfo(scope: MANAGER_NAME, log: string) {
+  logStats({
+    requestId,
+    requestSegment,
+    scope,
+    statsType,
+    consumedCapacityData,
+  }: {
+    requestId?: string;
+    requestSegment?: number; // if for any reason, request was segmented into multiple request, this indicates segment index
+    scope: MANAGER_NAME;
+    statsType: STATS_TYPE;
+    consumedCapacityData: any;
+  }) {
+    if (this.debugStatsLog.enabled) {
+      this.debugStatsLog(
+        `${
+          chalk.bold.bgCyanBright(requestId) +
+          (requestSegment ? ':' + chalk.bold.bgCyanBright(requestId) : '')
+        } ${chalk.green(scope)} ${chalk.magenta(statsType)}:`,
+        chalk.white(this.ensurePrintable(consumedCapacityData))
+      );
+    }
+  }
+
+  logInfo({
+    requestId,
+    scope,
+    log,
+  }: {
+    requestId?: string;
+    scope: MANAGER_NAME;
+    log: string;
+  }) {
     if (this.debugInfoLog.enabled) {
       this.debugInfoLog(
-        `${chalk.green(scope)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(scope)}:`,
         chalk.white(this.ensurePrintable(log))
       );
     }
   }
 
-  logWarn(scope: MANAGER_NAME, log: string) {
+  logWarn({
+    requestId,
+    scope,
+    log,
+  }: {
+    requestId?: string;
+    scope: MANAGER_NAME;
+    log: string;
+  }) {
     if (this.debugWarnLog.enabled) {
       this.debugWarnLog(
-        `${chalk.green(scope)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(scope)}:`,
         chalk.yellow(this.ensurePrintable(log))
       );
     }
   }
 
-  logError(scope: MANAGER_NAME, log: any) {
+  logError({
+    requestId,
+    scope,
+    log,
+  }: {
+    requestId?: string;
+    scope: MANAGER_NAME;
+    log: any;
+  }) {
     if (this.debugErrorLog.enabled) {
       this.debugErrorLog(
-        `${chalk.green(scope)}:`,
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(scope)}:`,
         chalk.red(this.ensurePrintable(log))
       );
     }

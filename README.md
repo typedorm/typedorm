@@ -27,18 +27,20 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 
 ## Features
 
+- Single table design first class support
 - DataMapper development pattern
 - Full type safety
 - Declarative relational schema
 - Entity manager
 - Transaction manager
+- Batch manager
 - Multiple connections support
 - Code follows all possible best practices when modeling for dynamodb
-- Additional higher level features like, ability to declare non key attribute as unique(beta)
-- Auto Generated values fro attributes
-- Auto Update values on update
+- Additional higher level features like, ability to declare non key attribute as unique, automatic retries
+- Auto Generated values for attributes
+- Auto update attribute values on UPDATE operations
 - Dynamic & Static default values for attributes
-- Complex update, key condition and condition expression all made easy to work with (Partial Support)
+- Complex update, key condition and condition expression all made easy to work with
 - Powerful expression builder to auto generate expressions from input
 - Typescript and javascript support
 
@@ -233,8 +235,7 @@ To find out more about how the data looks like when it is stored in dynamo have 
 
 ## Current Limitations
 
-- To keep things simple TypeDORM, at the moment WILL NOT create/update table configuration and must be done separately.
-- There is very minimal support for providing different arguments to queries, and will be resolved soon.
+- TypeDORM, at the moment WILL NOT create/update table configuration and must be done separately by the developer.
 
 ## Sponsors
 

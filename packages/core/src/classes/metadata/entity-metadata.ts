@@ -135,7 +135,7 @@ export class EntityMetadata extends BaseMetadata {
 
       const currentIndex = indexes[key];
 
-      validateKey(currentIndex.sortKey, attributes);
+      validateKey(currentIndex.sortKey, attributes, this.name);
       // validates and gets and fill set indexes interpolations of sort key
       const sortKeyInterpolations = getInterpolatedKeys(currentIndex.sortKey);
 

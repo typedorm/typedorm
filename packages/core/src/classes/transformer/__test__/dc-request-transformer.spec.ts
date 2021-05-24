@@ -900,6 +900,30 @@ test('transforms simple query item request with projection expression', () => {
   });
 });
 
+test('transforms simple count query item request', () => {
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      onlyCount: true,
+    }
+  );
+  expect(queryItem).toEqual({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#1',
+    },
+    ScanIndexForward: true,
+    KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
+    TableName: 'test-table',
+    Select: 'COUNT',
+  });
+});
+
 test('transforms query item request with filter input', () => {
   const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
     User,

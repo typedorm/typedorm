@@ -12,6 +12,7 @@ import {
   UserAutoGenerateAttributes,
 } from '../../../../__mocks__/user-auto-generate-attributes';
 import {Connection} from '../../connection/connection';
+import {CONSUMED_CAPACITY_TYPE} from '@typedorm/common';
 
 let manager: EntityManager;
 let connection: Connection;
@@ -49,7 +50,9 @@ test('creates entity', async () => {
   user.name = 'Test User';
   user.status = 'active';
 
-  const userEntity = await manager.create(user);
+  const userEntity = await manager.create(user, undefined, {
+    returnConsumedCapacity: CONSUMED_CAPACITY_TYPE.TOTAL,
+  });
   expect(dcMock.put).toHaveBeenCalledTimes(1);
   expect(dcMock.put).toHaveBeenCalledWith({
     Item: {
@@ -63,6 +66,7 @@ test('creates entity', async () => {
       status: 'active',
     },
     TableName: 'test-table',
+    ReturnConsumedCapacity: 'TOTAL',
     ConditionExpression:
       '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
@@ -285,6 +289,9 @@ test('checks if given item exists', async () => {
     User,
     {
       id: '1',
+    },
+    {
+      returnConsumedCapacity: CONSUMED_CAPACITY_TYPE.INDEXES,
     }
   );
 
@@ -294,6 +301,7 @@ test('checks if given item exists', async () => {
       SK: 'USER#1',
     },
     TableName: 'test-table',
+    ReturnConsumedCapacity: 'INDEXES',
   });
   expect(userEntity).toEqual(true);
 });
@@ -487,7 +495,12 @@ test('updates item with unique attributes and returns all updated attributes', a
     on: jest.fn(),
     send: jest.fn().mockImplementation(cb => {
       cb(null, {
-        ConsumedCapacity: [{}],
+        ConsumedCapacity: [
+          {
+            TableName: 'my-table',
+            CapacityUnits: 123.3,
+          },
+        ],
         ItemCollectionMetrics: [{}],
       });
     }),
@@ -503,6 +516,10 @@ test('updates item with unique attributes and returns all updated attributes', a
     },
     {
       email: 'new@examil.com',
+    },
+    {},
+    {
+      requestId: 'MY_CUSTOM_UNIQUE_REQUEST_ID',
     }
   );
 
@@ -623,23 +640,83 @@ test('updates item and return all new attributes with given condition', async ()
   });
 });
 
-test('does not update an item when failed to get item by key', async () => {
-  manager.findOne = jest.fn();
+test('updates item and create new unique item when no previous record was found', async () => {
+  manager.findOne = jest
+    .fn()
+    .mockImplementationOnce(() => null)
+    .mockImplementationOnce(() => ({
+      id: '1',
+      name: 'user',
+      status: 'active',
+      age: 4,
+    }));
 
-  const updatedItem = async () =>
-    await manager.update<UserUniqueEmail, UserUniqueEmailPrimaryKey>(
-      UserUniqueEmail,
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const updatedItem = await manager.update<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      email: 'new@examil.com',
+    }
+  );
+
+  expect(manager.findOne).toHaveBeenCalledTimes(2);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    TransactItems: [
       {
-        id: '1',
+        Update: {
+          ExpressionAttributeNames: {
+            '#attr0': 'email',
+          },
+          ExpressionAttributeValues: {
+            ':val0': 'new@examil.com',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+          UpdateExpression: 'SET #attr0 = :val0',
+        },
       },
       {
-        email: 'new@examil.com',
-      }
-    );
+        Put: {
+          ConditionExpression:
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+          ExpressionAttributeNames: {
+            '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
+          },
+          Item: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@examil.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@examil.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
 
-  await expect(updatedItem).rejects.toThrow(
-    'Failed to update entity, could not find entity with primary key "{"id":"1"}"'
-  );
+  expect(updatedItem).toEqual({
+    age: 4,
+    id: '1',
+    name: 'user',
+    status: 'active',
+  });
 });
 
 /**
@@ -759,6 +836,47 @@ test('deletes an item with unique attributes', async () => {
           Key: {
             PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
             SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+  expect(deletedResponse).toEqual({
+    success: true,
+  });
+});
+
+test('deletes an item with unique attributes when no existing item is found', async () => {
+  // make find one return undefined
+  manager.findOne = jest.fn();
+
+  const deleteItemOperation = dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const deletedResponse = await manager.delete<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(UserUniqueEmail, {
+    id: '1',
+  });
+
+  expect(manager.findOne).toHaveBeenCalledTimes(1);
+  expect(deleteItemOperation).toHaveBeenCalledTimes(1);
+  expect(deleteItemOperation).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Delete: {
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
           },
           TableName: 'test-table',
         },
@@ -1117,4 +1235,172 @@ test('queries items until limit is met', async () => {
     ],
   ]);
   expect(users.items.length).toEqual(2000);
+});
+
+/**
+ * @group count
+ */
+test('counts items matching given query params', async () => {
+  dcMock.query.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      Count: 132,
+    }),
+  });
+
+  const usersCount = await manager.count<User, UserPrimaryKey>(
+    User,
+    {
+      id: 'aaaa',
+    },
+    {
+      keyCondition: {
+        BEGINS_WITH: 'USER#',
+      },
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(1);
+  expect(dcMock.query).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#KY_CE_SK': 'SK',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#aaaa',
+      ':KY_CE_SK': 'USER#',
+    },
+    KeyConditionExpression:
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+    Select: 'COUNT',
+    ScanIndexForward: true,
+    TableName: 'test-table',
+  });
+  expect(usersCount).toEqual(132);
+});
+
+test('counts items with multiple requests', async () => {
+  dcMock.query
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 121,
+        LastEvaluatedKey: 'AAAA',
+      }),
+    }))
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 56,
+        LastEvaluatedKey: 'BB',
+      }),
+    }))
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 13,
+      }),
+    }));
+
+  const users = await manager.count<User, UserPrimaryKey>(
+    User,
+    {
+      id: 'aaaa',
+    },
+    {
+      keyCondition: {
+        BEGINS_WITH: 'USER#',
+      },
+      where: {
+        AND: {
+          age: {
+            BETWEEN: [1, 5],
+          },
+          name: {
+            EQ: 'Me',
+          },
+          status: 'ATTRIBUTE_EXISTS',
+        },
+      },
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(3);
+  expect(dcMock.query.mock.calls).toEqual([
+    [
+      {
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+    [
+      {
+        ExclusiveStartKey: 'AAAA',
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+    [
+      {
+        ExclusiveStartKey: 'BB',
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+  ]);
+
+  expect(users).toEqual(190);
 });

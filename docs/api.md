@@ -17,6 +17,7 @@ _Note: In an event of inconstancy between actual API and this document, API shou
     - [EntityManager.update](#entitymanagerupdate)
     - [EntityManager.delete](#entitymanagerdelete)
     - [EntityManager.query](#entitymanagerquery)
+    - [EntityManager.count](#entitymanagercount)
   - [BatchManager](#batchmanager)
     - [BatchManager.write](#batchmanagerwrite)
     - [BatchManager.read](#batchmanagerread)
@@ -110,12 +111,12 @@ Declare an entity to be registered in TypeDORM domain
   indexes: {
     // Each index specified here can only exist if it is also declared on attached table instance
     [indexName] : {
-      // Partition key attribute name for this entity
+      // Partition key attribute pattern or alias schema for this entity
       // @optional
       // Required when index type is GSI
       partitionKey
 
-      // Sort key attribute name for this entity
+      // Sort key attribute pattern or alias schema for this entity
       sortKey
 
       // Type of index: INDEX_TYPE
@@ -199,6 +200,19 @@ create(
     // condition based creates
     // when present, it must evaluate to true in order for operation to succeed.
     where
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -222,6 +236,19 @@ findOne(
     // Specify attributes to get, only selected attributes are fetched
     // @default `ALL`
     select
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -236,7 +263,20 @@ exists(
   entityClass
 
   // Primary key attributes or unique attributes referenced in schemas
-  attributes
+  attributes,
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
 )
 ```
 
@@ -245,7 +285,7 @@ exists(
 Update item with magically generated set operation
 
 ```Typescript
-exists(
+update(
   // Entity class to resolve schema against
   entityClass
 
@@ -268,6 +308,19 @@ exists(
     // condition based updates
     // when present, it must evaluate to true in order for operation to succeed.
     where
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 
 )
@@ -292,6 +345,19 @@ delete(
     // condition based creates
     // when present, it must evaluate to true in order for operation to succeed.
     where
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -306,17 +372,17 @@ find(
   entityClass
 
   // all attributes referenced in partition key
-  partitionKeyAttributes: {
-    // @optional
-    // Name of the index if querying against GSI/LSI
-    // @default - query will be run against main table
-    queryIndex
-  }
+  partitionKeyAttributes
 
   // @optional
   // Entity manager query options
   // @default none - if non specified, query will be made using only partition key
   queryOptions: {
+    // @optional
+    // Name of the index if querying against GSI/LSI
+    // @default - query will be run against main table
+    queryIndex
+
     // @optional
     // Cursor to start querying from
     // @default - none
@@ -347,6 +413,68 @@ find(
     // Specify attributes to get, only selected attributes are fetched
     // @default `ALL`
     select
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
+)
+```
+
+### EntityManager.count
+
+Counts items from db using over document client query items op
+
+```Typescript
+count(
+  // Entity class to resolve schema against
+  entityClass
+
+  // all attributes referenced in partition key
+  partitionKeyAttributes
+
+  // @optional
+  // Entity manager count options
+  // @default none - if non specified, items will be queried using only partition key
+  queryOptions: {
+
+    // @optional
+    // Name of the index if querying against GSI/LSI
+    // @default - query will be run against main table
+    queryIndex
+
+    // Key condition to use when querying items
+    // i.e this could be `{BEGINS_WITH: 'ORDER#'}`
+    keyCondition
+
+    // @optional
+    // Filter returned items
+    // Any conditions listed here will apply after items have been read from dynamodb and
+    // therefore this should be avoided wherever possible, but can be helpful in some cases
+    // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
+    where
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -383,6 +511,19 @@ write(
     // Used to increase wait times between retries
     // @default `1`
     backoffMultiplicationFactor
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 ```
@@ -414,6 +555,19 @@ read(
     // Used to increase wait times between retries
     // @default `1`
     backoffMultiplicationFactor
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
   }
 )
 
@@ -431,7 +585,20 @@ Writes entities to dynamodb over document client transaction api.
 write(
   // Write request input
   // Must be an instance of `WriteTransaction` class
-  transaction
+  transaction,
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
 )
 ```
 
@@ -443,6 +610,19 @@ Reads entities to from dynamodb over document client transaction api.
 read(
   // Read request input
   // Must be an instance of `ReadTransaction` class
-  transaction
+  transaction,
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
 )
 ```
