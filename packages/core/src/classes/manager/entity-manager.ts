@@ -427,14 +427,6 @@ export class EntityManager {
       metadataOptions
     );
 
-    if (!existingItem) {
-      throw new Error(
-        `Failed to update entity, could not find entity with primary key "${JSON.stringify(
-          primaryKeyAttributes
-        )}"`
-      );
-    }
-
     const updateItemList = dynamoUpdateItem.lazyLoadTransactionWriteItems(
       existingItem
     );
@@ -499,14 +491,6 @@ export class EntityManager {
       undefined,
       metadataOptions
     );
-
-    if (!existingItem) {
-      throw new Error(
-        `Failed to update entity, could not find entity with primary key "${JSON.stringify(
-          primaryKeyAttributes
-        )}"`
-      );
-    }
 
     const deleteItemList = dynamoDeleteItem.lazyLoadTransactionWriteItems(
       existingItem
