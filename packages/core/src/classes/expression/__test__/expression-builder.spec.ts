@@ -53,22 +53,6 @@ test('builds update expression', () => {
   });
 });
 
-test('builds update expression with dynamic values', () => {
-  const item = {
-    balance: {$SUB: 20},
-  };
-  const expression = expressionBuilder.buildUpdateExpression(item);
-  expect(expression).toEqual({
-    UpdateExpression: 'SET #attr0 = #attr0 - :val0',
-    ExpressionAttributeNames: {
-      '#attr0': 'balance',
-    },
-    ExpressionAttributeValues: {
-      ':val0': 20,
-    },
-  });
-});
-
 test('builds update expression for nested object', () => {
   const item = {
     'user.name': 'new name',
