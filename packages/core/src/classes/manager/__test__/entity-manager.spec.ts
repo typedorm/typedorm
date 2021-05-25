@@ -128,8 +128,9 @@ test('creates entity with possible overwrite and given condition', async () => {
   const userEntity = await manager.create<User>(user, {
     overwriteIfExists: true,
     where: {
-      NOT: {
+      AND: {
         id: {
+          $ADD: '3',
           EQ: '1',
         },
       },

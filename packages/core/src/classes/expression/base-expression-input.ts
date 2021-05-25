@@ -420,10 +420,10 @@ export abstract class BaseExpressionInput {
       GE: '>=',
       GT: '>',
       NE: '<>',
-      SUB: '-',
-      ADD: '+',
-      MPY: '*',
-      DIV: '/',
+      $SUB: '-',
+      $ADD: '+',
+      $MPY: '*',
+      $DIV: '/',
     };
     return symbolMap[operator];
   }

@@ -4,19 +4,26 @@ import {
   ConditionType,
   ATTRIBUTE_TYPE,
   RequireAtLeastOne,
+  ArithmeticOperator,
 } from '@typedorm/common';
 
 type AttributeConditionOptions<Entity> =
   | {
       [enKey in keyof Entity]?: RequireOnlyOne<
+        {
+          [key in ConditionType.SimpleOperator]: Entity[enKey];
+        }
+      > &
+        {[key in ArithmeticOperator]?: Entity[enKey]};
+    }
+  | {
+      [enKey in keyof Entity]?: RequireOnlyOne<
         // if condition is one of the below, value must be of scalar type
         {
-          [key in
-            | ConditionType.SimpleOperator
-            | Extract<
-                ConditionType.FunctionOperator,
-                'CONTAINS' | 'BEGINS_WITH'
-              >]: Entity[enKey];
+          [key in Extract<
+            ConditionType.FunctionOperator,
+            'CONTAINS' | 'BEGINS_WITH'
+          >]: Entity[enKey];
         } &
           // if between operator, value must be an array of two items
           {
@@ -48,7 +55,8 @@ type AttributeConditionOptions<Entity> =
               {
                 [key in ConditionType.SimpleOperator]: Entity[enKey];
               }
-            >;
+            > &
+              {[key in ArithmeticOperator]?: Entity[enKey]};
           }
       >;
     }

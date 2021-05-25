@@ -136,7 +136,7 @@ describe('BaseExpressionInput', () => {
 test('creates expression with arithmetic operands', () => {
   const condition = new TestCondition();
   condition.greaterThanAndEqualTo('balance', 0, {
-    operand: 'SUB',
+    operand: '$SUB',
     value: 256,
   });
 
@@ -146,9 +146,9 @@ test('creates expression with arithmetic operands', () => {
     },
     _values: {
       ':TC_balance': 0,
-      ':TC_balance_SUB': 256,
+      ':TC_balance_$SUB': 256,
     },
-    expression: '#TC_balance - :TC_balance_SUB >= :TC_balance',
+    expression: '#TC_balance - :TC_balance_$SUB >= :TC_balance',
   });
 });
 
@@ -156,12 +156,12 @@ test('creates expression with arithmetic operands', () => {
   const condition = new TestCondition();
   condition
     .greaterThanAndEqualTo('balance', 0, {
-      operand: 'SUB',
+      operand: '$SUB',
       value: 256,
     })
     .merge(
       new TestCondition().lessThan('age', 3, {
-        operand: 'MPY',
+        operand: '$MPY',
         value: 2,
       })
     );
@@ -173,12 +173,12 @@ test('creates expression with arithmetic operands', () => {
     },
     _values: {
       ':TC_age': 3,
-      ':TC_age_MPY': 2,
+      ':TC_age_$MPY': 2,
       ':TC_balance': 0,
-      ':TC_balance_SUB': 256,
+      ':TC_balance_$SUB': 256,
     },
     expression:
-      '(#TC_balance - :TC_balance_SUB >= :TC_balance) AND (#TC_age * :TC_age_MPY < :TC_age)',
+      '(#TC_balance - :TC_balance_$SUB >= :TC_balance) AND (#TC_age * :TC_age_$MPY < :TC_age)',
   });
 });
 
