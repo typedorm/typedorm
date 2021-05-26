@@ -61,3 +61,37 @@ test('throws when trying to reference invalid index', () => {
 
   expect(transformedFactory).toThrow(NoSuchIndexFoundError);
 });
+
+test('transforms input with filter and projection', () => {
+  const transformed = dcScanTransformer.toDynamoScanItem({
+    where: {
+      id: {
+        EQ: '1',
+      },
+    },
+    select: ['id'],
+  });
+
+  expect(transformed).toEqual({
+    ExpressionAttributeNames: {
+      '#FE_id': 'id',
+      '#PE_id': 'id',
+    },
+    ExpressionAttributeValues: {
+      ':FE_id': '1',
+    },
+    FilterExpression: '#FE_id = :FE_id',
+    ProjectionExpression: '#PE_id',
+    TableName: 'test-table',
+  });
+});
+
+test('transforms input with count only', () => {
+  const transformed = dcScanTransformer.toDynamoScanItem({
+    onlyCount: true,
+  });
+  expect(transformed).toEqual({
+    Select: 'COUNT',
+    TableName: 'test-table',
+  });
+});

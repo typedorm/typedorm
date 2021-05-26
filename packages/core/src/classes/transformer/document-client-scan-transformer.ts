@@ -1,4 +1,10 @@
-import {IndexOptions, NoSuchIndexFoundError, Table} from '@typedorm/common';
+import {
+  InvalidFilterInputError,
+  InvalidSelectInputError,
+  NoSuchIndexFoundError,
+  QUERY_SELECT_TYPE,
+  Table,
+} from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
@@ -10,6 +16,9 @@ interface ScanTransformerToDynamoScanOptions {
   scanIndex?: string;
   limit?: number;
   cursor?: DynamoDB.DocumentClient.Key;
+  where?: any;
+  select?: any[];
+  onlyCount?: boolean;
 }
 
 export class DocumentClientScanTransformer extends LowOrderTransformers {
@@ -47,18 +56,80 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
       }
     }
 
-    const transformedScanInput: DynamoDB.DocumentClient.ScanInput = {
+    let transformedScanInput: DynamoDB.DocumentClient.ScanInput = {
       TableName: tableToScan.name,
       IndexName: verifiedIndexToScan,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
 
+    // transform additional options
     if (scanOptions && !isEmptyObject(scanOptions)) {
-      const {cursor, limit} = scanOptions;
+      const {cursor, limit, where, onlyCount, select} = scanOptions;
 
       transformedScanInput.Limit = limit;
       transformedScanInput.ExclusiveStartKey = cursor;
-      // TODO: add other filter and projection expressions support
+
+      // check if only the count was requested
+      if (onlyCount) {
+        if (select?.length) {
+          throw new Error(
+            'Attributes projection and count can not be used together'
+          );
+        }
+        // count and projection selection can not be used together
+        transformedScanInput.Select = QUERY_SELECT_TYPE.COUNT;
+      }
+
+      // build filter expression
+      if (where && !isEmptyObject(where)) {
+        const filter = this.expressionInputParser.parseToFilter(where);
+
+        if (!filter) {
+          throw new InvalidFilterInputError(where);
+        }
+
+        const {
+          FilterExpression,
+          ExpressionAttributeNames,
+          ExpressionAttributeValues,
+        } = this.expressionBuilder.buildFilterExpression(filter);
+
+        transformedScanInput = {
+          ...transformedScanInput,
+          FilterExpression,
+          ExpressionAttributeNames: {
+            ...transformedScanInput.ExpressionAttributeNames,
+            ...ExpressionAttributeNames,
+          },
+          ExpressionAttributeValues: {
+            ...transformedScanInput.ExpressionAttributeValues,
+            ...ExpressionAttributeValues,
+          },
+        };
+      }
+
+      // projection builder
+      if (select?.length) {
+        const projection = this.expressionInputParser.parseToProjection(select);
+
+        if (!projection) {
+          throw new InvalidSelectInputError(select);
+        }
+
+        const {
+          ProjectionExpression,
+          ExpressionAttributeNames,
+        } = this.expressionBuilder.buildProjectionExpression(projection);
+
+        transformedScanInput = {
+          ...transformedScanInput,
+          ProjectionExpression,
+          ExpressionAttributeNames: {
+            ...transformedScanInput.ExpressionAttributeNames,
+            ...ExpressionAttributeNames,
+          },
+        };
+      }
     }
 
     this.connection.logger.logTransformScan({
