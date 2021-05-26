@@ -14,3 +14,5 @@ export * from './no-such-index-found-error';
 export * from './invalid-filter-input-error';
 export * from './invalid-select-input-error';
 export * from './no-such-entity-exists-error';
+export * from './missing-required-entity-physical-name-error';
+export * from './duplicate-entity-physical-name-error';

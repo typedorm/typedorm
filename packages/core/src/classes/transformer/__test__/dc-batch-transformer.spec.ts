@@ -156,7 +156,7 @@ test('transforms into batch write items', () => {
                 GSI1SK: 'USER#user 2',
                 PK: 'USER#2',
                 SK: 'USER#2',
-                __en: 'user',
+                __en: 'user-unique-email',
                 email: 'user@test.com',
                 id: '2',
                 name: 'user 2',
