@@ -39,6 +39,8 @@ export class DebugLogger {
   private debugTransformTransactionLog = debug(
     'typedorm:transform:transaction:log'
   );
+  // scan transform logger
+  private debugTransformScanLog = debug('typedorm:transform:scan:log');
   // info logger
   private debugInfoLog = debug('typedorm:info:log');
   private debugWarnLog = debug('typedorm:warn:log');
@@ -150,6 +152,38 @@ export class DebugLogger {
       this.debugTransformTransactionLog(
         `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
           operation
+        )} ${chalk.magenta(prefix)}:`,
+        ...(body
+          ? [
+              chalk.blueBright('\nBody: '),
+              chalk.white(this.ensurePrintable(body)),
+            ]
+          : []),
+        ...(options
+          ? [
+              chalk.blueBright('\nOptions: '),
+              chalk.white(this.ensurePrintable(options)),
+            ]
+          : [])
+      );
+    }
+  }
+
+  logTransformScan({
+    requestId,
+    prefix,
+    body,
+    options,
+  }: {
+    requestId?: string;
+    prefix: string;
+    body?: any;
+    options?: any;
+  }) {
+    if (this.debugTransformScanLog.enabled) {
+      this.debugTransformScanLog(
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
+          'SCAN'
         )} ${chalk.magenta(prefix)}:`,
         ...(body
           ? [

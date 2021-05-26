@@ -9,6 +9,7 @@ import {
   TRANSFORM_TYPE,
   IndexOptions,
   QUERY_SELECT_TYPE,
+  NoSuchIndexFoundError,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {dropProp} from '../../helpers/drop-prop';
@@ -644,9 +645,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     if (queryIndexName) {
       const matchingIndex = table.getIndexByKey(queryIndexName);
       if (!matchingIndex) {
-        throw new Error(
-          `Requested to query items from index "${queryIndexName}", but no such index exists on table "${table.name}".`
-        );
+        throw new NoSuchIndexFoundError(table.name, queryIndexName);
       }
 
       const matchingIndexOnEntity =

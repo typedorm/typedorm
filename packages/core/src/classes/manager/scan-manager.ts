@@ -1,14 +1,18 @@
 import {EntityTarget} from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {Connection} from '../connection/connection';
-import {ProjectionKeys} from '../expression/expression-input-parser';
-import {FilterOptions} from '../expression/filter-options-type';
 import {MetadataOptions} from '../transformer/base-transformer';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
 import {DocumentClientTransactionTransformer} from '../transformer/document-client-transaction-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';
 
 interface ScanManageBaseOptions<Entity, PartitionKey> {
+  /**
+   * Table to run scan against
+   * @default connection-table - table used at the time of connection creation will be used
+   */
+  tableName?: string;
+
   /**
    * Index to scan for items
    * @default - main table
@@ -25,20 +29,6 @@ interface ScanManageBaseOptions<Entity, PartitionKey> {
    * Cursor to traverse from
    */
   cursor?: DynamoDB.DocumentClient.Key;
-
-  /**
-   * Specify filter to apply
-   * Avoid using this where possible, since filters in dynamodb applies after items
-   * are read
-   * @default none
-   */
-  where?: FilterOptions<Entity, PartitionKey>;
-
-  /**
-   * Specifies which attributes to fetch
-   * @default all
-   */
-  select?: ProjectionKeys<Entity>;
 }
 
 export type ScanManagerScanOptions = ScanManageBaseOptions<any, any>;
