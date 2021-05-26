@@ -1,4 +1,5 @@
 import {
+  INTERNAL_ENTITY_ATTRIBUTE,
   InvalidFilterInputError,
   InvalidSelectInputError,
   NoSuchIndexFoundError,
@@ -139,5 +140,53 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
     });
 
     return transformedScanInput;
+  }
+
+  /**
+   * Transforms DynamoDB scan output into entities
+   */
+  fromDynamoScanResponseItemList<T>(
+    itemList: DynamoDB.DocumentClient.ItemList,
+    metadataOptions?: MetadataOptions
+  ): {
+    items: T[];
+    unknownItems: DynamoDB.DocumentClient.AttributeMap[];
+  } {
+    const initialResponse: {
+      items: T[];
+      unknownItems: DynamoDB.DocumentClient.AttributeMap[];
+    } = {
+      items: [],
+      unknownItems: [],
+    };
+
+    if (!itemList.length) {
+      return initialResponse;
+    }
+
+    return itemList.reduce((acc: typeof initialResponse, responseItem) => {
+      const entityPhysicalName =
+        responseItem[INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME];
+
+      // early return if no entity metadata was found on item
+      if (!entityPhysicalName) {
+        acc.unknownItems.push(responseItem);
+        return acc;
+      }
+
+      const entityMetadata = this.connection.getEntityByPhysicalName(
+        entityPhysicalName
+      );
+
+      const reverseTransformedItem = this.fromDynamoEntity(
+        entityMetadata.target,
+        responseItem,
+        metadataOptions
+      );
+
+      acc.items.push(reverseTransformedItem);
+
+      return acc;
+    }, initialResponse);
   }
 }

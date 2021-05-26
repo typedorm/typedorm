@@ -1,4 +1,8 @@
-import {CONSUMED_CAPACITY_TYPE, NoSuchIndexFoundError} from '@typedorm/common';
+import {
+  CONSUMED_CAPACITY_TYPE,
+  NoSuchEntityExistsError,
+  NoSuchIndexFoundError,
+} from '@typedorm/common';
 import {Organisation} from '@typedorm/core/__mocks__/organisation';
 import {table} from '@typedorm/core/__mocks__/table';
 import {User} from '@typedorm/core/__mocks__/user';
@@ -94,4 +98,41 @@ test('transforms input with count only', () => {
     Select: 'COUNT',
     TableName: 'test-table',
   });
+});
+
+test('transforms simple dynamodb output items', () => {
+  const transformed = dcScanTransformer.fromDynamoScanResponseItemList([
+    {id: '1', __en: 'user', name: 'test-user'},
+    {id: 'ORG_1', __en: 'organisation', name: 'test organisation'},
+    {
+      email: 'some@entity.com',
+    },
+  ]);
+
+  expect(transformed).toEqual({
+    items: [
+      {
+        id: '1',
+        name: 'test-user',
+      },
+      {
+        id: 'ORG_1',
+        name: 'test organisation',
+      },
+    ],
+    unknownItems: [
+      {
+        email: 'some@entity.com',
+      },
+    ],
+  });
+});
+
+test('throws for unknown entity name', () => {
+  const transformedFactory = () =>
+    dcScanTransformer.fromDynamoScanResponseItemList([
+      {id: 1, __en: 'unusual entity'},
+    ]);
+
+  expect(transformedFactory).toThrow(NoSuchEntityExistsError);
 });

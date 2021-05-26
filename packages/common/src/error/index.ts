@@ -13,3 +13,4 @@ export * from './no-such-attribute-exists-error';
 export * from './no-such-index-found-error';
 export * from './invalid-filter-input-error';
 export * from './invalid-select-input-error';
+export * from './no-such-entity-exists-error';
