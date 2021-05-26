@@ -11,3 +11,5 @@ export * from './read-transaction-item-limit-exceeded-error';
 export * from './invalid-attribute-alias-schema-error';
 export * from './no-such-attribute-exists-error';
 export * from './no-such-index-found-error';
+export * from './invalid-filter-input-error';
+export * from './invalid-select-input-error';
