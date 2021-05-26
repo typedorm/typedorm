@@ -54,6 +54,10 @@ export function getBatchManager(connectionName?: string) {
   return connectionManger().get(connectionName).batchManager;
 }
 
+export function getScanManager(connectionName?: string) {
+  return connectionManger().get(connectionName).scanManager;
+}
+
 // private methods
 
 function connectionManger() {
