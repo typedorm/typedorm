@@ -103,7 +103,7 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
 
       // build filter expression
       let optionsFilter: Filter | undefined = undefined;
-      if ((where && !isEmptyObject(where)) || entity) {
+      if (where && !isEmptyObject(where)) {
         const inputFilter = this.expressionInputParser.parseToFilter(where);
 
         if (!inputFilter) {
