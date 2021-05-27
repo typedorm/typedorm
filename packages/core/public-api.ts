@@ -18,6 +18,9 @@ export * from './src/classes/manager/entity-manager';
 export * from './src/classes/manager/batch-manager';
 export * from './src/classes/manager/transaction-manager';
 
+// classes
+export {Connection} from './src/classes/connection/connection';
+
 // public method exports
 
 export function createConnection(options: ConnectionOptions) {
