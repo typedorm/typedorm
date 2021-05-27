@@ -1,19 +1,22 @@
 import {
+  EntityTarget,
   INTERNAL_ENTITY_ATTRIBUTE,
   InvalidFilterInputError,
   InvalidSelectInputError,
+  NoSuchEntityExistsError,
   NoSuchIndexFoundError,
   QUERY_SELECT_TYPE,
-  Table,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
+import {MERGE_STRATEGY} from '../expression/base-expression-input';
+import {Filter} from '../expression/filter';
 import {MetadataOptions} from './base-transformer';
 import {LowOrderTransformers} from './low-order-transformers';
 
 interface ScanTransformerToDynamoScanOptions {
-  table?: Table;
+  entity?: EntityTarget<any>;
   scanIndex?: string;
   limit?: number;
   cursor?: DynamoDB.DocumentClient.Key;
@@ -34,16 +37,17 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
     scanOptions?: ScanTransformerToDynamoScanOptions,
     metadataOptions?: MetadataOptions
   ): DynamoDB.DocumentClient.ScanInput {
-    const tableToScan = scanOptions?.table || this.connection.table;
-
     this.connection.logger.logTransformScan({
       requestId: metadataOptions?.requestId,
       prefix: 'Before',
-      options: scanOptions ? {...scanOptions, table: tableToScan} : null,
+      options: scanOptions,
     });
 
-    let verifiedIndexToScan: string | undefined;
+    const tableToScan = scanOptions?.entity
+      ? this.connection.getEntityByTarget(scanOptions?.entity)?.table
+      : this.connection.table;
 
+    let verifiedIndexToScan: string | undefined;
     // validate if index requested to scan belongs to current resolved table
     if (scanOptions?.scanIndex) {
       const scanIndexOptions = tableToScan.getIndexByKey(
@@ -65,7 +69,7 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
 
     // transform additional options
     if (scanOptions && !isEmptyObject(scanOptions)) {
-      const {cursor, limit, where, onlyCount, select} = scanOptions;
+      const {cursor, limit, where, onlyCount, select, entity} = scanOptions;
 
       transformedScanInput.Limit = limit;
       transformedScanInput.ExclusiveStartKey = cursor;
@@ -81,14 +85,46 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
         transformedScanInput.Select = QUERY_SELECT_TYPE.COUNT;
       }
 
-      // build filter expression
-      if (where && !isEmptyObject(where)) {
-        const filter = this.expressionInputParser.parseToFilter(where);
+      // entity filter
+      let entityFilter: Filter | undefined = undefined;
+      if (entity) {
+        const metadata = this.connection.getEntityByTarget(entity);
 
-        if (!filter) {
+        if (!metadata) {
+          throw new NoSuchEntityExistsError(entity.name);
+        }
+        // build current entity filter
+        entityFilter = this.expressionInputParser.parseToFilter({
+          [INTERNAL_ENTITY_ATTRIBUTE.ENTITY_NAME]: {
+            EQ: metadata.name,
+          },
+        } as any);
+      }
+
+      // build filter expression
+      let optionsFilter: Filter | undefined = undefined;
+      if ((where && !isEmptyObject(where)) || entity) {
+        const inputFilter = this.expressionInputParser.parseToFilter(where);
+
+        if (!inputFilter) {
           throw new InvalidFilterInputError(where);
         }
+        optionsFilter = inputFilter;
+      }
 
+      // merge filters of fall back to none
+      let filter: Filter | null;
+      if (entityFilter && optionsFilter) {
+        filter = new Filter().mergeMany(
+          [entityFilter, optionsFilter],
+          MERGE_STRATEGY.AND
+        );
+      } else {
+        filter = entityFilter || optionsFilter || null; // if non of the condition skip it all together
+      }
+
+      // if at least one condition was truthy, parse it and include it in the input
+      if (filter) {
         const {
           FilterExpression,
           ExpressionAttributeNames,

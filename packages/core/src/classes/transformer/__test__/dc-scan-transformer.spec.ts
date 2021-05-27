@@ -100,6 +100,33 @@ test('transforms input with count only', () => {
   });
 });
 
+test('transforms input with entity filter and option filter', () => {
+  const transformed = dcScanTransformer.toDynamoScanItem({
+    where: {
+      id: {
+        EQ: '1',
+      },
+    },
+    select: ['id'],
+    entity: User,
+  });
+
+  expect(transformed).toEqual({
+    ExpressionAttributeNames: {
+      '#FE_id': 'id',
+      '#PE_id': 'id',
+      '#FE___en': '__en',
+    },
+    ExpressionAttributeValues: {
+      ':FE___en': 'user',
+      ':FE_id': '1',
+    },
+    FilterExpression: '(#FE___en = :FE___en) AND (#FE_id = :FE_id)',
+    ProjectionExpression: '#PE_id',
+    TableName: 'test-table',
+  });
+});
+
 test('transforms simple dynamodb output items', () => {
   const transformed = dcScanTransformer.fromDynamoScanResponseItemList([
     {id: '1', __en: 'user', name: 'test-user'},
