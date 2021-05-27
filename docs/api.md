@@ -16,7 +16,7 @@ _Note: In an event of inconstancy between actual API and this document, API shou
     - [EntityManager.exists](#entitymanagerexists)
     - [EntityManager.update](#entitymanagerupdate)
     - [EntityManager.delete](#entitymanagerdelete)
-    - [EntityManager.query](#entitymanagerquery)
+    - [EntityManager.find](#entitymanagerfind)
     - [EntityManager.count](#entitymanagercount)
   - [BatchManager](#batchmanager)
     - [BatchManager.write](#batchmanagerwrite)
@@ -24,6 +24,10 @@ _Note: In an event of inconstancy between actual API and this document, API shou
   - [TransactionManager](#transactionmanager)
     - [TransactionManager.write](#transactionmanagerwrite)
     - [TransactionManager.read](#transactionmanagerread)
+  - [ScanManager](#scanmanager)
+    - [ScanManager.find](#scanmanagerfind)
+    - [ScanManager.count](#scanmanagercount)
+    - [ScanManager.scan](#scanmanagerscan)
 
 ## Connection
 
@@ -362,7 +366,7 @@ delete(
 )
 ```
 
-### EntityManager.query
+### EntityManager.find
 
 Query items from db
 
@@ -611,6 +615,166 @@ read(
   // Read request input
   // Must be an instance of `ReadTransaction` class
   transaction,
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
+)
+```
+
+## ScanManager
+
+Scan manager API. Works on top of Document Client's `scan` operation
+
+### ScanManager.find
+
+Finds entity from table by running a full table scan.
+
+```Typescript
+find(
+  // Entity class to find from the table
+  entityClass
+
+  // @optional
+  // Scan manager scan options
+  // @default none
+  scanOptions: {
+    // @optional
+    // Name of the index if running a scan against secondary indexes
+    // @default - scan will be run against main table
+    scanIndex
+
+    // @optional
+    // Total number of items to return
+    // @default no limit is applied
+    limit
+
+    // @optional
+    // Cursor to start scanning from
+    // @default - none
+    cursor
+
+    // @optional
+    // Filter returned items
+    // Any conditions listed here will apply after items have been read from dynamodb and
+    // therefore this should be avoided wherever possible, but can be helpful in some cases
+    // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
+    where
+
+    // @optional
+    // Specify attributes to get, only selected attributes are fetched
+    // @default `ALL`
+    select
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
+)
+```
+
+### ScanManager.count
+
+Counts entity from table by running a full table scan.
+
+```Typescript
+count(
+  // Entity class to count
+  entityClass
+
+  // @optional
+  // Scan manager scan options
+  // @default none
+  scanOptions: {
+    // @optional
+    // Name of the index if running a scan against secondary indexes
+    // @default - scan will be run against main table
+    scanIndex
+
+    // @optional
+    // Filter returned items
+    // Any conditions listed here will apply after items have been read from dynamodb and
+    // therefore this should be avoided wherever possible, but can be helpful in some cases
+    // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
+    where
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
+)
+```
+
+### ScanManager.scan
+
+Low level scan api - returns all scanned items to the client that matches given filter - also used by `.find`.
+You should always use `.find` unless trying to scan all items from the table,
+
+```Typescript
+count(
+  // @optional
+  // Scan manager scan options
+  // @default none
+  scanOptions: {
+    // @Optional
+    // Entity to scan
+    // @default - none
+    entity
+
+    // @optional
+    // Name of the index if running a scan against secondary indexes
+    // @default - scan will be run against main table
+    scanIndex
+
+    // @optional
+    // Total number of items to return
+    // @default no limit is applied
+    limit
+
+    // @optional
+    // Cursor to start scanning from
+    // @default - none
+    cursor
+
+    // @optional
+    // Filter returned items
+    // Any conditions listed here will apply after items have been read from dynamodb and
+    // therefore this should be avoided wherever possible, but can be helpful in some cases
+    // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
+    where
+
+    // @optional
+    // Specify attributes to get, only selected attributes are fetched
+    // @default `ALL`
+    select
+  },
 
   // @optional
   // extra non-functional options
