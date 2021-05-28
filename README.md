@@ -27,8 +27,9 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 
 ## Features
 
-- Single table design first class support
+- Single-Table design pattern first class support
 - DataMapper development pattern
+- Attribute level per entity transformation, enabled via [class-transformer](https://github.com/typestack/class-transformer)
 - Full type safety
 - Declarative relational schema
 - Entity manager
