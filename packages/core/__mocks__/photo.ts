@@ -3,6 +3,8 @@ import {
   AutoGenerateAttribute,
   AUTO_GENERATE_ATTRIBUTE_STRATEGY,
   Entity,
+  TransformFromDynamo,
+  TransformToDynamo,
 } from '@typedorm/common';
 import {Transform, Type} from 'class-transformer';
 import {table} from './table';
@@ -33,18 +35,13 @@ export class Photo {
   id: number;
 
   @Attribute()
-  @Transform(
-    ({value}) => {
-      if (value === CATEGORY.KIDS) {
-        return 'kids-new';
-      } else {
-        return value;
-      }
-    },
-    {
-      toPlainOnly: true,
+  @TransformToDynamo(({value}) => {
+    if (value === CATEGORY.KIDS) {
+      return 'kids-new';
+    } else {
+      return value;
     }
-  )
+  })
   category: CATEGORY;
 
   @Attribute()
@@ -54,7 +51,7 @@ export class Photo {
     default: () => new Date().toString(),
   })
   @Type(() => Date)
-  @Transform(({value}) => moment(value))
+  @TransformFromDynamo(({value}) => moment(value))
   createdAt: Moment;
 
   constructor(category: CATEGORY, name: string) {
