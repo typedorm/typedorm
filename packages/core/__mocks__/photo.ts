@@ -6,7 +6,7 @@ import {
   TransformFromDynamo,
   TransformToDynamo,
 } from '@typedorm/common';
-import {Transform, Type} from 'class-transformer';
+import {Type} from 'class-transformer';
 import {table} from './table';
 
 // Moment is only being used here to display the usage of @transform utility

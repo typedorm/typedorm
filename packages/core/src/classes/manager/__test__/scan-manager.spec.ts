@@ -70,6 +70,11 @@ test('scans table with given options', async () => {
       },
     ],
   });
+  expect(
+    response.items?.forEach(item => {
+      expect(item).toBeInstanceOf(User);
+    })
+  );
 });
 
 test('scans table with multiple requests', async () => {
@@ -169,6 +174,13 @@ test('scans table with given options and returns deserialized and unknown items'
         data: '0x0000',
       },
     ],
+  });
+
+  response.items?.forEach(item => {
+    expect(item).toBeInstanceOf(User);
+  });
+  response.unknownItems?.forEach(item => {
+    expect(item).not.toBeInstanceOf(User);
   });
 });
 

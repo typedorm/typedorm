@@ -234,6 +234,7 @@ test('finds one entity by given primary key', async () => {
     name: 'Me',
     status: 'active',
   });
+  expect(userEntity).toBeInstanceOf(User);
 });
 
 // issue: 110
@@ -960,6 +961,10 @@ test('finds items matching given query params', async () => {
       },
     ],
   });
+
+  users.items.forEach(user => {
+    expect(user).toBeInstanceOf(User);
+  });
 });
 
 test('finds items matching given query params and options', async () => {
@@ -1038,6 +1043,7 @@ test('finds items matching given query params and options', async () => {
       },
     ],
   });
+  expect(users.items[0]).toBeInstanceOf(User);
 });
 
 test('finds items with alternate syntax', async () => {
