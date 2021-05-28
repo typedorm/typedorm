@@ -519,7 +519,7 @@ export class EntityManager {
     queryOptions?: EntityManagerFindOptions<Entity, PartitionKey>,
     metadataOptions?: MetadataOptions
   ): Promise<{
-    items: DynamoDB.DocumentClient.ItemList;
+    items: Entity[];
     cursor?: DynamoDB.DocumentClient.Key | undefined;
   }> {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);

@@ -9,6 +9,9 @@ import {
   TRANSFORM_TYPE,
   IndexOptions,
   QUERY_SELECT_TYPE,
+  NoSuchIndexFoundError,
+  InvalidFilterInputError,
+  InvalidSelectInputError,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {dropProp} from '../../helpers/drop-prop';
@@ -644,9 +647,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     if (queryIndexName) {
       const matchingIndex = table.getIndexByKey(queryIndexName);
       if (!matchingIndex) {
-        throw new Error(
-          `Requested to query items from index "${queryIndexName}", but no such index exists on table "${table.name}".`
-        );
+        throw new NoSuchIndexFoundError(table.name, queryIndexName);
       }
 
       const matchingIndexOnEntity =
@@ -713,7 +714,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         operation: TRANSFORM_TYPE.QUERY,
         prefix: 'After',
         entityName: name,
-        primaryKey: null,
+        primaryKey: partitionKeyAttributes,
         body: transformedQueryItem,
       });
 
@@ -789,11 +790,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       const filter = this.expressionInputParser.parseToFilter(where);
 
       if (!filter) {
-        throw new Error(
-          `Failed to build filter expression for input: ${JSON.stringify(
-            where
-          )}`
-        );
+        throw new InvalidFilterInputError(where);
       }
 
       const {
@@ -818,6 +815,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // check if only the count was requested
     if (onlyCount) {
+      if (select?.length) {
+        throw new Error(
+          'Attributes projection and count can not be used together'
+        );
+      }
       // count and projection selection can not be used together
       queryInputParams.Select = QUERY_SELECT_TYPE.COUNT;
     }
@@ -827,11 +829,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       const projection = this.expressionInputParser.parseToProjection(select);
 
       if (!projection) {
-        throw new Error(
-          `Failed to build projection expression for input: ${JSON.stringify(
-            select
-          )}`
-        );
+        throw new InvalidSelectInputError(select);
       }
 
       const {
@@ -854,7 +852,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       operation: TRANSFORM_TYPE.QUERY,
       prefix: 'After',
       entityName: name,
-      primaryKey: null,
+      primaryKey: partitionKeyAttributes,
       body: queryInputParams,
     });
 

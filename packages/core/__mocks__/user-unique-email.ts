@@ -12,7 +12,7 @@ export interface UserUniqueEmailGSI1 {
 
 @Entity({
   table,
-  name: 'user',
+  name: 'user-unique-email',
   primaryKey: {
     partitionKey: 'USER#{{id}}',
     sortKey: 'USER#{{id}}',
