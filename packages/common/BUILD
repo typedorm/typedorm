@@ -10,7 +10,8 @@ setup_ts_build(
         "@npm//@types/uuid",
         "@npm//debug",
         "@npm//@types/debug",
-        "@npm//chalk"
+        "@npm//chalk",
+        "@npm//class-transformer"
     ],
     visibility = ["//packages:__subpackages__"]
 )

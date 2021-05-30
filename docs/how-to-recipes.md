@@ -6,6 +6,9 @@ This page will walk you through some of the unique recipes to enhance your devel
   - [Entity configuration](#entity-configuration)
     - [Define a simple entity](#define-a-simple-entity)
     - [Define an entity with index](#define-an-entity-with-index)
+  - [Attribute Transformation](#attribute-transformation)
+    - [Using TransformToDynamo](#using-transformtodynamo)
+    - [Using TransformFromDynamo](#using-transformfromdynamo)
   - [Define default values](#define-default-values)
     - [Static Default values](#static-default-values)
     - [Dynamic Default values](#dynamic-default-values)
@@ -76,6 +79,53 @@ class User {
   age: number
 
 }
+```
+
+## Attribute Transformation
+
+Attribute transformation in TypeDORM is enabled via third party package: class-transformer.
+Most of the decorators provided by class-transformer should work by default, if there are any not behaving
+the way they should be, please consider opening an issue.
+
+All entities are passed through to class-transformer two times form any given read operation:
+
+- First, when class instance is transformed to JSON to insert into DynamoDB.
+
+  - `TransformToDynamo`: used to overwrite attribute at insertion time (serialization)
+
+- Second, when receiving JSON object from DynamoDB and returning to client.
+
+  - `TransformFromDynamo`: used to overwrite attribute at retrieval time (de-serialization)
+
+### Using TransformToDynamo
+
+```Typescript
+@Entity({
+  ...entity options
+})
+export class Photo {
+  @Attribute()
+  @Type(() => Date)
+  @TransformToDynamo(({value}: {value: Moment}) => value.toString())
+  createdAt: Moment;
+}
+
+```
+
+### Using TransformFromDynamo
+
+```Typescript
+@Entity({
+  ...entity options
+})
+export class Photo {
+
+  @Attribute()
+  @Type(() => Date)
+  @TransformFromDynamo(({value}) => moment(value))
+  createdAt: Moment;
+}
+
 ```
 
 ## Define default values

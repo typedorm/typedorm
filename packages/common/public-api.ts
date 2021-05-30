@@ -2,6 +2,8 @@
 export * from './src/decorators/attribute.decorator';
 export * from './src/decorators/auto-generate-attribute.decorator';
 export * from './src/decorators/entity.decorator';
+export * from './src/decorators/transform-from-dynamo.decorator';
+export * from './src/decorators/transform-to-dynamo.decorator';
 
 // utils
 export * from './src/helpers/common-types';

@@ -14,6 +14,14 @@ import {EntityTransformer} from '../entity-transformer';
 import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
 import {table} from '@typedorm/core/__mocks__/table';
 import {UserAttrAlias} from '@typedorm/core/__mocks__/user-with-attribute-alias';
+import {CATEGORY, Photo} from '@typedorm/core/__mocks__/photo';
+// Moment is only being used here to display the usage of @transform utility
+// eslint-disable-next-line node/no-extraneous-import
+import moment from 'moment';
+
+jest.mock('uuid', () => ({
+  v4: () => 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+}));
 
 let transformer: EntityTransformer;
 beforeEach(() => {
@@ -24,6 +32,7 @@ beforeEach(() => {
       UserAutoGenerateAttributes,
       UserSparseIndexes,
       UserAttrAlias,
+      Photo,
     ],
   });
   transformer = new EntityTransformer(connection);
@@ -161,6 +170,26 @@ test('excludes hidden props from returned response', () => {
   });
 });
 
+test('transforms dynamo entity to entity model instance ', () => {
+  const dynamoEntity = {
+    PK: 'PHOTO#PETS',
+    SK: 'PHOTO#1',
+    id: 1,
+    category: 'PETS',
+    name: 'my cute pet billy',
+    createdAt: '2020-03-21T03:26:34.781Z',
+  };
+  const transformed = transformer.fromDynamoEntity(Photo, dynamoEntity);
+  expect(transformed).toMatchObject({
+    category: 'PETS',
+    createdAt: expect.any(moment),
+    id: 1,
+    name: 'my cute pet billy',
+  });
+  expect(transformed).toBeInstanceOf(Photo);
+  expect(transformed.createdDate()).toEqual('03-21-2020');
+});
+
 /**
  * @group toDynamoEntity
  */
@@ -179,6 +208,20 @@ test('transforms simple model to dynamo entity', () => {
     id: '111',
     name: 'Test User',
     status: 'inactive',
+  });
+});
+
+test('transforms dynamo entity to entity model instance ', () => {
+  const photo = new Photo(CATEGORY.KIDS, 'my baby');
+
+  const response = transformer.toDynamoEntity(photo);
+
+  expect(response).toEqual({
+    PK: 'PHOTO#kids-new',
+    SK: 'PHOTO#c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    category: 'kids-new',
+    id: 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    name: 'my baby',
   });
 });
 
