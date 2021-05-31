@@ -570,7 +570,7 @@ test('transforms update item request with condition input', () => {
   });
 });
 
-test('transforms update item record with unique attributes and condition options', () => {
+test.only('transforms update item record with unique attributes and condition options', () => {
   const updatedItem = transformer.toDynamoUpdateItem<
     UserUniqueEmail,
     UserPrimaryKey
@@ -644,6 +644,24 @@ test('transforms update item record with unique attributes and condition options
       },
     },
   ]);
+});
+
+// FIXME:
+test('transforms update item with primary key changes', () => {
+  const updateItem = transformer.toDynamoUpdateItem<
+    UserUniqueEmail,
+    UserPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      id: '1a',
+    }
+  );
+
+  expect(updateItem).toEqual({});
 });
 
 test('transforms update item request with complex condition input', () => {

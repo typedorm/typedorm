@@ -439,14 +439,15 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       UpdateExpression,
       ExpressionAttributeNames,
       ExpressionAttributeValues,
-    } = this.expressionBuilder.buildUpdateExpression({
-      ...attributesToUpdate,
-      ...affectedIndexes,
-    });
-
-    const uniqueAttributesToUpdate = this.connection
-      .getUniqueAttributesForEntity(entityClass)
-      .filter(attr => !!body[attr.name]);
+    } = this.expressionBuilder.buildUpdateExpression(
+      {
+        ...attributesToUpdate,
+        ...affectedIndexes,
+      },
+      {
+        nestedKeySeparator,
+      }
+    );
 
     const itemToUpdate: DynamoDB.DocumentClient.UpdateItemInput = {
       TableName: tableName,
@@ -492,6 +493,24 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ...ExpressionAttributeValues,
       };
     }
+
+    // check if attributes to update references a primary key, if it does update must be done lazily
+    const affectedPrimaryKeyAttributes = this.getAffectedPrimaryKeyAttributes<
+      Entity,
+      PrimaryKey
+    >(entityClass, attributesToUpdate);
+
+    // TODO: build lazy loaded update expression for primary key
+    /**
+     * build a transaction write of
+     * 1. - DELETE original item,
+     * build new item to put with new attributes -> if there were new attributes added throw error
+     * 2. - PUT new item (optionally check if update expression can be used to avoid throwing above error)
+     */
+
+    const uniqueAttributesToUpdate = this.connection
+      .getUniqueAttributesForEntity(entityClass)
+      .filter(attr => !!body[attr.name]);
 
     // when item does not have any unique attributes to update, return putItemInput
     if (!uniqueAttributesToUpdate.length) {

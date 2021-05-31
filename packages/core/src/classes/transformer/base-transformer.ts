@@ -124,6 +124,52 @@ export abstract class BaseTransformer {
     return {...parsedEntity, ...formattedSchema};
   }
 
+  getAffectedPrimaryKeyAttributes<Entity, PrimaryKey>(
+    entityClass: EntityTarget<Entity>,
+    attributes: UpdateAttributes<Entity, PrimaryKey>
+  ) {
+    const {
+      schema: {primaryKey},
+    } = this.connection.getEntityByTarget(entityClass);
+
+    const interpolations = primaryKey.metadata._interpolations;
+
+    // if none of partition or sort key has any referenced attributes, return
+    if (!interpolations || isEmptyObject(interpolations)) {
+      return;
+    }
+
+    const affectedKeyAttributes = Object.entries(attributes).reduce(
+      (acc, [attrKey, attrValue]) => {
+        // bail early if current attribute type is not of type scalar
+        if (!isScalarType(attrValue)) {
+          return acc;
+        }
+
+        // resolve all interpolations
+        Object.entries(interpolations).forEach(
+          ([primaryKeyAttrName, primaryKeyAttrRefs]) => {
+            // if no attributes are referenced for current primary key attribute, return
+            if (!primaryKeyAttrRefs.includes(attrKey)) {
+              return;
+            }
+
+            const parsedKey = parseKey(
+              primaryKey.attributes[primaryKeyAttrName],
+              attributes
+            );
+            acc[primaryKeyAttrName] = parsedKey;
+          }
+        );
+
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    return affectedKeyAttributes;
+  }
+
   /**
    * Returns all affected indexes for given attributes
    * @param entityClass Entity class
@@ -143,7 +189,7 @@ export abstract class BaseTransformer {
     const affectedIndexes = Object.keys(attributes).reduce(
       (acc, attrKey: string) => {
         const currAttrValue = attributes[attrKey];
-        // if current value is not if scalar type skip checking index
+        // if current value is not of scalar type skip checking index
         if (
           attrKey.includes(nestedKeySeparator) ||
           !isScalarType(currAttrValue)
