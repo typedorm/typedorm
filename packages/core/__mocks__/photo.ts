@@ -72,6 +72,15 @@ export class Photo implements PhotoPrimaryKey {
     this.category = category;
   }
 
+  @AutoGenerateAttribute({
+    strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_DATE,
+    autoUpdate: true,
+  })
+  @TransformToDynamo(({value}) => {
+    return value.toString();
+  })
+  updatedAt: Date;
+
   createdDate() {
     return this.createdAt.format('MM-DD-YYYY');
   }

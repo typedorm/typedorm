@@ -18,6 +18,7 @@ import {
 import {CATEGORY, Photo, PhotoPrimaryKey} from '@typedorm/core/__mocks__/photo';
 // eslint-disable-next-line node/no-extraneous-import
 import moment from 'moment';
+jest.useFakeTimers('modern').setSystemTime(1622530750000);
 
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {
@@ -748,6 +749,7 @@ test('transforms update item with attributes that reference primary key and inde
           __en: 'photo',
           category: 'PETS',
           id: 2,
+          updatedAt: '1622530750',
         },
         ReturnValues: 'ALL_NEW',
         TableName: 'test-table',

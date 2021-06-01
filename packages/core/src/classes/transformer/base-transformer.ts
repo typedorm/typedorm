@@ -37,6 +37,15 @@ export abstract class BaseTransformer {
     return entityMetadata.table.name;
   }
 
+  applyClassTransformerFormations<Entity>(entity: Entity) {
+    const transformedPlainEntity = classToPlain(entity, {
+      enableImplicitConversion: true,
+      excludePrefixes: ['__'],
+    });
+
+    return transformedPlainEntity;
+  }
+
   /**
    * Transforms entity to dynamo db entity schema
    * @param entity Entity to transform to DynamoDB entity type
@@ -45,10 +54,7 @@ export abstract class BaseTransformer {
     const entityClass = getConstructorForInstance(entity);
 
     // pass through entity to class transformer to have all the metadata applied
-    const transformedPlainEntity = classToPlain(entity, {
-      enableImplicitConversion: true,
-      excludePrefixes: ['__'],
-    });
+    const transformedPlainEntity = this.applyClassTransformerFormations(entity);
 
     let parsedEntity = {
       ...entity,

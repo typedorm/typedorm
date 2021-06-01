@@ -427,7 +427,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       {} as {[key: string]: any}
     );
 
-    const attributesToUpdate = {...body, ...formattedAutoUpdateAttributes};
+    // we manually need to replace the constructor of the attributes to update
+    // with the entity class, so that we can pass it through to class-transformer
+    // to have all transformer metadata applied.
+    const attributesToUpdateRaw = {...body, ...formattedAutoUpdateAttributes};
+    attributesToUpdateRaw.constructor = entityClass;
+    const attributesToUpdate = this.applyClassTransformerFormations(
+      attributesToUpdateRaw
+    ) as typeof attributesToUpdateRaw;
 
     // check if attributes to update references a primary key, if it does update must be done lazily
     const affectedPrimaryKeyAttributes = this.getAffectedPrimaryKeyAttributes<
@@ -444,7 +451,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       const primaryKeyReferencedAttributes = this.connection.getPrimaryKeyAttributeInterpolationsForEntity(
         entityClass
       );
-      const nonKeyAttributesToUpdate = Object.keys(attributesToUpdate).filter(
+      const nonKeyAttributesToUpdate = Object.keys(body).filter(
         attr => !primaryKeyReferencedAttributes.includes(attr)
       );
 
