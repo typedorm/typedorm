@@ -294,6 +294,8 @@ Some additional features that TypeDORM provides on top of Document Client's upda
 - supports updating attributes that are marked as unique, again using document client's transaction write API
 - handles updating all auto update attributes at the update time
 
+_Notes: Primary key attributes and non-primary key attributes can not be updated in same request._
+
 ```Typescript
 update(
   // Entity class to resolve schema against
