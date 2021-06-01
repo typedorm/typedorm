@@ -170,13 +170,15 @@ test('excludes hidden props from returned response', () => {
   });
 });
 
-test('transforms dynamo entity to entity model instance ', () => {
+test('transforms photo dynamo item to entity model instance ', () => {
   const dynamoEntity = {
     PK: 'PHOTO#PETS',
     SK: 'PHOTO#1',
     id: 1,
     category: 'PETS',
     name: 'my cute pet billy',
+    GSI1PK: 'PHOTO#c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    GSI1SK: 'PHOTO#kids-new',
     createdAt: '2020-03-21T03:26:34.781Z',
   };
   const transformed = transformer.fromDynamoEntity(Photo, dynamoEntity);
@@ -211,7 +213,7 @@ test('transforms simple model to dynamo entity', () => {
   });
 });
 
-test('transforms dynamo entity to entity model instance ', () => {
+test('transforms photo dynamo entity to entity model instance ', () => {
   const photo = new Photo(CATEGORY.KIDS, 'my baby');
 
   const response = transformer.toDynamoEntity(photo);
@@ -219,6 +221,8 @@ test('transforms dynamo entity to entity model instance ', () => {
   expect(response).toEqual({
     PK: 'PHOTO#kids-new',
     SK: 'PHOTO#c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    GSI1PK: 'PHOTO#c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    GSI1SK: 'PHOTO#kids-new',
     category: 'kids-new',
     id: 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
     name: 'my baby',

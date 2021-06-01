@@ -121,12 +121,6 @@ export class Connection {
   getUniqueAttributesForEntity<Entity>(entityClass: EntityTarget<Entity>) {
     const entityMetadata = this.getEntityByTarget(entityClass);
 
-    if (!entityMetadata) {
-      throw new Error(
-        'Could not get unique attributes for entity, every class to be used as entity must have @Entity decorator on it.'
-      );
-    }
-
     return this.getAttributesForEntity<Entity>(entityClass).filter(attr => {
       // only attributes that are not part of primary key should be included
       return (
@@ -138,6 +132,24 @@ export class Connection {
       'unique',
       {unique: DynamoEntitySchemaPrimaryKey}
     >[];
+  }
+
+  /**
+   * Returns a list of attribute names that are referenced in primary key
+   * @param entityClass Entity to get primary key attributes for
+   * @returns
+   */
+  getPrimaryKeyAttributeInterpolationsForEntity<Entity>(
+    entityClass: EntityTarget<Entity>
+  ) {
+    const entityMetadata = this.getEntityByTarget(entityClass);
+    return [
+      ...new Set(
+        Object.values(
+          entityMetadata.schema.primaryKey.metadata._interpolations ?? {}
+        ).flat()
+      ),
+    ];
   }
 
   getEntityByTarget<Entity>(entityClass: EntityTarget<Entity>) {

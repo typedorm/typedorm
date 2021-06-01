@@ -441,24 +441,26 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // validate update attributes
     if (!isEmptyObject(affectedPrimaryKeyAttributes)) {
-      const nonKeyAttributesToUpdate = Object.keys(attributesToUpdate).filter(
-        attr =>
-          !Object.keys(metadata.schema.primaryKey.attributes).includes(attr)
+      const primaryKeyReferencedAttributes = this.connection.getPrimaryKeyAttributeInterpolationsForEntity(
+        entityClass
       );
-
-      // primary key and non key attributes can not be updated together
-      if (nonKeyAttributesToUpdate.length) {
-        throw new InvalidPrimaryKeyAttributesUpdateError(
-          affectedPrimaryKeyAttributes!,
-          nonKeyAttributesToUpdate
-        );
-      }
+      const nonKeyAttributesToUpdate = Object.keys(attributesToUpdate).filter(
+        attr => !primaryKeyReferencedAttributes.includes(attr)
+      );
 
       // updates are not allowed for attributes that unique and also references primary key.
       if (uniqueAttributesToUpdate.length) {
         throw new InvalidUniqueAttributeUpdateError(
           affectedPrimaryKeyAttributes!,
           uniqueAttributesToUpdate.map(attr => attr.name)
+        );
+      }
+
+      // primary key and non key attributes can not be updated together
+      if (nonKeyAttributesToUpdate.length) {
+        throw new InvalidPrimaryKeyAttributesUpdateError(
+          affectedPrimaryKeyAttributes!,
+          nonKeyAttributesToUpdate
         );
       }
     }
@@ -470,8 +472,6 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     >(entityClass, attributesToUpdate, {
       nestedKeySeparator,
     });
-
-    // TODO: only build update expression for non primary key attribute updates
 
     const itemToUpdate:
       | DynamoDB.DocumentClient.UpdateItemInput
@@ -517,14 +517,19 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
     }
 
+    // 1.1 update contains primary key attributes
     // if tried updating attribute that is referenced in a primary key build lazy expression
     if (!isEmptyObject(affectedPrimaryKeyAttributes)) {
       const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdatePrimaryKeyFactory(
         metadata.table,
         metadata.name,
-        primaryKeyAttributes,
+        metadata.schema.primaryKey,
         {
-          Item: attributesToUpdate,
+          Item: {
+            ...affectedPrimaryKeyAttributes,
+            ...affectedIndexes,
+            ...attributesToUpdate,
+          },
           TableName: metadata.table.name,
           ReturnConsumedCapacity: itemToUpdate.ReturnConsumedCapacity,
           ReturnValues: itemToUpdate.ReturnValues,
@@ -566,6 +571,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ...itemToUpdate.ExpressionAttributeValues,
     };
 
+    // 1.2 update contains unique attributes
     // if tried updating a unique attribute, build a lazy expression
     if (uniqueAttributesToUpdate.length) {
       // if there are unique attributes, return a lazy loader, which will return write item list
@@ -586,18 +592,20 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         entityClass,
         lazyLoadTransactionWriteItems,
       };
-    }
 
-    // return default transform
-    this.connection.logger.logTransform({
-      requestId: metadataOptions?.requestId,
-      operation: TRANSFORM_TYPE.UPDATE,
-      prefix: 'After',
-      entityName: metadata.name,
-      primaryKey: null,
-      body: itemToUpdate,
-    });
-    return itemToUpdate;
+      // 1.3 update contains simple attribute updates
+    } else {
+      // return default transform
+      this.connection.logger.logTransform({
+        requestId: metadataOptions?.requestId,
+        operation: TRANSFORM_TYPE.UPDATE,
+        prefix: 'After',
+        entityName: metadata.name,
+        primaryKey: null,
+        body: itemToUpdate,
+      });
+      return itemToUpdate;
+    }
   }
 
   toDynamoDeleteItem<Entity, PrimaryKey>(
@@ -933,31 +941,39 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     return queryInputParams;
   }
 
-  private lazyToDynamoUpdatePrimaryKeyFactory<PrimaryKey>(
+  private lazyToDynamoUpdatePrimaryKeyFactory(
     table: Table,
     entityName: string,
-    originalPrimaryKey: PrimaryKey,
+    primaryKeySchema: DynamoEntitySchemaPrimaryKey,
     newItemBody: DynamoDB.DocumentClient.PutItemInput,
     metadataOptions?: MetadataOptions
   ) {
     return (previousItemBody: any) => {
       const updateTransactionItems: DynamoDB.DocumentClient.TransactWriteItemList = [
         {
-          Delete: {
-            TableName: table.name,
-            Key: {
-              ...originalPrimaryKey,
-            },
-          },
-        },
-        {
           Put: {
             ...newItemBody,
             // import existing current item
-            Item: {previousItemBody, ...newItemBody.Item},
+            Item: {...previousItemBody, ...newItemBody.Item},
           },
         },
       ] as DynamoDB.DocumentClient.TransactWriteItem[];
+
+      // if there was a previous existing item, basically remove it as part of this transaction
+      if (previousItemBody && !isEmptyObject(previousItemBody)) {
+        updateTransactionItems.push({
+          Delete: {
+            TableName: table.name,
+            Key: {
+              ...this.getParsedPrimaryKey(
+                table,
+                primaryKeySchema,
+                previousItemBody
+              ),
+            },
+          },
+        });
+      }
 
       this.connection.logger.logTransform({
         requestId: metadataOptions?.requestId,
