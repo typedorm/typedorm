@@ -22,6 +22,7 @@ import moment from 'moment';
 jest.mock('uuid', () => ({
   v4: () => 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
 }));
+jest.useFakeTimers('modern').setSystemTime(1622530750000);
 
 let transformer: EntityTransformer;
 beforeEach(() => {
@@ -213,7 +214,7 @@ test('transforms simple model to dynamo entity', () => {
   });
 });
 
-test('transforms photo dynamo entity to entity model instance ', () => {
+test('transforms photo entity to valid dynamo item ', () => {
   const photo = new Photo(CATEGORY.KIDS, 'my baby');
 
   const response = transformer.toDynamoEntity(photo);
@@ -225,6 +226,7 @@ test('transforms photo dynamo entity to entity model instance ', () => {
     GSI1SK: 'PHOTO#kids-new',
     category: 'kids-new',
     id: 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    updatedAt: '1622530750',
     name: 'my baby',
   });
 });
