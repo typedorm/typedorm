@@ -16,3 +16,5 @@ export * from './invalid-select-input-error';
 export * from './no-such-entity-exists-error';
 export * from './missing-required-entity-physical-name-error';
 export * from './duplicate-entity-physical-name-error';
+export * from './invalid-unique-attribute-update-error';
+export * from './invalid-primary-key-attributes-update-error';

@@ -188,7 +188,7 @@ export abstract class BaseTransformer {
 
     const affectedIndexes = Object.keys(attributes).reduce(
       (acc, attrKey: string) => {
-        const currAttrValue = attributes[attrKey];
+        const currAttrValue = (attributes as any)[attrKey];
         // if current value is not of scalar type skip checking index
         if (
           attrKey.includes(nestedKeySeparator) ||
@@ -248,7 +248,7 @@ export abstract class BaseTransformer {
   getParsedPrimaryKey<Entity>(
     table: Table,
     primaryKey: DynamoEntitySchemaPrimaryKey,
-    attributes: {[key in keyof Entity]: any}
+    attributes: Partial<Entity>
   ) {
     return this.recursiveParseEntity(primaryKey.attributes, attributes);
   }

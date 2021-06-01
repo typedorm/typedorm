@@ -570,7 +570,7 @@ test('transforms update item request with condition input', () => {
   });
 });
 
-test.only('transforms update item record with unique attributes and condition options', () => {
+test('transforms update item record with unique attributes and condition options', () => {
   const updatedItem = transformer.toDynamoUpdateItem<
     UserUniqueEmail,
     UserPrimaryKey
@@ -647,7 +647,7 @@ test.only('transforms update item record with unique attributes and condition op
 });
 
 // FIXME:
-test('transforms update item with primary key changes', () => {
+test.only('transforms update item with primary key changes', () => {
   const updateItem = transformer.toDynamoUpdateItem<
     UserUniqueEmail,
     UserPrimaryKey
