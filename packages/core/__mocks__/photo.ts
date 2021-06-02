@@ -3,6 +3,7 @@ import {
   AutoGenerateAttribute,
   AUTO_GENERATE_ATTRIBUTE_STRATEGY,
   Entity,
+  INDEX_TYPE,
   TransformFromDynamo,
   TransformToDynamo,
 } from '@typedorm/common';
@@ -20,6 +21,11 @@ export enum CATEGORY {
   KIDS = 'KIDS',
 }
 
+export interface PhotoPrimaryKey {
+  category: CATEGORY;
+  id: number;
+}
+
 @Entity({
   table,
   name: 'photo',
@@ -27,8 +33,15 @@ export enum CATEGORY {
     partitionKey: 'PHOTO#{{category}}',
     sortKey: 'PHOTO#{{id}}',
   },
+  indexes: {
+    GSI1: {
+      partitionKey: 'PHOTO#{{id}}',
+      sortKey: 'PHOTO#{{category}}',
+      type: INDEX_TYPE.GSI,
+    },
+  },
 })
-export class Photo {
+export class Photo implements PhotoPrimaryKey {
   @AutoGenerateAttribute({
     strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.UUID4,
   })
@@ -58,6 +71,15 @@ export class Photo {
     this.name = name;
     this.category = category;
   }
+
+  @AutoGenerateAttribute({
+    strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_DATE,
+    autoUpdate: true,
+  })
+  @TransformToDynamo(({value}) => {
+    return value.toString();
+  })
+  updatedAt: Date;
 
   createdDate() {
     return this.createdAt.format('MM-DD-YYYY');

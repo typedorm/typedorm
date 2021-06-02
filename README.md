@@ -37,7 +37,8 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 - Batch manager
 - Multiple connections support
 - Code follows all possible best practices when modeling for dynamodb
-- Additional higher level features like, ability to declare non key attribute as unique, automatic retries
+- Supports specifying non key attribute as unique, built in pagination support for querying
+- Supports updating Primary key attributes
 - Auto Generated values for attributes
 - Auto update attribute values on UPDATE operations
 - Dynamic & Static default values for attributes

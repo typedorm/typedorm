@@ -1,4 +1,10 @@
-import {Attribute, Entity, QUERY_ORDER} from '@typedorm/common';
+import {
+  Attribute,
+  Entity,
+  InvalidPrimaryKeyAttributesUpdateError,
+  InvalidUniqueAttributeUpdateError,
+  QUERY_ORDER,
+} from '@typedorm/common';
 import {Customer} from '../../../../__mocks__/inherited-customer';
 import {table} from '../../../../__mocks__/table';
 import {User, UserGSI1} from '../../../../__mocks__/user';
@@ -9,11 +15,15 @@ import {
   UserUniqueEmail,
   UserUniqueEmailPrimaryKey,
 } from '../../../../__mocks__/user-unique-email';
+import {CATEGORY, Photo, PhotoPrimaryKey} from '@typedorm/core/__mocks__/photo';
+// eslint-disable-next-line node/no-extraneous-import
+import moment from 'moment';
+jest.useFakeTimers('modern').setSystemTime(1622530750000);
 
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {
   const connection = createTestConnection({
-    entities: [User, Customer, UserUniqueEmail],
+    entities: [User, Customer, UserUniqueEmail, Photo],
   });
   transformer = new DocumentClientRequestTransformer(connection);
 });
@@ -644,6 +654,150 @@ test('transforms update item record with unique attributes and condition options
       },
     },
   ]);
+});
+
+test('transforms update item with primary key changes', () => {
+  const updateItem = transformer.toDynamoUpdateItem<
+    UserUniqueEmail,
+    UserPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      id: '1a',
+    }
+  );
+
+  const lazyWriteItemListLoader = (updateItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  // with following existing item
+  const writeItemList = lazyWriteItemListLoader({
+    id: '1',
+    PK: 'USER#1',
+    SK: 'USER#1',
+    name: 'new name',
+    email: 'user@email.com',
+    __en: 'user',
+  });
+
+  expect(writeItemList).toEqual([
+    {
+      Put: {
+        Item: {
+          email: 'user@email.com',
+          id: '1a',
+          name: 'new name',
+          PK: 'USER#1a',
+          SK: 'USER#1a',
+          __en: 'user',
+        },
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
+test('transforms update item with attributes that reference primary key and indexes', () => {
+  const updateItem = transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
+    Photo,
+    {
+      category: CATEGORY.PETS,
+      id: 1,
+    },
+    {
+      id: 2,
+    }
+  );
+
+  const lazyWriteItemListLoader = (updateItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  // with following existing item
+  const writeItemList = lazyWriteItemListLoader({
+    id: 1,
+    PK: 'PHOTO#PETS',
+    SK: 'PHOTO#1',
+    category: 'PETS',
+    GSI1PK: 'PHOTO#1',
+    GSI1SK: 'PHOTO#PETS',
+    __en: 'photo',
+  });
+
+  expect(writeItemList).toEqual([
+    {
+      Put: {
+        Item: {
+          GSI1PK: 'PHOTO#2',
+          GSI1SK: 'PHOTO#PETS',
+          PK: 'PHOTO#PETS',
+          SK: 'PHOTO#2',
+          __en: 'photo',
+          category: 'PETS',
+          id: 2,
+          updatedAt: '1622530750',
+        },
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'PHOTO#PETS',
+          SK: 'PHOTO#1',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
+test('throws when trying to update primary key attribute and unique attribute in the same request', () => {
+  const updateItem = () =>
+    transformer.toDynamoUpdateItem<UserUniqueEmail, UserUniqueEmailPrimaryKey>(
+      UserUniqueEmail,
+      {
+        id: 'OLD_ID',
+      },
+      {
+        id: 'NEW_ID',
+        email: 'new@email.com',
+      }
+    );
+
+  expect(updateItem).toThrow(InvalidUniqueAttributeUpdateError);
+});
+
+test('throws when trying to update primary key attribute and non key attribute in the same request', () => {
+  const updateItem = () =>
+    transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
+      Photo,
+      {
+        category: CATEGORY.PETS,
+        id: 1,
+      },
+      {
+        id: 2,
+        createdAt: moment(),
+      }
+    );
+
+  expect(updateItem).toThrow(InvalidPrimaryKeyAttributesUpdateError);
 });
 
 test('transforms update item request with complex condition input', () => {

@@ -286,7 +286,15 @@ exists(
 
 ### EntityManager.update
 
-Update item with magically generated set operation
+Updates items and related items over document client's update API.
+
+Some additional features that TypeDORM provides on top of Document Client's update api features:
+
+- supports updating attributes that are referenced in primary key over transaction write API
+- supports updating attributes that are marked as unique, again using document client's transaction write API
+- handles updating all auto update attributes at the update time
+
+_Notes: Primary key attributes and non-primary key attributes can not be updated in same request._
 
 ```Typescript
 update(
