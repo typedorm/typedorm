@@ -33,7 +33,7 @@ test('scan manager works', () => {
 /**
  * @group scan
  */
-test('scans table with given options', async () => {
+test('scans table with simple options', async () => {
   dcMock.scan.mockReturnValue({
     promise: () => ({
       Items: [
@@ -59,6 +59,54 @@ test('scans table with given options', async () => {
   expect(dcMock.scan).toHaveBeenCalledWith({
     Limit: 1000,
     TableName: 'test-table',
+  });
+  expect(response).toEqual({
+    items: [
+      {
+        id: '1',
+      },
+      {
+        id: '2',
+      },
+    ],
+  });
+  expect(
+    response.items?.forEach(item => {
+      expect(item).toBeInstanceOf(User);
+    })
+  );
+});
+
+test('scans table with parallel scan options', async () => {
+  dcMock.scan.mockReturnValue({
+    promise: () => ({
+      Items: [
+        {
+          id: '1',
+          PK: 'USER#1',
+          __en: 'user',
+        },
+        {
+          id: '2',
+          PK: 'USER#1',
+          __en: 'user',
+        },
+      ],
+    }),
+  });
+  const response = await manager.scan({
+    limitPerSegment: 1000,
+    segment: 0,
+    totalSegments: 2,
+    limit: 2000,
+  });
+
+  expect(dcMock.scan).toHaveBeenCalledTimes(1);
+  expect(dcMock.scan).toHaveBeenCalledWith({
+    Limit: 1000,
+    TableName: 'test-table',
+    Segment: 0,
+    TotalSegments: 2,
   });
   expect(response).toEqual({
     items: [
@@ -182,6 +230,79 @@ test('scans table with given options and returns deserialized and unknown items'
   response.unknownItems?.forEach(item => {
     expect(item).not.toBeInstanceOf(User);
   });
+});
+
+/**
+ * @group parallelScan
+ */
+test('runs parallel scan requests for each segment', async () => {
+  const callIndex = {
+    0: 0,
+    1: 1,
+  };
+  dcMock.scan.mockImplementation(({Segment}: {Segment: 0 | 1}) => {
+    callIndex[Segment] = callIndex[Segment] + 1;
+    return {
+      promise: () => ({
+        Items: new Array(10).fill({
+          id: Segment,
+          __en: 'user',
+        }),
+        LastEvaluatedKey: {
+          PK: callIndex[Segment],
+        },
+      }),
+    };
+  });
+
+  const response = await manager.parallelScan({
+    totalSegments: 2,
+    limitPerSegment: 10,
+    limit: 20,
+  });
+
+  // Here, we are still making extra one request even tho we managed to get 20 items from the
+  // first requests on each segment, this is not 100% ideal but the only way possible to handle
+  // parallel requests, as we do not upfront know, what request will have how many items.
+  // However, we did manage to kill of further request from second segment
+  expect(dcMock.scan).toHaveBeenCalledTimes(3);
+  expect(response.cursor).toEqual({
+    '0': {
+      PK: 1,
+    },
+    '1': {
+      PK: 2,
+    },
+  });
+  expect(response.items?.length).toEqual(20);
+  expect(dcMock.scan.mock.calls).toEqual([
+    [
+      {
+        Limit: 10,
+        Segment: 0,
+        TableName: 'test-table',
+        TotalSegments: 2,
+      },
+    ],
+    [
+      {
+        Limit: 10,
+        Segment: 1,
+        TableName: 'test-table',
+        TotalSegments: 2,
+      },
+    ],
+    [
+      {
+        // request was rerun for that segment with pk
+        ExclusiveStartKey: {PK: 1},
+        Limit: 10,
+        Segment: 0,
+        TableName: 'test-table',
+        TotalSegments: 2,
+      },
+    ],
+  ]);
 });
 
 /**

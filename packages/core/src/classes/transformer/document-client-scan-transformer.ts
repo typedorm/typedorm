@@ -24,69 +24,13 @@ interface ScanTransformerToDynamoScanOptions {
   where?: any;
   select?: any[];
   onlyCount?: boolean;
-}
-
-interface ScanTransformerToDynamoParallelScanOptions
-  extends ScanTransformerToDynamoScanOptions {
-  segments: number;
+  segment?: number; // current segment
+  totalSegments?: number; // total segments that this parallel scan will be divided in
 }
 
 export class DocumentClientScanTransformer extends LowOrderTransformers {
   constructor(connection: Connection) {
     super(connection);
-  }
-
-  toDynamoParallelScanItem(
-    scanOptions: ScanTransformerToDynamoParallelScanOptions,
-    metadataOptions?: MetadataOptions
-  ) {
-    this.connection.logger.logTransformScan({
-      requestId: metadataOptions?.requestId,
-      operation: TRANSFORM_SCAN_TYPE.PARALLEL_SCAN,
-      prefix: 'Before',
-      options: scanOptions,
-    });
-
-    const {
-      segments,
-      cursor,
-      entity,
-      limit,
-      onlyCount,
-      scanIndex,
-      select,
-      where,
-    } = scanOptions;
-    const parallelScanInput = [];
-
-    // create a segmented request for each scan
-    for (let index = 0; index < segments; index++) {
-      const scanItem = this.toDynamoScanItem(
-        {
-          cursor,
-          entity,
-          limit,
-          onlyCount,
-          scanIndex,
-          select,
-          where,
-        },
-        metadataOptions
-      );
-      scanItem.Segment = index;
-      scanItem.TotalSegments = segments;
-
-      parallelScanInput.push(scanItem);
-    }
-
-    this.connection.logger.logTransformScan({
-      requestId: metadataOptions?.requestId,
-      prefix: 'After',
-      operation: TRANSFORM_SCAN_TYPE.PARALLEL_SCAN,
-      body: parallelScanInput,
-    });
-
-    return parallelScanInput;
   }
 
   /**
@@ -227,6 +171,28 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
           },
         };
       }
+    }
+
+    // validate value for segment and totalSegment before appending
+    if (
+      scanOptions?.totalSegments !== undefined &&
+      scanOptions?.totalSegments !== null
+    ) {
+      if (scanOptions?.totalSegments === 0) {
+        throw new Error(`Invalid scan option totalSegment: ${scanOptions?.totalSegments}.
+        totalSegments is optional, but when provided it's value must be greater than 0.`);
+      }
+      if (scanOptions?.segment === undefined || scanOptions?.segment === null) {
+        throw new Error(`Invalid scan option segment: ${scanOptions?.segment}.
+        When totalSegments value is defined, value for option 'segment' must also be defined.`);
+      }
+      if (scanOptions?.segment >= scanOptions?.totalSegments) {
+        throw new Error(`Invalid scan option segment: ${scanOptions?.segment}.
+        When totalSegments value is defined, value for option 'segment' must be one less than totalSegment size.`);
+      }
+
+      transformedScanInput.TotalSegments = scanOptions?.totalSegments;
+      transformedScanInput.Segment = scanOptions?.segment;
     }
 
     this.connection.logger.logTransformScan({

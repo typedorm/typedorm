@@ -2,9 +2,11 @@ import {
   EntityTarget,
   INTERNAL_ENTITY_ATTRIBUTE,
   MANAGER_NAME,
+  PARALLEL_SCAN_CONCURRENCY_LIMIT,
   STATS_TYPE,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
+import pLimit from 'p-limit';
 import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 import {Connection} from '../connection/connection';
 import {ProjectionKeys} from '../expression/expression-input-parser';
@@ -46,19 +48,41 @@ interface ScanManageBaseOptions<Entity, PartitionKey> {
   select?: ProjectionKeys<Entity>;
 }
 
-export type ScanManagerScanOptions = ScanManageBaseOptions<any, any> & {
+export interface ScanManagerFindOptions<Entity>
+  extends ScanManageBaseOptions<
+    Entity,
+    // empty object since all attributes including ones used in primary key can be used with filter
+    {}
+  > {
   /**
-   * Entity to scan
-   * When one is provided, filter expression in auto updated to include filer condition for this entity
+   * Total number of segments to divide this scan in
+   * @default none - all items are scanned sequentially
+   */
+  totalSegments?: number;
+
+  /**
+   * Limit to apply per segment
+   * When no `totalSegments` is provided, this is ignored
+   * @default none - limit to apply per segment
+   */
+  limitPerSegment?: number;
+
+  /**
+   * Per segment cursor, where key is the segment number, and value is the cursor options for that segment
+   * segmented cursor when running a segmented scan or simple cursor
    * @default none
    */
-  entity?: EntityTarget<any>;
-};
-export type ScanManagerFindOptions<Entity> = ScanManageBaseOptions<
-  Entity,
-  // empty object since all attributes including ones used in primary key can be used with filter
-  {}
->;
+  cursor?:
+    | Record<number, ScanManageBaseOptions<Entity, {}>['cursor']>
+    | ScanManageBaseOptions<Entity, {}>['cursor'];
+
+  /**
+   * Max number of requests to run in parallel
+   * When no `totalSegments` is provided, this is ignored
+   * @default PARALLEL_SCAN_CONCURRENCY_LIMIT
+   */
+  requestsConcurrencyLimit?: number;
+}
 
 export type ScanManagerCountOptions<Entity> = Pick<
   ScanManageBaseOptions<
@@ -69,11 +93,81 @@ export type ScanManagerCountOptions<Entity> = Pick<
   'scanIndex' | 'where'
 >;
 
+export interface ScanManagerParallelScanOptions
+  extends ScanManageBaseOptions<any, any> {
+  /**
+   * Total number of segments to divide this scan in
+   */
+  totalSegments: number;
+
+  /**
+   * Limit to apply per segment
+   * @default none - limit to apply per segment
+   */
+  limitPerSegment?: number;
+
+  /**
+   * Entity to scan
+   * When one is provided, filter expression in auto updated to include filer condition for this entity
+   * @default none
+   */
+  entity?: EntityTarget<any>;
+
+  /**
+   * Per segment cursor, where key is the segment number, and value is the cursor options for that segment
+   * @default none
+   */
+  cursor?: Record<number, ScanManagerScanOptions['cursor']>;
+
+  /**
+   * Max number of requests to run in parallel
+   * When requesting parallel scan on x segments, request are executed in parallel using Promise.all
+   * While it is okay to run small number of requests in parallel, it is often a good idea to enforce a concurrency controller to stop node from eating up the all the memory
+   *
+   * This parameter does exactly that. i.e if requested to run scan with `20,000` segments, and `requestsConcurrencyLimit` is set to `100`
+   * TypeDORM will make sure that there are always only `100` requests are running in parallel at any time until all `20,000` segments have finished processing.
+   *
+   * @default PARALLEL_SCAN_CONCURRENCY_LIMIT
+   */
+  requestsConcurrencyLimit?: number;
+}
+
+export interface ScanManagerScanOptions
+  extends ScanManageBaseOptions<any, any> {
+  /**
+   * Entity to scan
+   * When one is provided, filter expression in auto updated to include filer condition for this entity
+   * @default none
+   */
+  entity?: EntityTarget<any>;
+
+  /**
+   * Number of current segment
+   * @default none - scan is not segmented
+   */
+  segment?: number;
+
+  /**
+   * Total number of segments to divide this scan in
+   * @default none - all items are scanned sequentially
+   */
+  totalSegments?: number;
+
+  /**
+   * Limit to apply per segment
+   * @default none - limit to apply per segment
+   */
+  limitPerSegment?: number;
+}
+
 export class ScanManager {
+  private itemsFetchedSoFarTotalParallelCount: number;
+  private limit = pLimit(PARALLEL_SCAN_CONCURRENCY_LIMIT);
   private _dcScanTransformer: DocumentClientScanTransformer;
 
   constructor(private connection: Connection) {
     this._dcScanTransformer = new DocumentClientScanTransformer(connection);
+    this.itemsFetchedSoFarTotalParallelCount = 0;
   }
 
   /**
@@ -86,19 +180,35 @@ export class ScanManager {
     entityClass: EntityTarget<Entity>,
     findOptions?: ScanManagerFindOptions<Entity>,
     metadataOptions?: MetadataOptions
-  ): Promise<{
-    items: Entity[] | undefined;
-    cursor: DynamoDB.DocumentClient.Key | undefined;
-  }> {
+  ) {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
-    const response = await this.scan<Entity>(
-      {...findOptions, entity: entityClass} as ScanManagerScanOptions,
-      {
-        requestId,
-        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-      }
-    );
+    let response: {
+      items?: Entity[];
+      unknownItems?: DynamoDB.DocumentClient.AttributeMap[];
+      cursor?:
+        | DynamoDB.DocumentClient.Key
+        | Record<number, DynamoDB.DocumentClient.Key>;
+    };
+
+    if (findOptions?.totalSegments) {
+      (response = await this.parallelScan<Entity>({
+        ...findOptions,
+        entity: entityClass,
+      } as ScanManagerParallelScanOptions)),
+        {
+          requestId,
+          returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+        };
+    } else {
+      response = await this.scan<Entity>(
+        {...findOptions, entity: entityClass} as ScanManagerScanOptions,
+        {
+          requestId,
+          returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+        }
+      );
+    }
 
     if (response.unknownItems?.length) {
       // log warning for items that were skipped form the response
@@ -149,8 +259,115 @@ export class ScanManager {
   }
 
   /**
-   * Low level scan operation
-   * Perhaps you are looking for higher level ScanManager.find operation
+   * Scans all items from dynamo table in parallel while also respecting the max provisioned concurrency
+   * @param scanOptions Options for parallel scan
+   * @param metadataOptions Additional metadata options
+   */
+  async parallelScan<Entity>(
+    scanOptions: ScanManagerParallelScanOptions,
+    metadataOptions?: MetadataOptions
+  ): Promise<{
+    items: Entity[] | undefined;
+    unknownItems: DynamoDB.DocumentClient.AttributeMap[] | undefined;
+    cursor: Record<number, DynamoDB.DocumentClient.Key | undefined>;
+  }> {
+    // start with 0
+    this.itemsFetchedSoFarTotalParallelCount = 0;
+
+    const concurrencyLimit =
+      PARALLEL_SCAN_CONCURRENCY_LIMIT || scanOptions.requestsConcurrencyLimit;
+    const requestId = getUniqueRequestId(metadataOptions?.requestId);
+
+    if (scanOptions.requestsConcurrencyLimit) {
+      this.limit = pLimit(scanOptions.requestsConcurrencyLimit);
+    }
+
+    const parallelScanOptions: ScanManagerScanOptions[] = [];
+
+    if (
+      scanOptions?.limit &&
+      scanOptions?.limitPerSegment &&
+      scanOptions?.limit < scanOptions?.limitPerSegment
+    ) {
+      throw new Error(`Invalid scan option "limit", when using parallel scan, value for "limitPerSegment" cannot be greater than
+       "limit". Consider using a scan operation instead.`);
+    }
+
+    for (let index = 0; index < scanOptions.totalSegments; index++) {
+      // only the cursor for same segment can be applied
+      const cursorForSegment = scanOptions.cursor
+        ? scanOptions.cursor[index]
+        : undefined;
+
+      parallelScanOptions.push({
+        ...scanOptions,
+        cursor: cursorForSegment,
+        segment: index,
+      });
+    }
+
+    this.connection.logger.logInfo({
+      requestId,
+      scope: MANAGER_NAME.SCAN_MANAGER,
+      log: `Running scan in parallel with ${scanOptions.totalSegments} segments.`,
+    });
+
+    if (concurrencyLimit < scanOptions.totalSegments) {
+      this.connection.logger.logInfo({
+        requestId,
+        scope: MANAGER_NAME.SCAN_MANAGER,
+        log: `Current request concurrency limit ${concurrencyLimit} is lower than requested segments count ${scanOptions.totalSegments}
+        So requests will be run in a batch of ${concurrencyLimit} at a time until all segments ${scanOptions.totalSegments} have processed.`,
+      });
+    }
+
+    const allPromisesResponse = await Promise.all(
+      parallelScanOptions.map(options =>
+        this.toLimited(this.scan<Entity>(options, metadataOptions))
+      )
+    );
+
+    // merge all responses
+    const response = allPromisesResponse.reduce(
+      (
+        acc: {
+          items: Entity[];
+          unknownItems: DynamoDB.DocumentClient.AttributeMap[];
+          cursor: Record<number, DynamoDB.DocumentClient.Key>;
+        },
+        current,
+        index
+      ) => {
+        if (current.items?.length) {
+          acc.items.push(...current.items);
+        }
+
+        if (current.unknownItems?.length) {
+          acc.unknownItems!.push(...current.unknownItems);
+        }
+
+        if (current.cursor) {
+          acc.cursor = {
+            ...acc.cursor,
+            [index]: current.cursor,
+          };
+        }
+        return acc;
+      },
+      {
+        items: [],
+        unknownItems: [],
+        cursor: {},
+      }
+    );
+
+    return response;
+  }
+
+  /**
+   * Low level scan operation.
+   *
+   * Perhaps you are looking for higher level ScanManager.find or ScanManager.parallelScan operation
    * @param scanOptions scan options to run scan with
    * @param metadataOptions any other metadata options
    */
@@ -165,7 +382,13 @@ export class ScanManager {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
     const dynamoScanInput = this._dcScanTransformer.toDynamoScanItem(
-      scanOptions,
+      {
+        ...scanOptions,
+        // if requested segmented scan, then apply segment limit or default to limit operator
+        limit: scanOptions?.totalSegments
+          ? scanOptions?.limitPerSegment
+          : scanOptions?.limit,
+      },
       {
         requestId,
         returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
@@ -225,6 +448,14 @@ export class ScanManager {
     items: DynamoDB.DocumentClient.ItemList;
     cursor?: DynamoDB.DocumentClient.Key;
   }> {
+    // return if the count is already met
+    if (limit && this.itemsFetchedSoFarTotalParallelCount >= limit) {
+      return {
+        items: itemsFetched,
+        cursor,
+      };
+    }
+
     const {
       LastEvaluatedKey,
       Items = [],
@@ -243,18 +474,26 @@ export class ScanManager {
       });
     }
 
+    // recheck if requested items limit is already met, may be other worker
+    // if so drop the result of current request and return
+    if (limit && this.itemsFetchedSoFarTotalParallelCount >= limit) {
+      return {
+        items: itemsFetched,
+        cursor,
+      };
+    }
+
     itemsFetched = [...itemsFetched, ...Items];
+    this.itemsFetchedSoFarTotalParallelCount += Items.length;
 
     if (LastEvaluatedKey) {
-      if (!limit || itemsFetched.length < limit) {
-        return this._internalRecursiveScan({
-          scanInput,
-          limit,
-          cursor: LastEvaluatedKey,
-          itemsFetched,
-          metadataOptions,
-        });
-      }
+      return this._internalRecursiveScan({
+        scanInput,
+        limit,
+        cursor: LastEvaluatedKey,
+        itemsFetched,
+        metadataOptions,
+      });
     }
 
     return {
@@ -307,5 +546,14 @@ export class ScanManager {
     }
 
     return currentCount;
+  }
+
+  /**
+   * Simple wrapper to limit number of concurrent calls
+   * @param promise wraps promise in a limited factory
+   * @returns
+   */
+  private toLimited<T>(promise: Promise<T>) {
+    return this.limit(() => promise);
   }
 }
