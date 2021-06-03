@@ -33,6 +33,9 @@ test('correctly extends low order transformers', () => {
   expect(dcScanTransformer.connection).toEqual(connection);
 });
 
+/**
+ * @group toDynamoScanItem
+ */
 test('transforms simple scan input', () => {
   const transformed = dcScanTransformer.toDynamoScanItem();
   expect(transformed).toEqual({TableName: 'test-table'});
@@ -127,6 +130,9 @@ test('transforms input with entity filter and option filter', () => {
   });
 });
 
+/**
+ * @group fromDynamoScanResponseItemList
+ */
 test('transforms simple dynamodb output items', () => {
   const transformed = dcScanTransformer.fromDynamoScanResponseItemList([
     {id: '1', __en: 'user', name: 'test-user'},
@@ -162,4 +168,81 @@ test('throws for unknown entity name', () => {
     ]);
 
   expect(transformedFactory).toThrow(NoSuchEntityExistsError);
+});
+
+/**
+ * @group toDynamoParallelScanItem
+ */
+test('transforms simple parallel scan item', () => {
+  const transformed = dcScanTransformer.toDynamoParallelScanItem({
+    segments: 3,
+  });
+
+  expect(transformed).toEqual([
+    {
+      Segment: 0,
+      TableName: 'test-table',
+      TotalSegments: 3,
+    },
+    {
+      Segment: 1,
+      TableName: 'test-table',
+      TotalSegments: 3,
+    },
+    {
+      Segment: 2,
+      TableName: 'test-table',
+      TotalSegments: 3,
+    },
+  ]);
+});
+
+test('transforms parallel scan item request for entity count', () => {
+  const transformed = dcScanTransformer.toDynamoParallelScanItem({
+    segments: 3,
+    entity: User,
+    onlyCount: true,
+  });
+
+  expect(transformed).toEqual([
+    {
+      ExpressionAttributeNames: {
+        '#FE___en': '__en',
+      },
+      ExpressionAttributeValues: {
+        ':FE___en': 'user',
+      },
+      FilterExpression: '#FE___en = :FE___en',
+      Segment: 0,
+      Select: 'COUNT',
+      TableName: 'test-table',
+      TotalSegments: 3,
+    },
+    {
+      ExpressionAttributeNames: {
+        '#FE___en': '__en',
+      },
+      ExpressionAttributeValues: {
+        ':FE___en': 'user',
+      },
+      FilterExpression: '#FE___en = :FE___en',
+      Segment: 1,
+      Select: 'COUNT',
+      TableName: 'test-table',
+      TotalSegments: 3,
+    },
+    {
+      ExpressionAttributeNames: {
+        '#FE___en': '__en',
+      },
+      ExpressionAttributeValues: {
+        ':FE___en': 'user',
+      },
+      FilterExpression: '#FE___en = :FE___en',
+      Segment: 2,
+      Select: 'COUNT',
+      TableName: 'test-table',
+      TotalSegments: 3,
+    },
+  ]);
 });

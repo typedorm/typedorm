@@ -6,6 +6,7 @@ import {
   NoSuchEntityExistsError,
   NoSuchIndexFoundError,
   QUERY_SELECT_TYPE,
+  TRANSFORM_SCAN_TYPE,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isEmptyObject} from '../../helpers/is-empty-object';
@@ -25,9 +26,67 @@ interface ScanTransformerToDynamoScanOptions {
   onlyCount?: boolean;
 }
 
+interface ScanTransformerToDynamoParallelScanOptions
+  extends ScanTransformerToDynamoScanOptions {
+  segments: number;
+}
+
 export class DocumentClientScanTransformer extends LowOrderTransformers {
   constructor(connection: Connection) {
     super(connection);
+  }
+
+  toDynamoParallelScanItem(
+    scanOptions: ScanTransformerToDynamoParallelScanOptions,
+    metadataOptions?: MetadataOptions
+  ) {
+    this.connection.logger.logTransformScan({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_SCAN_TYPE.PARALLEL_SCAN,
+      prefix: 'Before',
+      options: scanOptions,
+    });
+
+    const {
+      segments,
+      cursor,
+      entity,
+      limit,
+      onlyCount,
+      scanIndex,
+      select,
+      where,
+    } = scanOptions;
+    const parallelScanInput = [];
+
+    // create a segmented request for each scan
+    for (let index = 0; index < segments; index++) {
+      const scanItem = this.toDynamoScanItem(
+        {
+          cursor,
+          entity,
+          limit,
+          onlyCount,
+          scanIndex,
+          select,
+          where,
+        },
+        metadataOptions
+      );
+      scanItem.Segment = index;
+      scanItem.TotalSegments = segments;
+
+      parallelScanInput.push(scanItem);
+    }
+
+    this.connection.logger.logTransformScan({
+      requestId: metadataOptions?.requestId,
+      prefix: 'After',
+      operation: TRANSFORM_SCAN_TYPE.PARALLEL_SCAN,
+      body: parallelScanInput,
+    });
+
+    return parallelScanInput;
   }
 
   /**
@@ -39,6 +98,7 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
   ): DynamoDB.DocumentClient.ScanInput {
     this.connection.logger.logTransformScan({
       requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_SCAN_TYPE.SCAN,
       prefix: 'Before',
       options: scanOptions,
     });
@@ -172,6 +232,7 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
     this.connection.logger.logTransformScan({
       requestId: metadataOptions?.requestId,
       prefix: 'After',
+      operation: TRANSFORM_SCAN_TYPE.SCAN,
       body: transformedScanInput,
     });
 

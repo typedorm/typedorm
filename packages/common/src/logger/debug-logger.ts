@@ -22,6 +22,11 @@ export enum TRANSFORM_TRANSACTION_TYPE {
   TRANSACTION_READ = 'TRANSACTION_READ',
 }
 
+export enum TRANSFORM_SCAN_TYPE {
+  SCAN = 'SCAN',
+  PARALLEL_SCAN = 'PARALLEL_SCAN',
+}
+
 export enum TRANSFORM_BATCH_TYPE {
   BATCH_WRITE = 'BATCH_WRITE',
   BATCH_READ = 'BATCH_READ',
@@ -173,10 +178,12 @@ export class DebugLogger {
   logTransformScan({
     requestId,
     prefix,
+    operation,
     body,
     options,
   }: {
     requestId?: string;
+    operation: TRANSFORM_SCAN_TYPE;
     prefix: string;
     body?: any;
     options?: any;
@@ -184,7 +191,7 @@ export class DebugLogger {
     if (this.debugTransformScanLog.enabled) {
       this.debugTransformScanLog(
         `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
-          'SCAN'
+          operation
         )} ${chalk.magenta(prefix)}:`,
         ...(body
           ? [
