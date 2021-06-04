@@ -27,6 +27,7 @@ _Note: In an event of inconstancy between actual API and this document, API shou
   - [ScanManager](#scanmanager)
     - [ScanManager.find](#scanmanagerfind)
     - [ScanManager.count](#scanmanagercount)
+    - [ScanManager.parallelScan](#scanmanagerparallelscan)
     - [ScanManager.scan](#scanmanagerscan)
 
 ## Connection
@@ -682,6 +683,20 @@ find(
     // Specify attributes to get, only selected attributes are fetched
     // @default `ALL`
     select
+
+    // @optional
+    // Total segments to divide this scan in
+    totalSegments
+
+    // @optional
+    // Item scan limit to apply per segment, this option is ignored when `totalSegments` is not provided
+    limitPerSegment
+
+    // @optional
+    // maximum concurrency to apply, this option is ignored when `totalSegments` is not provided
+    // @default PARALLEL_SCAN_CONCURRENCY_LIMIT
+    requestConcurrencyLimit
+
   },
 
   // @optional
@@ -740,13 +755,15 @@ count(
 )
 ```
 
-### ScanManager.scan
+### ScanManager.parallelScan
 
-Low level scan api - returns all scanned items to the client that matches given filter - also used by `.find`.
-You should always use `.find` unless trying to scan all items from the table,
+You should always use `.find` unless trying to scan all items from the table
+
+Returns all scanned items to the client that matches given filter, this is build on top of lower level `.scan` op but adds
+safer concurrency control - also used by `.find`.
 
 ```Typescript
-count(
+parallelScan(
   // @optional
   // Scan manager scan options
   // @default none
@@ -782,6 +799,96 @@ count(
     // Specify attributes to get, only selected attributes are fetched
     // @default `ALL`
     select
+
+    // @optional
+    // Current segment identified
+    segment
+
+    // @optional
+    // Total segments to divide this scan in
+    totalSegments
+
+    // @optional
+    // Item scan limit to apply per segment, this option is ignored when `totalSegments` is not provided
+    limitPerSegment
+
+    // @optional
+    // maximum concurrency to apply, this option is ignored when `totalSegments` is not provided
+    // @default PARALLEL_SCAN_CONCURRENCY_LIMIT
+    requestConcurrencyLimit
+  },
+
+  // @optional
+  // extra non-functional options
+  metadataOptions: {
+    // @optional
+    // Unique request id to use, throughout the request processing,
+    // @default a unique v4 uuid is set and used for all logs
+    requestId
+
+    // @optional
+    // Sets ReturnConsumedCapacity param to given value when making a request via document client
+    returnConsumedCapacity
+  }
+)
+```
+
+### ScanManager.scan
+
+Low level scan api - returns all scanned items to the client that matches given filter - also used by `.find`.
+You should always use `.find` unless trying to scan all items from the table.
+
+_Scan manager `.scan` does not enforce concurrency limit, consider using `.parallelScan` to perform safer parallel scan._
+
+```Typescript
+scan(
+  // @optional
+  // Scan manager scan options
+  // @default none
+  scanOptions: {
+    // @Optional
+    // Entity to scan
+    // @default - none
+    entity
+
+    // @optional
+    // Name of the index if running a scan against secondary indexes
+    // @default - scan will be run against main table
+    scanIndex
+
+    // @optional
+    // Total number of items to return
+    // @default no limit is applied
+    limit
+
+    // @optional
+    // Cursor to start scanning from
+    // @default - none
+    cursor
+
+    // @optional
+    // Filter returned items
+    // Any conditions listed here will apply after items have been read from dynamodb and
+    // therefore this should be avoided wherever possible, but can be helpful in some cases
+    // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
+    where
+
+    // @optional
+    // Specify attributes to get, only selected attributes are fetched
+    // @default `ALL`
+    select
+
+    // @optional
+    // Current segment identified
+    segment
+
+    // @optional
+    // Total segments to divide this scan in
+    totalSegments
+
+    // @optional
+    // Item scan limit to apply per segment, this option is ignored when `totalSegments` is not provided
+    limitPerSegment
   },
 
   // @optional

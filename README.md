@@ -32,9 +32,11 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 - Attribute level per entity transformation, enabled via [class-transformer](https://github.com/typestack/class-transformer)
 - Full type safety
 - Declarative relational schema
-- Entity manager
-- Transaction manager
-- Batch manager
+- Entity manager - easy to use `findOne`, `find`, `count`, `exists`, `create`, `update`, and `delete` operations
+- Transaction manager - easy to use `write` and `read` operations
+- Batch manager - powerful `write` and `read` operations
+- Scan Manager - powerful `find`, `count`, `parallelScan` and `scan` operations
+- Safer parallel scan with configurable concurrency control
 - Multiple connections support
 - Code follows all possible best practices when modeling for dynamodb
 - Supports specifying non key attribute as unique, built in pagination support for querying
