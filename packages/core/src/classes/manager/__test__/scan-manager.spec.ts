@@ -1,3 +1,4 @@
+import {InvalidParallelScanLimitOptionError} from '@typedorm/common';
 import {table} from '@typedorm/core/__mocks__/table';
 import {User} from '@typedorm/core/__mocks__/user';
 import {UserAutoGenerateAttributes} from '@typedorm/core/__mocks__/user-auto-generate-attributes';
@@ -305,6 +306,19 @@ test('runs parallel scan requests for each segment', async () => {
   ]);
 });
 
+test('throws when trying to run parallel scan with invalid limit values', async () => {
+  const responseFac = () =>
+    manager.parallelScan({
+      totalSegments: 2,
+      limit: 100,
+      limitPerSegment: 200,
+    });
+
+  await expect(responseFac).rejects.toThrow(
+    InvalidParallelScanLimitOptionError
+  );
+});
+
 /**
  * @group find
  */
@@ -397,6 +411,67 @@ test('finds items from table with over the scan api with given options', async (
         id: '2',
       },
     ],
+  });
+});
+
+test('finds items from table with using parallel scan', async () => {
+  dcMock.scan.mockImplementation(({Segment}) => ({
+    promise: () => ({
+      Items: [
+        {
+          id: Segment,
+          PK: `USER#${Segment}`,
+          __en: 'user',
+        },
+      ],
+    }),
+  }));
+  const response = await manager.find(User, {
+    totalSegments: 2,
+    where: {
+      id: {
+        GE: '1',
+      },
+    },
+  });
+
+  expect(dcMock.scan).toHaveBeenCalledTimes(2);
+  expect(dcMock.scan.mock.calls).toEqual([
+    [
+      {
+        ExpressionAttributeNames: {
+          '#FE___en': '__en',
+          '#FE_id': 'id',
+        },
+        ExpressionAttributeValues: {
+          ':FE___en': 'user',
+          ':FE_id': '1',
+        },
+        FilterExpression: '(#FE___en = :FE___en) AND (#FE_id >= :FE_id)',
+        Segment: 0,
+        TableName: 'test-table',
+        TotalSegments: 2,
+      },
+    ],
+    [
+      {
+        ExpressionAttributeNames: {
+          '#FE___en': '__en',
+          '#FE_id': 'id',
+        },
+        ExpressionAttributeValues: {
+          ':FE___en': 'user',
+          ':FE_id': '1',
+        },
+        FilterExpression: '(#FE___en = :FE___en) AND (#FE_id >= :FE_id)',
+        Segment: 1,
+        TableName: 'test-table',
+        TotalSegments: 2,
+      },
+    ],
+  ]);
+  expect(response).toEqual({
+    items: [{id: 0}, {id: 1}],
   });
 });
 

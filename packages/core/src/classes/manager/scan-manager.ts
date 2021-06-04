@@ -1,6 +1,7 @@
 import {
   EntityTarget,
   INTERNAL_ENTITY_ATTRIBUTE,
+  InvalidParallelScanLimitOptionError,
   MANAGER_NAME,
   PARALLEL_SCAN_CONCURRENCY_LIMIT,
   STATS_TYPE,
@@ -51,25 +52,27 @@ interface ScanManageBaseOptions<Entity, PartitionKey> {
 export interface ScanManagerFindOptions<Entity>
   extends ScanManageBaseOptions<
     Entity,
-    // empty object since all attributes including ones used in primary key can be used with filter
-    {}
+    {} // empty object since all attributes including ones used in primary key can be used with filter
   > {
   /**
-   * Total number of segments to divide this scan in
+   * Total number of segments to divide this scan in.
+   *
    * @default none - all items are scanned sequentially
    */
   totalSegments?: number;
 
   /**
-   * Limit to apply per segment
-   * When no `totalSegments` is provided, this is ignored
+   * Limit to apply per segment.
+   *
+   * when no `totalSegments` is provided, this option is ignored
    * @default none - limit to apply per segment
    */
   limitPerSegment?: number;
 
   /**
-   * Per segment cursor, where key is the segment number, and value is the cursor options for that segment
-   * segmented cursor when running a segmented scan or simple cursor
+   * Item cursor, used for paginating a scan.
+   *
+   * When the `totalSegments` option is provided, this option should be of type {[segmentNo]: [Key]}
    * @default none
    */
   cursor?:
@@ -78,7 +81,13 @@ export interface ScanManagerFindOptions<Entity>
 
   /**
    * Max number of requests to run in parallel
-   * When no `totalSegments` is provided, this is ignored
+   *
+   * When requesting parallel scan on x segments, request are executed in parallel using Promise.all
+   * While it is okay to run small number of requests in parallel, it is often a good idea to enforce a concurrency controller to stop node from eating up the all the memory
+   *
+   * This parameter does exactly that. i.e if requested to run scan with `20,000` segments, and `requestsConcurrencyLimit` is set to `100`
+   * TypeDORM will make sure that there are always only `100` requests are running in parallel at any time until all `20,000` segments have finished processing.
+   *
    * @default PARALLEL_SCAN_CONCURRENCY_LIMIT
    */
   requestsConcurrencyLimit?: number;
@@ -87,8 +96,7 @@ export interface ScanManagerFindOptions<Entity>
 export type ScanManagerCountOptions<Entity> = Pick<
   ScanManageBaseOptions<
     Entity,
-    // empty object since all attributes including ones used in primary key can be used with filter
-    {}
+    {} // empty object since all attributes including ones used in primary key can be used with filter
   >,
   'scanIndex' | 'where'
 >;
@@ -102,25 +110,30 @@ export interface ScanManagerParallelScanOptions
 
   /**
    * Limit to apply per segment
+   *
    * @default none - limit to apply per segment
    */
   limitPerSegment?: number;
 
   /**
-   * Entity to scan
-   * When one is provided, filter expression in auto updated to include filer condition for this entity
+   * Entity to run scan for.
+   *
+   * When one is provided, filter expression in auto updated to include a default filer condition for matching entity
+   *
    * @default none
    */
   entity?: EntityTarget<any>;
 
   /**
    * Per segment cursor, where key is the segment number, and value is the cursor options for that segment
+   *
    * @default none
    */
   cursor?: Record<number, ScanManagerScanOptions['cursor']>;
 
   /**
    * Max number of requests to run in parallel
+   *
    * When requesting parallel scan on x segments, request are executed in parallel using Promise.all
    * While it is okay to run small number of requests in parallel, it is often a good idea to enforce a concurrency controller to stop node from eating up the all the memory
    *
@@ -136,25 +149,30 @@ export interface ScanManagerScanOptions
   extends ScanManageBaseOptions<any, any> {
   /**
    * Entity to scan
+   *
    * When one is provided, filter expression in auto updated to include filer condition for this entity
+   *
    * @default none
    */
   entity?: EntityTarget<any>;
 
   /**
    * Number of current segment
+   *
    * @default none - scan is not segmented
    */
   segment?: number;
 
   /**
    * Total number of segments to divide this scan in
+   *
    * @default none - all items are scanned sequentially
    */
   totalSegments?: number;
 
   /**
    * Limit to apply per segment
+   *
    * @default none - limit to apply per segment
    */
   limitPerSegment?: number;
@@ -289,8 +307,10 @@ export class ScanManager {
       scanOptions?.limitPerSegment &&
       scanOptions?.limit < scanOptions?.limitPerSegment
     ) {
-      throw new Error(`Invalid scan option "limit", when using parallel scan, value for "limitPerSegment" cannot be greater than
-       "limit". Consider using a scan operation instead.`);
+      throw new InvalidParallelScanLimitOptionError(
+        scanOptions?.limit,
+        scanOptions?.limitPerSegment
+      );
     }
 
     for (let index = 0; index < scanOptions.totalSegments; index++) {
@@ -339,14 +359,23 @@ export class ScanManager {
         index
       ) => {
         if (current.items?.length) {
-          acc.items.push(...current.items);
+          if (!acc.items) {
+            acc.items = [];
+          }
+          acc.items = [...acc.items, ...current.items];
         }
 
         if (current.unknownItems?.length) {
-          acc.unknownItems!.push(...current.unknownItems);
+          if (!acc.unknownItems) {
+            acc.unknownItems = [];
+          }
+          acc.unknownItems = [...acc.unknownItems, ...current.unknownItems];
         }
 
         if (current.cursor) {
+          if (!acc.cursor) {
+            acc.cursor = {};
+          }
           acc.cursor = {
             ...acc.cursor,
             [index]: current.cursor,
@@ -354,10 +383,10 @@ export class ScanManager {
         }
         return acc;
       },
-      {
-        items: [],
-        unknownItems: [],
-        cursor: {},
+      {} as {
+        items: Entity[];
+        unknownItems: DynamoDB.DocumentClient.AttributeMap[];
+        cursor: Record<number, DynamoDB.DocumentClient.Key>;
       }
     );
 
