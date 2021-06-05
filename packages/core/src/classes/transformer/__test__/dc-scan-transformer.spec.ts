@@ -33,6 +33,9 @@ test('correctly extends low order transformers', () => {
   expect(dcScanTransformer.connection).toEqual(connection);
 });
 
+/**
+ * @group toDynamoScanItem
+ */
 test('transforms simple scan input', () => {
   const transformed = dcScanTransformer.toDynamoScanItem();
   expect(transformed).toEqual({TableName: 'test-table'});
@@ -127,6 +130,36 @@ test('transforms input with entity filter and option filter', () => {
   });
 });
 
+test('transforms simple parallel scan item', () => {
+  const transformed = dcScanTransformer.toDynamoScanItem({
+    totalSegments: 3,
+    segment: 0,
+  });
+
+  expect(transformed).toEqual({
+    Segment: 0,
+    TableName: 'test-table',
+    TotalSegments: 3,
+  });
+});
+
+test('throws when invalid values are configured for segments', () => {
+  const transformedFac = () =>
+    dcScanTransformer.toDynamoScanItem({
+      // total segment is 2 but current segment id is 3,
+      totalSegments: 2,
+      segment: 3,
+    });
+
+  expect(transformedFac).toThrow(
+    `Invalid scan option segment: 3.
+        When totalSegments value is defined, value for option 'segment' must be one less than totalSegment size.`
+  );
+});
+
+/**
+ * @group fromDynamoScanResponseItemList
+ */
 test('transforms simple dynamodb output items', () => {
   const transformed = dcScanTransformer.fromDynamoScanResponseItemList([
     {id: '1', __en: 'user', name: 'test-user'},

@@ -6,6 +6,7 @@ import {
   NoSuchEntityExistsError,
   NoSuchIndexFoundError,
   QUERY_SELECT_TYPE,
+  TRANSFORM_SCAN_TYPE,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {isEmptyObject} from '../../helpers/is-empty-object';
@@ -23,6 +24,8 @@ interface ScanTransformerToDynamoScanOptions {
   where?: any;
   select?: any[];
   onlyCount?: boolean;
+  segment?: number; // current segment
+  totalSegments?: number; // total segments that this parallel scan will be divided in
 }
 
 export class DocumentClientScanTransformer extends LowOrderTransformers {
@@ -39,6 +42,7 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
   ): DynamoDB.DocumentClient.ScanInput {
     this.connection.logger.logTransformScan({
       requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_SCAN_TYPE.SCAN,
       prefix: 'Before',
       options: scanOptions,
     });
@@ -169,9 +173,32 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
       }
     }
 
+    // validate value for segment and totalSegment before appending
+    if (
+      scanOptions?.totalSegments !== undefined &&
+      scanOptions?.totalSegments !== null
+    ) {
+      if (scanOptions?.totalSegments === 0) {
+        throw new Error(`Invalid scan option totalSegment: ${scanOptions?.totalSegments}.
+        totalSegments is optional, but when provided it's value must be greater than 0.`);
+      }
+      if (scanOptions?.segment === undefined || scanOptions?.segment === null) {
+        throw new Error(`Invalid scan option segment: ${scanOptions?.segment}.
+        When totalSegments value is defined, value for option 'segment' must also be defined.`);
+      }
+      if (scanOptions?.segment >= scanOptions?.totalSegments) {
+        throw new Error(`Invalid scan option segment: ${scanOptions?.segment}.
+        When totalSegments value is defined, value for option 'segment' must be one less than totalSegment size.`);
+      }
+
+      transformedScanInput.TotalSegments = scanOptions?.totalSegments;
+      transformedScanInput.Segment = scanOptions?.segment;
+    }
+
     this.connection.logger.logTransformScan({
       requestId: metadataOptions?.requestId,
       prefix: 'After',
+      operation: TRANSFORM_SCAN_TYPE.SCAN,
       body: transformedScanInput,
     });
 

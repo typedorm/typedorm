@@ -18,3 +18,4 @@ export * from './missing-required-entity-physical-name-error';
 export * from './duplicate-entity-physical-name-error';
 export * from './invalid-unique-attribute-update-error';
 export * from './invalid-primary-key-attributes-update-error';
+export * from './invalid-parallel-scan-limit-option-error';
