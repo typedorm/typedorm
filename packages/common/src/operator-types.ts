@@ -14,6 +14,11 @@ export enum ATTRIBUTE_TYPE {
 }
 
 /**
+ * Operator types that are only supported by update expression
+ */
+export type ArithmeticOperator = 'INCREMENT_BY' | 'DECREMENT_BY';
+
+/**
  * This is the single place where all the the document client supported
  * operators are listed
  *
