@@ -110,12 +110,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     | DynamoDB.DocumentClient.PutItemInput
     | DynamoDB.DocumentClient.TransactWriteItemList {
     const entityClass = getConstructorForInstance(entity);
-    const {
-      table,
-      internalAttributes,
-      name,
-      attributes,
-    } = this.connection.getEntityByTarget(entityClass);
+    const {table, internalAttributes, name} = this.connection.getEntityByTarget(
+      entityClass
+    );
 
     this.connection.logger.logTransform({
       requestId: metadataOptions?.requestId,
@@ -131,6 +128,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       entityClass
     ) as AttributeMetadata[];
 
+    // include attributes with default values in
     const dynamoEntity = this.toDynamoEntity(entity);
 
     const entityInternalAttributes = internalAttributes.reduce((acc, attr) => {
@@ -138,24 +136,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return acc;
     }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
 
-    const attributesWithDefaultValues = attributes
-      .filter(
-        attr =>
-          !!(
-            (attr as AttributeMetadata)?.default &&
-            typeof (attr as AttributeMetadata)?.default === 'function'
-          )
-      )
-      .reduce((acc, attr) => {
-        const defaultValueProvider: any = (attr as AttributeMetadata).default;
-        acc[attr.name] = defaultValueProvider(dynamoEntity);
-        return acc;
-      }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
-
     let dynamoPutItem = {
       Item: {
         ...entityInternalAttributes,
-        ...attributesWithDefaultValues,
         ...dynamoEntity,
       },
       TableName: table.name,
