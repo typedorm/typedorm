@@ -14,6 +14,7 @@ import {EntityTransformer} from '../entity-transformer';
 import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
 import {table} from '@typedorm/core/__mocks__/table';
 import {UserAttrAlias} from '@typedorm/core/__mocks__/user-with-attribute-alias';
+import {UserWithDefaultValues} from '@typedorm/core/__mocks__/user-default-value';
 
 let transformer: EntityTransformer;
 beforeEach(() => {
@@ -24,6 +25,7 @@ beforeEach(() => {
       UserAutoGenerateAttributes,
       UserSparseIndexes,
       UserAttrAlias,
+      UserWithDefaultValues,
     ],
   });
   transformer = new EntityTransformer(connection);
@@ -340,6 +342,24 @@ test('transforms complex model model to dynamo entity', () => {
     SK: 'USER#111',
     name: 'Test User',
     age: 12,
+  });
+});
+
+/**
+ * Issue #135
+ */
+test('transforms put item requests with attributes containing default values', () => {
+  const user = new UserWithDefaultValues();
+  user.id = '1';
+
+  const putItem = transformer.toDynamoEntity(user);
+  expect(putItem).toEqual({
+    GSI1PK: 'USER#STATUS#active',
+    GSI1SK: 'USER#active',
+    PK: 'USER#1',
+    SK: 'USER#1',
+    id: '1',
+    status: 'active',
   });
 });
 
