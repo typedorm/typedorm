@@ -1,6 +1,6 @@
 import {DynamoEntity, EntityTarget, TRANSFORM_TYPE} from '@typedorm/common';
 import {DocumentClient} from 'aws-sdk/clients/dynamodb';
-import {ClassConstructor, plainToClass} from 'class-transformer';
+import {plainToClassFromExist} from 'class-transformer';
 import {unParseKey} from '../../helpers/unparse-key';
 import {Connection} from '../connection/connection';
 import {BaseTransformer, MetadataOptions} from './base-transformer';
@@ -67,8 +67,10 @@ export class EntityTransformer extends BaseTransformer {
       {} as Object
     );
 
-    const transformedEntity = plainToClass(
-      entityClass as ClassConstructor<Entity>,
+    // get reflected constructor to avoid initialization issues with custom constructor
+    const reflectedConstructor = Reflect.construct(Object, [], entityClass);
+    const transformedEntity = plainToClassFromExist(
+      reflectedConstructor,
       plainEntityAttributes
     );
 
