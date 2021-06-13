@@ -41,7 +41,7 @@ test('builds entity metadata with path match', () => {
     path.resolve(__dirname, '../../../../__mocks__/**/*.ts')
   );
 
-  expect(entities.length).toEqual(8);
+  expect(entities.length).toEqual(9);
 });
 
 test('throws when trying to register duplicated entities', () => {

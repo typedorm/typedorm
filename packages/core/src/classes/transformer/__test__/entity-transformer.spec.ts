@@ -18,6 +18,7 @@ import {CATEGORY, Photo} from '@typedorm/core/__mocks__/photo';
 // Moment is only being used here to display the usage of @transform utility
 // eslint-disable-next-line node/no-extraneous-import
 import moment from 'moment';
+import {UserCustomConstructor} from '@typedorm/core/__mocks__/user-custom-constructor';
 
 jest.mock('uuid', () => ({
   v4: () => 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
@@ -34,6 +35,7 @@ beforeEach(() => {
       UserSparseIndexes,
       UserAttrAlias,
       Photo,
+      UserCustomConstructor,
     ],
   });
   transformer = new EntityTransformer(connection);
@@ -61,6 +63,26 @@ test('transforms dynamo entity to entity model', () => {
     id: '1',
     name: 'Me',
     status: 'active',
+  });
+});
+
+/**
+ * Issue: #134
+ */
+test('transforms dynamo entity to entity model with custom constructor', () => {
+  const dynamoEntity = {
+    PK: 'USER#1',
+    SK: 'USER#1',
+    id: '1',
+    name: 'Me',
+  };
+  const transformed = transformer.fromDynamoEntity(
+    UserCustomConstructor,
+    dynamoEntity
+  );
+  expect(transformed).toEqual({
+    id: '1',
+    name: 'Me',
   });
 });
 
