@@ -1,9 +1,13 @@
 import {SetUpdate} from '../update/set-update';
+
+/**
+ * @group setTo
+ */
 test('creates update expression', () => {
   const updateSet = new SetUpdate()
-    .to('name', 'user')
+    .setTo('name', 'user')
     .and()
-    .to('email', 'email@user.com');
+    .setTo('email', 'email@user.com');
 
   expect(updateSet).toEqual({
     _names: {
@@ -19,9 +23,12 @@ test('creates update expression', () => {
   });
 });
 
+/**
+ * @group setToIfNotExists
+ */
 test('merges update expressions', () => {
-  const updateSet = new SetUpdate().to('name', 'user');
-  const updateSet2 = new SetUpdate().toIfNotExists('age', 3);
+  const updateSet = new SetUpdate().setTo('name', 'user');
+  const updateSet2 = new SetUpdate().setToIfNotExists('age', 3);
 
   expect(updateSet.merge(updateSet2)).toEqual({
     _names: {
@@ -38,11 +45,14 @@ test('merges update expressions', () => {
   });
 });
 
+/**
+ * @group setOrAppendToList
+ */
 test('creates update expression with different actions', () => {
   const updateSet = new SetUpdate()
-    .appendToList('name', ['user'])
+    .setOrAppendToList('name', ['user'])
     .and()
-    .to('email', 'email@user.com');
+    .setTo('email', 'email@user.com');
 
   expect(updateSet).toEqual({
     _names: {
@@ -60,7 +70,7 @@ test('creates update expression with different actions', () => {
 });
 
 test('creates update expression with optional increment strategy', () => {
-  const updateSet = new SetUpdate().to('age', 2, 'INCREMENT_BY');
+  const updateSet = new SetUpdate().setTo('age', 2, 'INCREMENT_BY');
 
   expect(updateSet).toEqual({
     _names: {
@@ -75,7 +85,7 @@ test('creates update expression with optional increment strategy', () => {
 });
 
 test('creates update expression that checks if other attribute exists', () => {
-  const updateSet = new SetUpdate().toIfNotExists('age', 2, 'age_old');
+  const updateSet = new SetUpdate().setToIfNotExists('age', 2, 'age_old');
 
   expect(updateSet).toEqual({
     _names: {

@@ -7,7 +7,7 @@ export class SetUpdate extends BaseUpdateExpressionInput {
   /**
    * Support specifying additional arithmetic operations
    */
-  to(key: string, value: any, incrementBy?: ArithmeticOperator): this {
+  setTo(key: string, value: any, incrementBy?: ArithmeticOperator): this {
     const arithmeticOperator = incrementBy
       ? this.getSymbolForArithmeticOperator(incrementBy)
       : '';
@@ -24,7 +24,7 @@ export class SetUpdate extends BaseUpdateExpressionInput {
     return this;
   }
 
-  toIfNotExists(key: string, value: any, otherKeyAttribute?: string): this {
+  setToIfNotExists(key: string, value: any, otherKeyAttribute?: string): this {
     const attrExpName = this.addExpressionName(key);
     const attrExpValue = this.addExpressionValue(key, value);
 
@@ -41,7 +41,7 @@ export class SetUpdate extends BaseUpdateExpressionInput {
     return this;
   }
 
-  appendToList(
+  setOrAppendToList(
     key: string,
     value: ScalarType[],
     otherKeyAttribute?: string
