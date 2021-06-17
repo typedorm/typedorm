@@ -5,5 +5,5 @@ import {NonKeyAttributes} from './non-key-attributes-type';
 export type UpdateAttributes<Entity, PrimaryKey> =
   | NonKeyAttributes<Entity, PrimaryKey>
   // support updating primary key attributes
-  | Partial<PrimaryKey>;
-// | {};
+  | Partial<PrimaryKey>
+  | {};

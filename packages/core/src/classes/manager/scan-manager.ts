@@ -10,8 +10,8 @@ import {DynamoDB} from 'aws-sdk';
 import pLimit from 'p-limit';
 import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 import {Connection} from '../connection/connection';
-import {ProjectionKeys} from '../expression/expression-input-parser';
 import {FilterOptions} from '../expression/filter-options-type';
+import {ProjectionKeys} from '../expression/projection-keys-options-type';
 import {MetadataOptions} from '../transformer/base-transformer';
 import {DocumentClientScanTransformer} from '../transformer/document-client-scan-transformer';
 

@@ -230,3 +230,18 @@ test('parses options to valid projection', () => {
     '#PE_id, #PE_name, #PE_status.#PE_status_active'
   );
 });
+
+/**
+ * @group parseToUpdate
+ *
+ */
+test('parses update body to update expression', () => {
+  const update = expInputParser.parseToUpdate<User, UserPrimaryKey>({
+    SET: {
+      name: 'new name',
+    },
+  });
+
+  // TODO: implement input update input parser
+  expect(update).toEqual({});
+});

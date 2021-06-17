@@ -18,12 +18,10 @@ import {isWriteTransactionItemList} from '../transaction/type-guards';
 import {isLazyTransactionWriteItemListLoader} from '../transformer/is-lazy-transaction-write-item-list-loader';
 import {FilterOptions} from '../expression/filter-options-type';
 import {ConditionOptions} from '../expression/condition-options-type';
-import {
-  KeyConditionOptions,
-  ProjectionKeys,
-} from '../expression/expression-input-parser';
 import {MetadataOptions} from '../transformer/base-transformer';
 import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
+import {ProjectionKeys} from '../expression/projection-keys-options-type';
+import {KeyConditionOptions} from '../expression/key-condition-options-type';
 
 export interface EntityManagerCreateOptions<Entity> {
   /**

@@ -666,7 +666,7 @@ test('transforms update item with primary key changes', () => {
       id: '1',
     },
     {
-      id: '1a',
+      id: '2',
     }
   );
 

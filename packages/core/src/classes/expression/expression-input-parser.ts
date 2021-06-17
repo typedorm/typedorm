@@ -1,13 +1,11 @@
 import {
   ATTRIBUTE_TYPE,
   RangeOperator,
-  RequireOnlyOne,
   ScalarType,
   SimpleOperator,
 } from '@typedorm/common';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {KeyCondition} from './key-condition';
-import {KeyConditionType} from '@typedorm/common';
 import {Filter} from './filter';
 import {BaseExpressionInput, MERGE_STRATEGY} from './base-expression-input';
 import {isScalarType} from '../../helpers/is-scalar-type';
@@ -15,20 +13,9 @@ import {FilterOptions} from './filter-options-type';
 import {ConditionOptions} from './condition-options-type';
 import {Condition} from './condition';
 import {Projection} from './projection';
-
-export type KeyConditionOptions = RequireOnlyOne<
-  {
-    [key in KeyConditionType.SimpleOperator]: ScalarType;
-  } &
-    {
-      [key in KeyConditionType.FunctionOperator]: ScalarType;
-    } &
-    {
-      [key in KeyConditionType.RangeOperator]: [ScalarType, ScalarType];
-    }
->;
-
-export type ProjectionKeys<Entity> = (keyof Entity)[] | string[];
+import {KeyConditionOptions} from './key-condition-options-type';
+import {ProjectionKeys} from './projection-keys-options-type';
+import {UpdateBody} from './update-body-type';
 
 /**
  * Parses expression input to expression instances
@@ -53,6 +40,10 @@ export class ExpressionInputParser {
     projection.addProjectionAttributes(keys as string[]);
 
     return projection;
+  }
+
+  parseToUpdate<Entity, PrimaryKey>(body: UpdateBody<Entity, PrimaryKey>) {
+    // TODO: implement update parse
   }
 
   /**

@@ -27,10 +27,8 @@ import {AttributeMetadata} from '../metadata/attribute-metadata';
 import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {BaseTransformer, MetadataOptions} from './base-transformer';
 import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
-import {
-  ExpressionInputParser,
-  KeyConditionOptions,
-} from '../expression/expression-input-parser';
+import {ExpressionInputParser} from '../expression/expression-input-parser';
+import {KeyConditionOptions} from '../expression/key-condition-options-type';
 
 export interface ManagerToDynamoPutItemOptions {
   /**
