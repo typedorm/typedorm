@@ -1,4 +1,4 @@
-import {ArithmeticOperator, ScalarType, UPDATE_KEYWORD} from '@typedorm/common';
+import {UpdateType, ScalarType, UPDATE_KEYWORD} from '@typedorm/common';
 import {BaseUpdateExpressionInput} from '../base-update-expression-input';
 
 export class SetUpdate extends BaseUpdateExpressionInput {
@@ -7,7 +7,11 @@ export class SetUpdate extends BaseUpdateExpressionInput {
   /**
    * Support specifying additional arithmetic operations
    */
-  setTo(key: string, value: any, incrementBy?: ArithmeticOperator): this {
+  setTo(
+    key: string,
+    value: any,
+    incrementBy?: UpdateType.ArithmeticOperator
+  ): this {
     const arithmeticOperator = incrementBy
       ? this.getSymbolForArithmeticOperator(incrementBy)
       : '';

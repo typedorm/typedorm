@@ -1,4 +1,4 @@
-import {ArithmeticOperator, UPDATE_KEYWORD} from '@typedorm/common';
+import {UpdateType, UPDATE_KEYWORD} from '@typedorm/common';
 import {BaseExpressionInput} from './base-expression-input';
 
 export abstract class BaseUpdateExpressionInput extends BaseExpressionInput {
@@ -79,7 +79,9 @@ export abstract class BaseUpdateExpressionInput extends BaseExpressionInput {
     return merged;
   }
 
-  protected getSymbolForArithmeticOperator(operator: ArithmeticOperator) {
+  protected getSymbolForArithmeticOperator(
+    operator: UpdateType.ArithmeticOperator
+  ) {
     const symbolMap = {
       INCREMENT_BY: '+',
       DECREMENT_BY: '-',

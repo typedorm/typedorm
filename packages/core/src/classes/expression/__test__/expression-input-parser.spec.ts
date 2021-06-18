@@ -237,11 +237,116 @@ test('parses options to valid projection', () => {
  */
 test('parses update body to update expression', () => {
   const update = expInputParser.parseToUpdate<User, UserPrimaryKey>({
+    id: '2',
     SET: {
-      name: 'new name',
+      id: '1',
+      status: {
+        IF_NOT_EXISTS: '1',
+      },
+      age: {
+        INCREMENT_BY: 2,
+      },
+      addresses: {
+        LIST_APPEND: ['12341'],
+      },
     },
   });
 
-  // TODO: implement input update input parser
-  expect(update).toEqual({});
+  // expected
+  // const y = [
+  //   // set default
+  //   {
+  //     id: '1',
+  //   },
+  //   {
+  //     id: {
+  //       TO_IF_NOT_EXISTS: '1',
+  //     },
+  //   },
+  //   {
+  //     id: {
+  //       TO_IF_NOT_EXISTS: {
+  //         email: 'user@example.com',
+  //       },
+  //     },
+  //   },
+  //   {
+  //     items: {
+  //       APPEND_TO_LIST: [123, 1234],
+  //     },
+  //   },
+  //   {
+  //     items: {
+  //       APPEND_TO_LIST: {
+  //         previous_items: [123, 234],
+  //       },
+  //     },
+  //   },
+  //   // set explicit
+  //   {
+  //     SET: {
+  //       id: '1',
+  //     },
+  //   },
+  //   {
+  //     SET: {
+  //       age: {
+  //         INCREMENT_BY: 1,
+  //       },
+  //     },
+  //   },
+  //   {
+  //     SET: {
+  //       id: {
+  //         TO_IF_NOT_EXISTS: '1',
+  //       },
+  //     },
+  //   },
+  //   {
+  //     SET: {
+  //       id: {
+  //         TO_IF_NOT_EXISTS: {
+  //           email: 'user@example.com',
+  //         },
+  //       },
+  //     },
+  //   },
+  //   {
+  //     SET: {
+  //       items: {
+  //         APPEND_TO_LIST: [123, 1234],
+  //       },
+  //     },
+  //   },
+  //   {
+  //     SET: {
+  //       items: {
+  //         APPEND_TO_LIST: {
+  //           previous_items: [123, 234],
+  //         },
+  //       },
+  //     },
+  //   },
+  //   // add
+  //   {
+  //     ADD: {
+  //       age: 2,
+  //     },
+  //   },
+  //   {
+  //     ADD: {
+  //       items: ['123', '345'],
+  //     },
+  //   },
+  //   // remove
+  //   {
+  //     REMOVE: ['age', 'name', 'user.contact[1]'],
+  //   },
+  //   // delete
+  //   {
+  //     DELETE: {
+  //       color: ['red'],
+  //     },
+  //   },
+  // ];
 });
