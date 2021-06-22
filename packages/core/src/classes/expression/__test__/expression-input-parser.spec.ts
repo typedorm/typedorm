@@ -238,16 +238,35 @@ test('parses options to valid projection', () => {
 test('parses update body to update expression', () => {
   const update = expInputParser.parseToUpdate<User, UserPrimaryKey>({
     id: '2',
-    SET: {
-      id: '1',
-      status: {
-        IF_NOT_EXISTS: '1',
+    name: {
+      IF_NOT_EXISTS: '1',
+    },
+    age: {
+      INCREMENT_BY: 2,
+    },
+    addresses: {
+      LIST_APPEND: ['1234'],
+    },
+  });
+  const updateAlternate = expInputParser.parseToUpdate<User, UserPrimaryKey>({
+    id: {
+      SET: '2',
+    },
+    name: {
+      SET: {
+        IF_NOT_EXISTS: {
+          age: 2,
+        },
       },
-      age: {
+    },
+    age: {
+      SET: {
         INCREMENT_BY: 2,
       },
-      addresses: {
-        LIST_APPEND: ['12341'],
+    },
+    addresses: {
+      SET: {
+        LIST_APPEND: ['1234'],
       },
     },
   });
