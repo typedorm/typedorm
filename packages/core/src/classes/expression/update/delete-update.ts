@@ -1,8 +1,8 @@
-import {ScalarType, UPDATE_KEYWORD} from '@typedorm/common';
+import {ScalarType, UpdateType} from '@typedorm/common';
 import {BaseUpdateExpressionInput} from '../base-update-expression-input';
 
 export class DeleteUpdate extends BaseUpdateExpressionInput {
-  prefix = UPDATE_KEYWORD.DELETE;
+  protected prefix: UpdateType.Action = 'DELETE';
 
   /**
    * Deletes elements from a set

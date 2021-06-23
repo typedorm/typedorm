@@ -1,8 +1,8 @@
-import {UpdateType, UPDATE_KEYWORD} from '@typedorm/common';
+import {UpdateType} from '@typedorm/common';
 import {BaseExpressionInput} from './base-expression-input';
 
 export abstract class BaseUpdateExpressionInput extends BaseExpressionInput {
-  protected abstract prefix: UPDATE_KEYWORD;
+  protected abstract prefix: UpdateType.Action;
   protected getExpNameKey(key: string): string {
     return `#UE_${key}`;
   }
@@ -44,14 +44,6 @@ export abstract class BaseUpdateExpressionInput extends BaseExpressionInput {
       this.values = values;
       return this;
     }
-
-    Object.keys(names).forEach(nameKey => {
-      if (this.names[nameKey]) {
-        throw new Error(
-          `Failed to build update expression, there are multiple update input referencing the same attribute "${nameKey}".`
-        );
-      }
-    });
 
     if (update.constructor === this.constructor) {
       this.expression += ',';

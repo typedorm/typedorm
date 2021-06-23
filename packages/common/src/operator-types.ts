@@ -49,6 +49,7 @@ export namespace FilterType {
 export namespace UpdateType {
   export type ArithmeticOperator = 'INCREMENT_BY' | 'DECREMENT_BY';
   export type SetUpdateOperator = 'IF_NOT_EXISTS' | 'LIST_APPEND';
+  export type Action = 'SET' | 'REMOVE' | 'ADD' | 'DELETE';
 }
 
 export type SimpleOperator =

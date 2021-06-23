@@ -1,8 +1,8 @@
-import {UpdateType, ScalarType, UPDATE_KEYWORD} from '@typedorm/common';
+import {UpdateType, ScalarType} from '@typedorm/common';
 import {BaseUpdateExpressionInput} from '../base-update-expression-input';
 
 export class SetUpdate extends BaseUpdateExpressionInput {
-  prefix = UPDATE_KEYWORD.SET;
+  protected prefix: UpdateType.Action = 'SET';
 
   /**
    * Support specifying additional arithmetic operations

@@ -1,8 +1,8 @@
-import {UPDATE_KEYWORD} from '@typedorm/common';
+import {UpdateType} from '@typedorm/common';
 import {BaseUpdateExpressionInput} from '../base-update-expression-input';
 
 export class RemoveUpdate extends BaseUpdateExpressionInput {
-  prefix = UPDATE_KEYWORD.REMOVE;
+  protected prefix: UpdateType.Action = 'REMOVE';
 
   remove(keyOrPath: string) {
     const attrExpName = this.addExpressionName(keyOrPath);

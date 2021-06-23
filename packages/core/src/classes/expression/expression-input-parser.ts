@@ -3,6 +3,7 @@ import {
   RangeOperator,
   ScalarType,
   SimpleOperator,
+  UpdateType,
 } from '@typedorm/common';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {KeyCondition} from './key-condition';
@@ -15,7 +16,12 @@ import {Condition} from './condition';
 import {Projection} from './projection';
 import {KeyConditionOptions} from './key-condition-options-type';
 import {ProjectionKeys} from './projection-keys-options-type';
-import {UpdateBody} from './update-body-type';
+import {
+  isSetOperatorComplexValueType,
+  isSetOperatorValueType,
+  UpdateBody,
+} from './update-body-type';
+import {SetUpdate} from './update/set-update';
 
 /**
  * Parses expression input to expression instances
@@ -43,13 +49,13 @@ export class ExpressionInputParser {
   }
 
   parseToUpdate<Entity, PrimaryKey>(body: UpdateBody<Entity, PrimaryKey>) {
-    // TODO: implement update parse
+    return this.parseToUpdateExpression(body);
   }
 
   /**
    * Generic Recursive input parser
    * Recursively parses nested object to build expression of type ExpClass
-   * @param input Complex options object to parse
+   * @param options Complex options object to parse
    * @param ExpClass Type of expression to build, can be of type Filter, Condition etc.
    *
    */
@@ -112,6 +118,90 @@ export class ExpressionInputParser {
         }
       }
     );
+  }
+
+  /**
+   * Parses input to update expression
+   * @param body body to parse
+   */
+  private parseToUpdateExpression(body: any) {
+    return Object.entries(body)
+      .map(([attr, value]) => {
+        if (!isSetOperatorValueType(value)) {
+          return this.parseSetValueToUpdateExp(attr, value);
+          // TODO: replace this with other `ADD`, `DELETE` and `REMOVE` operators
+          // } else if (!isAddOperatorValueType(value)) {
+          //   throw new Error('Not Implemented!');
+        } else {
+          // fallback to default `SET` action based update
+          return this.parseSetValueToUpdateExp(attr, value);
+        }
+      })
+      .reduce((acc, currExp) => {
+        acc.merge(currExp);
+        return acc;
+      }, new SetUpdate());
+  }
+
+  /**
+   * Parses single attribute into update expression instance
+   * @param attribute name/path of the attribute
+   * @param attributeValue value to update
+   */
+  private parseSetValueToUpdateExp(
+    attribute: string,
+    attributeValue: any // attribute value before operator extraction
+  ): SetUpdate {
+    const [operator, operatorValue] = Object.entries(attributeValue)[0] as [
+      (
+        | UpdateType.ArithmeticOperator
+        | UpdateType.SetUpdateOperator
+        | UpdateType.Action
+      ),
+      any
+    ];
+
+    const exp = new SetUpdate();
+    switch (operator) {
+      case 'INCREMENT_BY':
+      case 'DECREMENT_BY': {
+        return exp.setTo(attribute, operatorValue, operator);
+      }
+      case 'IF_NOT_EXISTS': {
+        if (isSetOperatorComplexValueType(operatorValue)) {
+          return exp.setToIfNotExists(
+            attribute,
+            operatorValue.$VALUE,
+            operatorValue.$PATH
+          );
+        } else {
+          return exp.setToIfNotExists(attribute, operatorValue);
+        }
+      }
+      case 'LIST_APPEND': {
+        if (isSetOperatorComplexValueType(operatorValue)) {
+          return exp.setOrAppendToList(
+            attribute,
+            operatorValue.$VALUE,
+            operatorValue.$PATH
+          );
+        } else {
+          return exp.setOrAppendToList(attribute, operatorValue);
+        }
+      }
+      case 'SET': {
+        /**
+         * aliased set support, this allows access patterns like
+         * {id: { SET: '1'}}
+         * behaves similar to {id: '1'}
+         */
+        return this.parseSetValueToUpdateExp(attribute, operatorValue);
+      }
+      default: {
+        // handle attribute with map type
+        return exp.setTo(attribute, attributeValue);
+      }
+    }
   }
 
   /**
