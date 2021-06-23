@@ -48,6 +48,12 @@ test('builds simple attribute metadata', () => {
       entityClass: User,
       table,
     },
+    {
+      entityClass: User,
+      type: 'Array',
+      name: 'addresses',
+      table,
+    },
   ]);
 });
 
@@ -88,6 +94,12 @@ test('builds attribute metadata for inherited entity', () => {
       name: 'age',
       type: 'Number',
       entityClass: Admin,
+      table,
+    },
+    {
+      entityClass: Admin,
+      type: 'Array',
+      name: 'addresses',
       table,
     },
   ]);

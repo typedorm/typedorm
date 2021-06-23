@@ -5,6 +5,7 @@ import {ExpressionInputParser} from '../expression-input-parser';
 import {Filter} from '../filter';
 import {KeyCondition} from '../key-condition';
 import {Projection} from '../projection';
+import {SetUpdate} from '../update/set-update';
 
 let expInputParser: ExpressionInputParser;
 beforeEach(() => {
@@ -239,6 +240,12 @@ test('parses update body to update expression', () => {
   const update = expInputParser.parseToUpdate<User, UserPrimaryKey>({
     id: '2',
     name: {
+      IF_NOT_EXISTS: {
+        $PATH: 'id',
+        $VALUE: '123',
+      },
+    },
+    status: {
       IF_NOT_EXISTS: '1',
     },
     age: {
@@ -247,15 +254,49 @@ test('parses update body to update expression', () => {
     addresses: {
       LIST_APPEND: ['1234'],
     },
+    'addresses.name': {
+      LIST_APPEND: {
+        $PATH: 'address',
+        $VALUE: ['123'],
+      },
+    },
   });
-  const updateAlternate = expInputParser.parseToUpdate<User, UserPrimaryKey>({
+
+  expect(update).toBeInstanceOf(SetUpdate);
+  expect(update).toEqual({
+    _names: {
+      '#UE_address': 'address',
+      '#UE_addresses': 'addresses',
+      '#UE_addresses_name': 'name',
+      '#UE_age': 'age',
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
+    },
+    _values: {
+      ':UE_addresses': ['1234'],
+      ':UE_addresses_name': ['123'],
+      ':UE_age': 2,
+      ':UE_id': '2',
+      ':UE_name': '123',
+      ':UE_status': '1',
+    },
+    expression:
+      '#UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name), #UE_status = if_not_exists(#UE_status, :UE_status), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses), #UE_addresses.#UE_addresses_name = list_append(#UE_address, :UE_addresses_name)',
+    prefix: 'SET',
+  });
+});
+
+test('parses explicit set update body', () => {
+  const update = expInputParser.parseToUpdate<User, UserPrimaryKey>({
     id: {
       SET: '2',
     },
     name: {
       SET: {
         IF_NOT_EXISTS: {
-          age: 2,
+          $PATH: 'age',
+          $VALUE: '2',
         },
       },
     },
@@ -270,102 +311,22 @@ test('parses update body to update expression', () => {
       },
     },
   });
-
-  // expected
-  // const y = [
-  //   // set default
-  //   {
-  //     id: '1',
-  //   },
-  //   {
-  //     id: {
-  //       TO_IF_NOT_EXISTS: '1',
-  //     },
-  //   },
-  //   {
-  //     id: {
-  //       TO_IF_NOT_EXISTS: {
-  //         email: 'user@example.com',
-  //       },
-  //     },
-  //   },
-  //   {
-  //     items: {
-  //       APPEND_TO_LIST: [123, 1234],
-  //     },
-  //   },
-  //   {
-  //     items: {
-  //       APPEND_TO_LIST: {
-  //         previous_items: [123, 234],
-  //       },
-  //     },
-  //   },
-  //   // set explicit
-  //   {
-  //     SET: {
-  //       id: '1',
-  //     },
-  //   },
-  //   {
-  //     SET: {
-  //       age: {
-  //         INCREMENT_BY: 1,
-  //       },
-  //     },
-  //   },
-  //   {
-  //     SET: {
-  //       id: {
-  //         TO_IF_NOT_EXISTS: '1',
-  //       },
-  //     },
-  //   },
-  //   {
-  //     SET: {
-  //       id: {
-  //         TO_IF_NOT_EXISTS: {
-  //           email: 'user@example.com',
-  //         },
-  //       },
-  //     },
-  //   },
-  //   {
-  //     SET: {
-  //       items: {
-  //         APPEND_TO_LIST: [123, 1234],
-  //       },
-  //     },
-  //   },
-  //   {
-  //     SET: {
-  //       items: {
-  //         APPEND_TO_LIST: {
-  //           previous_items: [123, 234],
-  //         },
-  //       },
-  //     },
-  //   },
-  //   // add
-  //   {
-  //     ADD: {
-  //       age: 2,
-  //     },
-  //   },
-  //   {
-  //     ADD: {
-  //       items: ['123', '345'],
-  //     },
-  //   },
-  //   // remove
-  //   {
-  //     REMOVE: ['age', 'name', 'user.contact[1]'],
-  //   },
-  //   // delete
-  //   {
-  //     DELETE: {
-  //       color: ['red'],
-  //     },
-  //   },
-  // ];
+  expect(update).toBeInstanceOf(SetUpdate);
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_age': 'age',
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+    },
+    _values: {
+      ':UE_addresses': ['1234'],
+      ':UE_age': 2,
+      ':UE_id': '2',
+      ':UE_name': '2',
+    },
+    expression:
+      '#UE_id = :UE_id, #UE_name = if_not_exists(#UE_age, :UE_name), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses)',
+    prefix: 'SET',
+  });
 });
