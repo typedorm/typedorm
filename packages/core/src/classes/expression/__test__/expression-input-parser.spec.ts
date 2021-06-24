@@ -386,6 +386,15 @@ test('parses explicit "REMOVE" update body', () => {
     },
   });
 
-  expect(update).toEqual({});
-  expect(update).toEqual({});
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_age': 'age',
+      '#UE_newAddresses': 'newAddresses',
+    },
+    _values: {},
+    expression:
+      'REMOVE #UE_age, #UE_newAddresses[1], #UE_newAddresses[3], #UE_newAddresses[4]',
+    prefix: '',
+  });
 });

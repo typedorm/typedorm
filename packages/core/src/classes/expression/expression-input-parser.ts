@@ -245,13 +245,32 @@ export class ExpressionInputParser {
         }
       }
       case 'ADD': {
+        if (isEmptyObject(operatorValue)) {
+          throw new Error(
+            `Invalid value ${operatorValue} received for action "ADD", Only numbers and lists are supported.`
+          );
+        }
         return new AddUpdate().addTo(attribute, operatorValue);
       }
       case 'DELETE': {
         return new DeleteUpdate().delete(attribute, operatorValue);
       }
       case 'REMOVE': {
-        return new RemoveUpdate().remove(attribute);
+        if (typeof operatorValue === 'boolean' && !!operatorValue) {
+          return new RemoveUpdate().remove(attribute);
+        } else if (
+          !isEmptyObject(operatorValue) &&
+          Array.isArray(operatorValue.$AT_INDEX)
+        ) {
+          return new RemoveUpdate().remove(attribute, {
+            atIndexes: operatorValue.$AT_INDEX,
+          });
+        } else {
+          throw new Error(
+            `Invalid value ${operatorValue} received for action "REMOVE". Value must be set to boolean
+            In addition, You may use special value type {$AT_INDEX: Array<number>} for attribute of type list..`
+          );
+        }
       }
       default: {
         // handle attribute with map type
