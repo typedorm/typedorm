@@ -1,8 +1,10 @@
 import {UpdateType} from '@typedorm/common';
-import {BaseExpressionInput} from './base-expression-input';
+import {BaseExpressionInput} from '../base-expression-input';
 
-export abstract class BaseUpdateExpressionInput extends BaseExpressionInput {
-  protected abstract prefix: UpdateType.Action;
+export class Update extends BaseExpressionInput {
+  // empty prefix for base update type
+  protected prefix = '';
+
   protected getExpNameKey(key: string): string {
     return `#UE_${key}`;
   }
@@ -29,24 +31,22 @@ export abstract class BaseUpdateExpressionInput extends BaseExpressionInput {
    * Support merging multiple update expressions with same keyword
    * @override merge
    */
-  merge(update: BaseUpdateExpressionInput) {
+  merge(update: Update) {
     const {expression, names, values, prefix} = update;
+
+    if (!prefix) {
+      throw new Error(
+        'Can not merge with Base `Update` type, merging expression must have a valid prefix.'
+      );
+    }
 
     // if merging condition does not have anything to merge return
     if (!expression) {
       return this;
     }
 
-    // if base condition does not have any expression replace
-    if (!this.expression) {
-      this.expression += expression;
-      this.names = names;
-      this.values = values;
-      return this;
-    }
-
     if (update.constructor === this.constructor) {
-      this.expression += ',';
+      this.expression += this.expression ? ',' : '';
       this.appendToExpression(expression);
     } else {
       this.appendToExpression(`${prefix} ${expression}`);

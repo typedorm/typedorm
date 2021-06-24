@@ -1,7 +1,7 @@
 import {ScalarType, UpdateType} from '@typedorm/common';
-import {BaseUpdateExpressionInput} from '../base-update-expression-input';
+import {Update} from './update';
 
-export class AddUpdate extends BaseUpdateExpressionInput {
+export class AddUpdate extends Update {
   protected prefix: UpdateType.Action = 'ADD';
 
   addTo(key: string, value: number | ScalarType[]): this {

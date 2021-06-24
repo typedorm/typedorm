@@ -1,7 +1,7 @@
 import {ScalarType, UpdateType} from '@typedorm/common';
-import {BaseUpdateExpressionInput} from '../base-update-expression-input';
+import {Update} from './update';
 
-export class DeleteUpdate extends BaseUpdateExpressionInput {
+export class DeleteUpdate extends Update {
   protected prefix: UpdateType.Action = 'DELETE';
 
   /**

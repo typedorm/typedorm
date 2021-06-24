@@ -16,12 +16,13 @@ import {Condition} from './condition';
 import {Projection} from './projection';
 import {KeyConditionOptions} from './key-condition-options-type';
 import {ProjectionKeys} from './projection-keys-options-type';
-import {
-  isSetOperatorComplexValueType,
-  isSetOperatorValueType,
-  UpdateBody,
-} from './update-body-type';
+import {isSetOperatorComplexValueType, UpdateBody} from './update-body-type';
 import {SetUpdate} from './update/set-update';
+import {AddUpdate} from './update/add-update';
+import {Update} from './update/update';
+
+import {DeleteUpdate} from './update/delete-update';
+import {RemoveUpdate} from './update/remove-update';
 
 /**
  * Parses expression input to expression instances
@@ -48,7 +49,9 @@ export class ExpressionInputParser {
     return projection;
   }
 
-  parseToUpdate<Entity, PrimaryKey>(body: UpdateBody<Entity, PrimaryKey>) {
+  parseToUpdate<Entity, AdditionalProperties = {}>(
+    body: UpdateBody<Entity, AdditionalProperties>
+  ) {
     return this.parseToUpdateExpression(body);
   }
 
@@ -125,22 +128,53 @@ export class ExpressionInputParser {
    * @param body body to parse
    */
   private parseToUpdateExpression(body: any) {
-    return Object.entries(body)
-      .map(([attr, value]) => {
-        if (!isSetOperatorValueType(value)) {
-          return this.parseSetValueToUpdateExp(attr, value);
-          // TODO: replace this with other `ADD`, `DELETE` and `REMOVE` operators
-          // } else if (!isAddOperatorValueType(value)) {
-          //   throw new Error('Not Implemented!');
-        } else {
-          // fallback to default `SET` action based update
-          return this.parseSetValueToUpdateExp(attr, value);
-        }
-      })
-      .reduce((acc, currExp) => {
-        acc.merge(currExp);
-        return acc;
-      }, new SetUpdate());
+    return (
+      Object.entries(body)
+        .map(([attr, value]) => {
+          if (!isEmptyObject(value)) {
+            const [operator, operatorValue] = Object.entries(
+              value as any
+            )[0] as [
+              (
+                | UpdateType.ArithmeticOperator
+                | UpdateType.SetUpdateOperator
+                | UpdateType.Action
+              ),
+              any
+            ];
+
+            return this.parseValueToUpdateExp(
+              attr,
+              value,
+              operator,
+              operatorValue
+            );
+          } else {
+            // fallback to default `SET` action based update
+            return new SetUpdate().setTo(attr, value);
+          }
+        })
+        // merge all expressions with matching action
+        .reduce(
+          (acc, currExp) => {
+            acc
+              .find(instance => instance.constructor === currExp.constructor)!
+              .merge(currExp);
+            return acc;
+          },
+          [
+            new SetUpdate(),
+            new AddUpdate(),
+            new RemoveUpdate(),
+            new DeleteUpdate(),
+          ]
+        )
+        // merge all expressions of different actions
+        .reduce((acc, curr) => {
+          acc.merge(curr);
+          return acc;
+        }, new Update())
+    );
   }
 
   /**
@@ -148,45 +182,40 @@ export class ExpressionInputParser {
    * @param attribute name/path of the attribute
    * @param attributeValue value to update
    */
-  private parseSetValueToUpdateExp(
+  private parseValueToUpdateExp(
     attribute: string,
-    attributeValue: any // attribute value before operator extraction
-  ): SetUpdate {
-    const [operator, operatorValue] = Object.entries(attributeValue)[0] as [
-      (
-        | UpdateType.ArithmeticOperator
-        | UpdateType.SetUpdateOperator
-        | UpdateType.Action
-      ),
-      any
-    ];
-
-    const exp = new SetUpdate();
+    attributeValue: any, // attribute value to set
+    operator:
+      | UpdateType.ArithmeticOperator
+      | UpdateType.SetUpdateOperator
+      | UpdateType.Action,
+    operatorValue: any
+  ): Update {
     switch (operator) {
       case 'INCREMENT_BY':
       case 'DECREMENT_BY': {
-        return exp.setTo(attribute, operatorValue, operator);
+        return new SetUpdate().setTo(attribute, operatorValue, operator);
       }
       case 'IF_NOT_EXISTS': {
         if (isSetOperatorComplexValueType(operatorValue)) {
-          return exp.setToIfNotExists(
+          return new SetUpdate().setToIfNotExists(
             attribute,
             operatorValue.$VALUE,
             operatorValue.$PATH
           );
         } else {
-          return exp.setToIfNotExists(attribute, operatorValue);
+          return new SetUpdate().setToIfNotExists(attribute, operatorValue);
         }
       }
       case 'LIST_APPEND': {
         if (isSetOperatorComplexValueType(operatorValue)) {
-          return exp.setOrAppendToList(
+          return new SetUpdate().setOrAppendToList(
             attribute,
             operatorValue.$VALUE,
             operatorValue.$PATH
           );
         } else {
-          return exp.setOrAppendToList(attribute, operatorValue);
+          return new SetUpdate().setOrAppendToList(attribute, operatorValue);
         }
       }
       case 'SET': {
@@ -195,11 +224,38 @@ export class ExpressionInputParser {
          * {id: { SET: '1'}}
          * behaves similar to {id: '1'}
          */
-        return this.parseSetValueToUpdateExp(attribute, operatorValue);
+        // handle explicit set exp
+        if (!isEmptyObject(operatorValue)) {
+          const [nestedOperator, nestedOperatorValue] = Object.entries(
+            operatorValue
+          )[0] as [
+            UpdateType.ArithmeticOperator | UpdateType.SetUpdateOperator,
+            any
+          ];
+
+          return this.parseValueToUpdateExp(
+            attribute,
+            nestedOperatorValue,
+            nestedOperator,
+            nestedOperatorValue
+          );
+        } else {
+          // handle attribute with map type
+          return new SetUpdate().setTo(attribute, operatorValue);
+        }
+      }
+      case 'ADD': {
+        return new AddUpdate().addTo(attribute, operatorValue);
+      }
+      case 'DELETE': {
+        return new DeleteUpdate().delete(attribute, operatorValue);
+      }
+      case 'REMOVE': {
+        return new RemoveUpdate().remove(attribute);
       }
       default: {
         // handle attribute with map type
-        return exp.setTo(attribute, attributeValue);
+        return new SetUpdate().setTo(attribute, attributeValue);
       }
     }
   }

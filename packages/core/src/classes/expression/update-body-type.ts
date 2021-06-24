@@ -1,4 +1,9 @@
-import {UpdateType, UpdateAttributes, RequireOnlyOne} from '@typedorm/common';
+import {
+  UpdateType,
+  UpdateAttributes,
+  RequireOnlyOne,
+  InvalidType,
+} from '@typedorm/common';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 /**
  * Type Guards
@@ -9,7 +14,7 @@ export const isSetOperatorValueType = (
   const operators: Array<
     | UpdateType.ArithmeticOperator
     | UpdateType.SetUpdateOperator
-    | UpdateType.Action
+    | Extract<UpdateType.Action, 'SET'>
   > = ['INCREMENT_BY', 'DECREMENT_BY', 'IF_NOT_EXISTS', 'LIST_APPEND', 'SET'];
   const key = Object.keys(value)[0] as typeof operators[0];
   return !!operators.includes(key);
@@ -69,25 +74,76 @@ type SetValueType<Entity, enKey extends keyof Entity> =
   // almost identical to implicit type but has more explicit syntax
   | SetExplicitValueType<Entity, enKey>;
 
-type SetUpdateBody<Entity, PrimaryKey> =
-  | {
-      // implicit set  type
-      [enKey in keyof Entity]?: SetValueType<Entity, enKey>;
-    }
-  | {}
-  | UpdateAttributes<Entity, PrimaryKey>;
+type SetUpdateBody<Entity, AdditionalProperties> = {
+  // implicit set  type
+  [enKey in keyof Entity]?: SetValueType<Entity, enKey>;
+} &
+  {
+    // implicit set  type
+    [additionalKey in keyof AdditionalProperties]?: SetValueType<
+      AdditionalProperties,
+      additionalKey
+    >;
+  };
+
 // **************************************
 
 /**
+ * *************************************
  * ADD Action
  */
-// FIXME: apply correct add body logic
-type AddUpdateBody<Entity, PrimaryKey> =
-  | {
-      // implicit set  type
-      [enKey in keyof Entity]?: SetValueType<Entity, enKey>;
-    }
-  | {}
-  | UpdateAttributes<Entity, PrimaryKey>;
+type AddValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
+  ADD?: Entity[enKey] extends number | any[]
+    ? Entity[enKey]
+    : InvalidType<
+        [
+          'number | any[]',
+          "Update action 'ADD' can not be used for attribute",
+          enKey
+        ]
+      >;
+}>;
 
-export type UpdateBody<Entity, PrimaryKey> = SetUpdateBody<Entity, PrimaryKey>;
+type AddUpdateBody<Entity, AdditionalProperties> = {
+  // ADD type
+  [enKey in keyof Entity]?: AddValueType<Entity, enKey>;
+} &
+  {
+    // additional attributes
+    [additionalKey in keyof AdditionalProperties]?: AddValueType<
+      AdditionalProperties,
+      additionalKey
+    >;
+  };
+// **************************************
+
+/**
+ * *************************************
+ * REMOVE Action
+ */
+type RemoveValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
+  REMOVE?: Entity[enKey] extends any[]
+    ? {$AT_INDEX: number[]} | boolean
+    : boolean;
+}>;
+
+type RemoveUpdateBody<Entity, AdditionalProperties> = {
+  // REMOVE type
+  [enKey in keyof Entity]?: RemoveValueType<Entity, enKey>;
+} &
+  {
+    // additional attributes
+    [additionalKey in keyof AdditionalProperties]?: RemoveValueType<
+      AdditionalProperties,
+      additionalKey
+    >;
+  };
+// **************************************
+
+/**
+ * Update Body
+ */
+export type UpdateBody<Entity, AdditionalProperties> =
+  | SetUpdateBody<Entity, AdditionalProperties>
+  | AddUpdateBody<Entity, AdditionalProperties>
+  | RemoveUpdateBody<Entity, AdditionalProperties>;

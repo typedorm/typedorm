@@ -6,6 +6,7 @@ import {Filter} from '../filter';
 import {KeyCondition} from '../key-condition';
 import {Projection} from '../projection';
 import {SetUpdate} from '../update/set-update';
+import {Update} from '../update/update';
 
 let expInputParser: ExpressionInputParser;
 beforeEach(() => {
@@ -237,7 +238,10 @@ test('parses options to valid projection', () => {
  *
  */
 test('parses update body to update expression', () => {
-  const update = expInputParser.parseToUpdate<User, UserPrimaryKey>({
+  const update = expInputParser.parseToUpdate<
+    User,
+    {'user.newAddresses': Array<string>}
+  >({
     id: '2',
     name: {
       IF_NOT_EXISTS: {
@@ -254,36 +258,36 @@ test('parses update body to update expression', () => {
     addresses: {
       LIST_APPEND: ['1234'],
     },
-    'addresses.name': {
+    'user.newAddresses': {
       LIST_APPEND: {
-        $PATH: 'address',
+        $PATH: 'addresses',
         $VALUE: ['123'],
       },
     },
   });
 
-  expect(update).toBeInstanceOf(SetUpdate);
+  expect(update).toBeInstanceOf(Update);
   expect(update).toEqual({
     _names: {
-      '#UE_address': 'address',
       '#UE_addresses': 'addresses',
-      '#UE_addresses_name': 'name',
       '#UE_age': 'age',
       '#UE_id': 'id',
       '#UE_name': 'name',
       '#UE_status': 'status',
+      '#UE_user': 'user',
+      '#UE_user_newAddresses': 'newAddresses',
     },
     _values: {
       ':UE_addresses': ['1234'],
-      ':UE_addresses_name': ['123'],
+      ':UE_user_newAddresses': ['123'],
       ':UE_age': 2,
       ':UE_id': '2',
       ':UE_name': '123',
       ':UE_status': '1',
     },
     expression:
-      '#UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name), #UE_status = if_not_exists(#UE_status, :UE_status), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses), #UE_addresses.#UE_addresses_name = list_append(#UE_address, :UE_addresses_name)',
-    prefix: 'SET',
+      'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name), #UE_status = if_not_exists(#UE_status, :UE_status), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses), #UE_user.#UE_user_newAddresses = list_append(#UE_addresses, :UE_user_newAddresses)',
+    prefix: '',
   });
 });
 
@@ -311,7 +315,10 @@ test('parses explicit set update body', () => {
       },
     },
   });
-  expect(update).toBeInstanceOf(SetUpdate);
+  expect(update).toBeInstanceOf(Update);
+  expect(update.expression).toEqual(
+    'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_age, :UE_name), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses)'
+  );
   expect(update).toEqual({
     _names: {
       '#UE_addresses': 'addresses',
@@ -326,7 +333,59 @@ test('parses explicit set update body', () => {
       ':UE_name': '2',
     },
     expression:
-      '#UE_id = :UE_id, #UE_name = if_not_exists(#UE_age, :UE_name), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses)',
-    prefix: 'SET',
+      'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_age, :UE_name), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses)',
+    prefix: '',
   });
+});
+
+test('parses explicit "ADD" update body', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {newAddresses: Array<number>}
+  >({
+    age: {
+      ADD: 1,
+    },
+    addresses: {
+      ADD: ['123'],
+    },
+    newAddresses: {
+      ADD: [1234],
+    },
+  });
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_age': 'age',
+      '#UE_newAddresses': 'newAddresses',
+    },
+    _values: {
+      ':UE_addresses': ['123'],
+      ':UE_age': 1,
+      ':UE_newAddresses': [1234],
+    },
+    expression:
+      'ADD #UE_age :UE_age, #UE_addresses :UE_addresses, #UE_newAddresses :UE_newAddresses',
+    prefix: '',
+  });
+});
+
+test('parses explicit "REMOVE" update body', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {newAddresses: Array<Buffer>}
+  >({
+    age: {
+      REMOVE: true,
+    },
+    newAddresses: {
+      REMOVE: {
+        $AT_INDEX: [1, 3, 4],
+      },
+    },
+  });
+
+  expect(update).toEqual({});
+  expect(update).toEqual({});
 });

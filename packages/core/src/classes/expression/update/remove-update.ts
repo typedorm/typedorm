@@ -1,7 +1,7 @@
 import {UpdateType} from '@typedorm/common';
-import {BaseUpdateExpressionInput} from '../base-update-expression-input';
+import {Update} from './update';
 
-export class RemoveUpdate extends BaseUpdateExpressionInput {
+export class RemoveUpdate extends Update {
   protected prefix: UpdateType.Action = 'REMOVE';
 
   remove(keyOrPath: string) {
