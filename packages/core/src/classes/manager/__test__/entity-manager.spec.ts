@@ -427,6 +427,60 @@ test('updates item and return all new attributes', async () => {
   expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
 });
 
+test('updates item with multiple body actions', async () => {
+  dcMock.update.mockReturnValue({
+    promise: () => ({
+      Attributes: {
+        PK: 'USER#1',
+        SK: 'USER#1',
+        GSI1PK: 'USER#STATUS#active',
+        GSI1SK: 'USER#Me',
+        id: '1',
+        name: 'user',
+        status: 'active',
+      },
+    }),
+  });
+  const updatedItem = await manager.update<User, UserPrimaryKey>(
+    User,
+    {id: '1'},
+    {
+      name: 'user',
+      status: {
+        IF_NOT_EXISTS: {
+          $PATH: 'id',
+          $VALUE: 'active',
+        },
+      },
+    }
+  );
+
+  expect(dcMock.update).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#UE_GSI1SK': 'GSI1SK',
+      '#UE_GSI1PK': 'GSI1PK',
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':UE_GSI1SK': 'USER#user',
+      ':UE_GSI1PK': 'USER#STATUS#active',
+      ':UE_name': 'user',
+      ':UE_status': 'active',
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression:
+      'SET #UE_name = :UE_name, #UE_status = if_not_exists(#UE_id, :UE_status), #UE_GSI1SK = :UE_GSI1SK, #UE_GSI1PK = :UE_GSI1PK',
+  });
+  expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
+});
+
 test('updates item and attributes marked to be autoUpdated', async () => {
   jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
 

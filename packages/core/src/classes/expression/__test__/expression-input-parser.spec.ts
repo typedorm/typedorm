@@ -470,3 +470,20 @@ test('parses update body with mixed actions', () => {
     prefix: '',
   });
 });
+
+/**
+ * @group parseToUpdateValue
+ */
+test('correctly parses and returns update values', () => {
+  const value = expInputParser.parseToUpdateValue('age', {
+    ADD: 1,
+  });
+  expect(value).toEqual(1);
+});
+
+test('skips parsing and returns update values', () => {
+  const value = expInputParser.parseToUpdateValue('name', {
+    firstName: 'test',
+  });
+  expect(value).toEqual({firstName: 'test'});
+});

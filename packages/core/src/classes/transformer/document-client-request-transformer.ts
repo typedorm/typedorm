@@ -27,7 +27,6 @@ import {AttributeMetadata} from '../metadata/attribute-metadata';
 import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {BaseTransformer, MetadataOptions} from './base-transformer';
 import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
-import {ExpressionInputParser} from '../expression/expression-input-parser';
 import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
 
@@ -90,12 +89,10 @@ export interface ManagerToDynamoGetItemOptions {
 
 export class DocumentClientRequestTransformer extends BaseTransformer {
   protected _expressionBuilder: ExpressionBuilder;
-  protected _expressionInputParser: ExpressionInputParser;
 
   constructor(connection: Connection) {
     super(connection);
     this._expressionBuilder = new ExpressionBuilder();
-    this._expressionInputParser = new ExpressionInputParser();
   }
 
   get expressionBuilder() {

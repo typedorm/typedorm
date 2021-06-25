@@ -1,6 +1,7 @@
-import {EntityTarget, UpdateAttributes} from '@typedorm/common';
+import {EntityTarget} from '@typedorm/common';
 import {Connection} from '../connection/connection';
 import {ConditionOptions} from '../expression/condition-options-type';
+import {UpdateBody} from '../expression/update-body-type';
 import {Transaction} from './transaction';
 
 interface WriteTransactionCreateOptions<Entity> {
@@ -29,11 +30,15 @@ interface WriteTransactionUpdateOptions<Entity> {
    */
   where?: ConditionOptions<Entity>;
 }
-export interface WriteTransactionUpdate<Entity, PrimaryKey> {
+export interface WriteTransactionUpdate<
+  Entity,
+  PrimaryKey,
+  AdditionalProperties
+> {
   update: {
     item: EntityTarget<Entity>;
     primaryKey: PrimaryKey;
-    body: UpdateAttributes<Entity, PrimaryKey>;
+    body: UpdateBody<Entity, AdditionalProperties>;
     options?: WriteTransactionUpdateOptions<Entity>;
   };
 }
@@ -51,13 +56,13 @@ export interface WriteTransactionDelete<Entity, PrimaryKey> {
     options?: WriteTransactionDeleteOptions<Entity>;
   };
 }
-export type WriteTransactionItem<Entity, PrimaryKey> =
+export type WriteTransactionItem<Entity, PrimaryKey, AdditionalProperties> =
   | WriteTransactionCreate<Entity>
-  | WriteTransactionUpdate<Entity, PrimaryKey>
+  | WriteTransactionUpdate<Entity, PrimaryKey, AdditionalProperties>
   | WriteTransactionDelete<Entity, PrimaryKey>;
 
 export class WriteTransaction extends Transaction<
-  WriteTransactionItem<any, any>
+  WriteTransactionItem<any, any, any>
 > {
   constructor(
     /** only here for backwards compatibility
@@ -70,7 +75,7 @@ export class WriteTransaction extends Transaction<
      * only here for backwards compatibility
      * @deprecated use `.add` for appending bulk items
      */
-    transactionItems?: WriteTransactionItem<any, any>[]
+    transactionItems?: WriteTransactionItem<any, any, any>[]
   ) {
     super();
 
@@ -85,13 +90,13 @@ export class WriteTransaction extends Transaction<
   /**
    * @deprecated use operation specific method or `.add` instead
    */
-  chian<Entity, PrimaryKey>(
-    chainedItem: WriteTransactionItem<Entity, PrimaryKey>
+  chian<Entity, PrimaryKey, AdditionalProperties = {}>(
+    chainedItem: WriteTransactionItem<Entity, PrimaryKey, AdditionalProperties>
   ): this {
-    return this.add([chainedItem as WriteTransactionItem<any, any>]);
+    return this.add([chainedItem as WriteTransactionItem<any, any, any>]);
   }
 
-  add(transactionItems: WriteTransactionItem<any, any>[]): this {
+  add(transactionItems: WriteTransactionItem<any, any, any>[]): this {
     this.items.push(...transactionItems);
     return this;
   }
@@ -109,10 +114,14 @@ export class WriteTransaction extends Transaction<
     return this;
   }
 
-  addUpdateItem<Entity, PrimaryKey = Partial<Entity>>(
+  addUpdateItem<
+    Entity,
+    PrimaryKey = Partial<Entity>,
+    AdditionalProperties = {}
+  >(
     item: EntityTarget<Entity>,
     primaryKey: PrimaryKey,
-    body: UpdateAttributes<Entity, PrimaryKey>,
+    body: UpdateBody<Entity, AdditionalProperties>,
     options?: WriteTransactionUpdateOptions<Entity>
   ): this {
     this.items.push({

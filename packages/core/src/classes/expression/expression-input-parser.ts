@@ -57,6 +57,35 @@ export class ExpressionInputParser {
   }
 
   /**
+   * Parses complex update object to a value
+   */
+  parseToUpdateValue(attr: string, value: any) {
+    if (isObject(value) && !isEmptyObject(value)) {
+      const [operator, operatorValue] = Object.entries(value as any)[0] as [
+        (
+          | UpdateType.ArithmeticOperator
+          | UpdateType.SetUpdateOperator
+          | UpdateType.Action
+        ),
+        any
+      ];
+
+      const parsedUpdate = this.parseValueToUpdateExp(
+        attr,
+        value,
+        operator,
+        operatorValue
+      );
+      const originalValues = Object.values(parsedUpdate.values);
+      // return first result as the response
+      return originalValues[0];
+    } else {
+      // return value as a default value
+      return value;
+    }
+  }
+
+  /**
    * Generic Recursive input parser
    * Recursively parses nested object to build expression of type ExpClass
    * @param options Complex options object to parse

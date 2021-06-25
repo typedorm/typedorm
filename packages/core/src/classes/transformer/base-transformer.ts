@@ -6,8 +6,8 @@ import {
   EntityTarget,
   Table,
   SparseIndexParseError,
-  UpdateAttributes,
   CONSUMED_CAPACITY_TYPE,
+  UpdateAttributes,
 } from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
@@ -19,6 +19,7 @@ import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {isDynamoEntityKeySchema} from '../../helpers/is-dynamo-entity-key-schema';
 import {isKeyOfTypeAliasSchema} from '../../helpers/is-key-of-type-alias-schema';
 import {classToPlain} from 'class-transformer';
+import {ExpressionInputParser} from '../expression/expression-input-parser';
 
 export interface MetadataOptions {
   requestId?: string;
@@ -26,7 +27,11 @@ export interface MetadataOptions {
 }
 
 export abstract class BaseTransformer {
-  constructor(protected connection: Connection) {}
+  protected _expressionInputParser: ExpressionInputParser;
+
+  constructor(protected connection: Connection) {
+    this._expressionInputParser = new ExpressionInputParser();
+  }
   /**
    * Returns table name decorated for given entity class
    * @param entityClass Entity Class
@@ -144,8 +149,14 @@ export abstract class BaseTransformer {
 
     const affectedKeyAttributes = Object.entries(attributes).reduce(
       (acc, [attrKey, attrValue]) => {
+        // parse update body to retrieve actual value
+        const parsedAttrValue = this._expressionInputParser.parseToUpdateValue(
+          attrKey,
+          attrValue
+        );
+
         // bail early if current attribute type is not of type scalar
-        if (!isScalarType(attrValue)) {
+        if (!isScalarType(parsedAttrValue)) {
           return acc;
         }
 
@@ -159,7 +170,12 @@ export abstract class BaseTransformer {
 
             const parsedKey = parseKey(
               primaryKey.attributes[primaryKeyAttrName],
-              attributes
+              // override current attribute body with parsed value
+              // this is required since update expression can sometimes contain special update syntax
+              {
+                ...attributes,
+                [attrKey]: parsedAttrValue,
+              }
             );
             acc[primaryKeyAttrName] = parsedKey;
           }
@@ -192,10 +208,16 @@ export abstract class BaseTransformer {
     const affectedIndexes = Object.keys(attributes).reduce(
       (acc, attrKey: string) => {
         const currAttrValue = (attributes as any)[attrKey];
+        // parse update body to retrieve actual value
+        const parsedAttrValue = this._expressionInputParser.parseToUpdateValue(
+          attrKey,
+          currAttrValue
+        );
+
         // if current value is not of scalar type skip checking index
         if (
           attrKey.includes(nestedKeySeparator) ||
-          !isScalarType(currAttrValue)
+          !isScalarType(parsedAttrValue)
         ) {
           return acc;
         }
@@ -223,7 +245,12 @@ export abstract class BaseTransformer {
               try {
                 const parsedIndex = parseKey(
                   currIndex.attributes[interpolationKey],
-                  attributes
+                  // override current attribute body with parsed value
+                  // this is required since update expression can sometimes contain special update syntax
+                  {
+                    ...attributes,
+                    [attrKey]: parsedAttrValue,
+                  }
                 );
                 acc[interpolationKey] = parsedIndex;
               } catch (err) {

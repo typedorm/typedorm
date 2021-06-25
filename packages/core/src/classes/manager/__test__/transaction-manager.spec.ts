@@ -374,6 +374,68 @@ test('performs write transactions when removing entities with unique attributes 
   });
 });
 
+test('performs write transactions when with mixed update actions ', async () => {
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const transaction = new WriteTransaction(connection).addUpdateItem<
+    User,
+    UserPrimaryKey
+  >(
+    User,
+    {id: '1'},
+    {
+      addresses: {
+        REMOVE: {
+          $AT_INDEX: [1],
+        },
+      },
+      name: {
+        IF_NOT_EXISTS: {
+          $PATH: 'updated',
+          $VALUE: 'active',
+        },
+      },
+    }
+  );
+
+  await manager.write(transaction);
+
+  expect(dcMock.transactWrite).toHaveBeenCalledTimes(1);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Update: {
+          ExpressionAttributeNames: {
+            '#UE_addresses': 'addresses',
+            '#UE_name': 'name',
+            '#UE_updated': 'updated',
+            '#UE_GSI1SK': 'GSI1SK',
+          },
+          ExpressionAttributeValues: {
+            ':UE_GSI1SK': 'USER#active',
+            ':UE_name': 'active',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+          UpdateExpression:
+            'SET #UE_name = if_not_exists(#UE_updated, :UE_name), #UE_GSI1SK = :UE_GSI1SK REMOVE #UE_addresses[1]',
+        },
+      },
+    ],
+  });
+});
+
 /**
  * @group read
  */
