@@ -23,6 +23,7 @@ import {Update} from './update/update';
 
 import {DeleteUpdate} from './update/delete-update';
 import {RemoveUpdate} from './update/remove-update';
+import {isObject} from '../../helpers/is-object';
 
 /**
  * Parses expression input to expression instances
@@ -131,7 +132,7 @@ export class ExpressionInputParser {
     return (
       Object.entries(body)
         .map(([attr, value]) => {
-          if (!isEmptyObject(value)) {
+          if (isObject(value) && !isEmptyObject(value)) {
             const [operator, operatorValue] = Object.entries(
               value as any
             )[0] as [

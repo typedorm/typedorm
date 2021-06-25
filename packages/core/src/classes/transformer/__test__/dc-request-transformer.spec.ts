@@ -458,12 +458,12 @@ test('transforms update item request', () => {
   );
   expect(updatedItem).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_GSI1SK': 'GSI1SK',
     },
     ExpressionAttributeValues: {
-      ':val0': 'new name',
-      ':val1': 'USER#new name',
+      ':UE_name': 'new name',
+      ':UE_GSI1SK': 'USER#new name',
     },
     Key: {
       PK: 'USER#1',
@@ -471,7 +471,7 @@ test('transforms update item request', () => {
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    UpdateExpression: 'SET #UE_name = :UE_name, #UE_GSI1SK = :UE_GSI1SK',
   });
 });
 
@@ -502,18 +502,19 @@ test('transforms update item record with unique attributes', () => {
     {
       Update: {
         ExpressionAttributeNames: {
-          '#attr0': 'name',
-          '#attr1': 'email',
-          '#attr2': 'GSI1SK',
+          '#UE_name': 'name',
+          '#UE_email': 'email',
+          '#UE_GSI1SK': 'GSI1SK',
         },
         ExpressionAttributeValues: {
-          ':val0': 'new name',
-          ':val1': 'new@email.com',
-          ':val2': 'USER#new name',
+          ':UE_name': 'new name',
+          ':UE_email': 'new@email.com',
+          ':UE_GSI1SK': 'USER#new name',
         },
         Key: {PK: 'USER#1', SK: 'USER#1'},
         TableName: 'test-table',
-        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+        UpdateExpression:
+          'SET #UE_name = :UE_name, #UE_email = :UE_email, #UE_GSI1SK = :UE_GSI1SK',
       },
     },
     {
@@ -559,13 +560,13 @@ test('transforms update item request with condition input', () => {
   );
   expect(updatedItem).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_GSI1SK': 'GSI1SK',
       '#CE_age': 'age',
     },
     ExpressionAttributeValues: {
-      ':val0': 'new name',
-      ':val1': 'USER#new name',
+      ':UE_name': 'new name',
+      ':UE_GSI1SK': 'USER#new name',
       ':CE_age_end': 10,
       ':CE_age_start': 3,
     },
@@ -575,7 +576,7 @@ test('transforms update item request with condition input', () => {
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    UpdateExpression: 'SET #UE_name = :UE_name, #UE_GSI1SK = :UE_GSI1SK',
     ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
   });
 });
@@ -614,21 +615,22 @@ test('transforms update item record with unique attributes and condition options
     {
       Update: {
         ExpressionAttributeNames: {
-          '#attr0': 'name',
-          '#attr1': 'email',
-          '#attr2': 'GSI1SK',
+          '#UE_name': 'name',
+          '#UE_email': 'email',
+          '#UE_GSI1SK': 'GSI1SK',
           '#CE_user': 'user',
           '#CE_user_name': 'name',
         },
         ExpressionAttributeValues: {
-          ':val0': 'new name',
-          ':val1': 'new@email.com',
-          ':val2': 'USER#new name',
+          ':UE_name': 'new name',
+          ':UE_email': 'new@email.com',
+          ':UE_GSI1SK': 'USER#new name',
           ':CE_user_name': 'test user',
         },
         Key: {PK: 'USER#1', SK: 'USER#1'},
         TableName: 'test-table',
-        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+        UpdateExpression:
+          'SET #UE_name = :UE_name, #UE_email = :UE_email, #UE_GSI1SK = :UE_GSI1SK',
         ConditionExpression: '#CE_user.#CE_user_name <> :CE_user_name',
       },
     },
@@ -824,14 +826,14 @@ test('transforms update item request with complex condition input', () => {
   );
   expect(updatedItem).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_GSI1SK': 'GSI1SK',
       '#CE_age': 'age',
       '#CE_status': 'status',
     },
     ExpressionAttributeValues: {
-      ':val0': 'new name',
-      ':val1': 'USER#new name',
+      ':UE_name': 'new name',
+      ':UE_GSI1SK': 'USER#new name',
       ':CE_age': 3,
       ':CE_status_0': 'active',
       ':CE_status_1': 'standby',
@@ -842,7 +844,7 @@ test('transforms update item request with complex condition input', () => {
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    UpdateExpression: 'SET #UE_name = :UE_name, #UE_GSI1SK = :UE_GSI1SK',
     ConditionExpression:
       '(#CE_age >= :CE_age) AND (#CE_status IN (:CE_status_0, :CE_status_1))',
   });

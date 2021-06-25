@@ -29,6 +29,7 @@ import {BaseTransformer, MetadataOptions} from './base-transformer';
 import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
 import {ExpressionInputParser} from '../expression/expression-input-parser';
 import {KeyConditionOptions} from '../expression/key-condition-options-type';
+import {UpdateBody} from '../expression/update-body-type';
 
 export interface ManagerToDynamoPutItemOptions {
   /**
@@ -373,10 +374,10 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     return transformBody;
   }
 
-  toDynamoUpdateItem<Entity, PrimaryKey>(
+  toDynamoUpdateItem<Entity, PrimaryKey, AdditionalProperties = {}>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
-    body: UpdateAttributes<Entity, PrimaryKey>,
+    body: UpdateBody<Entity, AdditionalProperties>,
     options: ManagerToDynamoUpdateItemsOptions = {},
     metadataOptions?: MetadataOptions
   ):
@@ -553,19 +554,15 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // for any other non key attribute updates, build update expression
+    const update = this.expressionInputParser.parseToUpdate({
+      ...attributesToUpdate,
+      ...affectedIndexes,
+    });
     const {
       UpdateExpression,
       ExpressionAttributeNames,
       ExpressionAttributeValues,
-    } = this.expressionBuilder.buildUpdateExpression(
-      {
-        ...attributesToUpdate,
-        ...affectedIndexes,
-      },
-      {
-        nestedKeySeparator,
-      }
-    );
+    } = this.expressionBuilder.buildUpdateExpression(update);
     itemToUpdate.UpdateExpression = UpdateExpression;
     itemToUpdate.ExpressionAttributeNames = {
       ...ExpressionAttributeNames,

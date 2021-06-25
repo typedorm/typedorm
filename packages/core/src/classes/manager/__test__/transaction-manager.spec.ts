@@ -112,19 +112,20 @@ test('performs write transactions for simple writes', async () => {
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'status',
-            '#attr1': 'GSI1PK',
+            '#UE_status': 'status',
+            '#UE_GSI1PK': 'GSI1PK',
           },
           ExpressionAttributeValues: {
-            ':val0': 'active',
-            ':val1': 'USER#STATUS#active',
+            ':UE_status': 'active',
+            ':UE_GSI1PK': 'USER#STATUS#active',
           },
           Key: {
             PK: 'USER#1',
             SK: 'USER#1',
           },
           TableName: 'test-table',
-          UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+          UpdateExpression:
+            'SET #UE_status = :UE_status, #UE_GSI1PK = :UE_GSI1PK',
         },
       },
       {
@@ -195,14 +196,14 @@ test('performs write transactions for entities with unique attributes ', async (
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'email',
-            '#attr1': 'status',
-            '#attr2': 'GSI1PK',
+            '#UE_email': 'email',
+            '#UE_status': 'status',
+            '#UE_GSI1PK': 'GSI1PK',
           },
           ExpressionAttributeValues: {
-            ':val0': 'new@example.com',
-            ':val1': 'active',
-            ':val2': 'USER#STATUS#active',
+            ':UE_email': 'new@example.com',
+            ':UE_status': 'active',
+            ':UE_GSI1PK': 'USER#STATUS#active',
           },
           Key: {
             PK: 'USER#1',
@@ -210,7 +211,7 @@ test('performs write transactions for entities with unique attributes ', async (
           },
           TableName: 'test-table',
           UpdateExpression:
-            'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+            'SET #UE_email = :UE_email, #UE_status = :UE_status, #UE_GSI1PK = :UE_GSI1PK',
         },
       },
       {
@@ -281,14 +282,14 @@ test('performs write transactions for entities with non existing unique attribut
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'email',
-            '#attr1': 'status',
-            '#attr2': 'GSI1PK',
+            '#UE_email': 'email',
+            '#UE_status': 'status',
+            '#UE_GSI1PK': 'GSI1PK',
           },
           ExpressionAttributeValues: {
-            ':val0': 'new@example.com',
-            ':val1': 'active',
-            ':val2': 'USER#STATUS#active',
+            ':UE_email': 'new@example.com',
+            ':UE_status': 'active',
+            ':UE_GSI1PK': 'USER#STATUS#active',
           },
           Key: {
             PK: 'USER#1',
@@ -296,7 +297,7 @@ test('performs write transactions for entities with non existing unique attribut
           },
           TableName: 'test-table',
           UpdateExpression:
-            'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+            'SET #UE_email = :UE_email, #UE_status = :UE_status, #UE_GSI1PK = :UE_GSI1PK',
         },
       },
       {

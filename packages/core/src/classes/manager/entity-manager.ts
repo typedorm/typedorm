@@ -5,7 +5,6 @@ import {
   MANAGER_NAME,
   QUERY_ORDER,
   STATS_TYPE,
-  UpdateAttributes,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
 import {isEmptyObject} from '../../helpers/is-empty-object';
@@ -22,6 +21,7 @@ import {MetadataOptions} from '../transformer/base-transformer';
 import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 import {ProjectionKeys} from '../expression/projection-keys-options-type';
 import {KeyConditionOptions} from '../expression/key-condition-options-type';
+import {UpdateBody} from '../expression/update-body-type';
 
 export interface EntityManagerCreateOptions<Entity> {
   /**
@@ -375,10 +375,10 @@ export class EntityManager {
    * @param body Attributes to update
    * @param options update options
    */
-  async update<Entity, PrimaryKey = Partial<Entity>>(
+  async update<Entity, PrimaryKey = Partial<Entity>, AdditionalProperties = {}>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
-    body: UpdateAttributes<Entity, PrimaryKey>,
+    body: UpdateBody<Entity, AdditionalProperties>,
     options?: EntityManagerUpdateOptions<Entity>,
     metadataOptions?: MetadataOptions
   ): Promise<Entity | undefined> {

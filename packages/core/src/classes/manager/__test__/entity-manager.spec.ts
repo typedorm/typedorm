@@ -404,16 +404,16 @@ test('updates item and return all new attributes', async () => {
 
   expect(dcMock.update).toHaveBeenCalledWith({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'status',
-      '#attr2': 'GSI1SK',
-      '#attr3': 'GSI1PK',
+      '#UE_GSI1PK': 'GSI1PK',
+      '#UE_GSI1SK': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
     },
     ExpressionAttributeValues: {
-      ':val0': 'user',
-      ':val1': 'active',
-      ':val2': 'USER#user',
-      ':val3': 'USER#STATUS#active',
+      ':UE_GSI1PK': 'USER#STATUS#active',
+      ':UE_GSI1SK': 'USER#user',
+      ':UE_name': 'user',
+      ':UE_status': 'active',
     },
     Key: {
       PK: 'USER#1',
@@ -422,7 +422,7 @@ test('updates item and return all new attributes', async () => {
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
     UpdateExpression:
-      'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2, #attr3 = :val3',
+      'SET #UE_name = :UE_name, #UE_status = :UE_status, #UE_GSI1SK = :UE_GSI1SK, #UE_GSI1PK = :UE_GSI1PK',
   });
   expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
 });
@@ -458,12 +458,12 @@ test('updates item and attributes marked to be autoUpdated', async () => {
 
   expect(dcMock.update).toHaveBeenCalledWith({
     ExpressionAttributeNames: {
-      '#attr0': 'updatedAt',
-      '#attr1': 'GSI1PK',
+      '#UE_updatedAt': 'updatedAt',
+      '#UE_GSI1PK': 'GSI1PK',
     },
     ExpressionAttributeValues: {
-      ':val0': 1577836800,
-      ':val1': 'USER#UPDATED_AT#1577836800',
+      ':UE_updatedAt': 1577836800,
+      ':UE_GSI1PK': 'USER#UPDATED_AT#1577836800',
     },
     Key: {
       PK: 'USER#1',
@@ -471,7 +471,8 @@ test('updates item and attributes marked to be autoUpdated', async () => {
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    UpdateExpression:
+      'SET #UE_updatedAt = :UE_updatedAt, #UE_GSI1PK = :UE_GSI1PK',
   });
   expect(updatedItem).toEqual({id: '1', name: 'Me', status: 'active'});
 });
@@ -530,17 +531,17 @@ test('updates item with unique attributes and returns all updated attributes', a
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'email',
+            '#UE_email': 'email',
           },
           ExpressionAttributeValues: {
-            ':val0': 'new@examil.com',
+            ':UE_email': 'new@examil.com',
           },
           Key: {
             PK: 'USER#1',
             SK: 'USER#1',
           },
           TableName: 'test-table',
-          UpdateExpression: 'SET #attr0 = :val0',
+          UpdateExpression: 'SET #UE_email = :UE_email',
         },
       },
       {
@@ -609,17 +610,17 @@ test('updates item and return all new attributes with given condition', async ()
 
   expect(dcMock.update).toHaveBeenCalledWith({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'status',
-      '#attr2': 'GSI1SK',
-      '#attr3': 'GSI1PK',
+      '#UE_GSI1PK': 'GSI1PK',
+      '#UE_GSI1SK': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
       '#CE_age': 'age',
     },
     ExpressionAttributeValues: {
-      ':val0': 'user',
-      ':val1': 'active',
-      ':val2': 'USER#user',
-      ':val3': 'USER#STATUS#active',
+      ':UE_GSI1PK': 'USER#STATUS#active',
+      ':UE_GSI1SK': 'USER#user',
+      ':UE_name': 'user',
+      ':UE_status': 'active',
       ':CE_age_end': 11,
       ':CE_age_start': 1,
     },
@@ -630,7 +631,7 @@ test('updates item and return all new attributes with given condition', async ()
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
     UpdateExpression:
-      'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2, #attr3 = :val3',
+      'SET #UE_name = :UE_name, #UE_status = :UE_status, #UE_GSI1SK = :UE_GSI1SK, #UE_GSI1PK = :UE_GSI1PK',
     ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
   });
   expect(updatedItem).toEqual({
@@ -681,17 +682,17 @@ test('updates item and create new unique item when no previous record was found'
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'email',
+            '#UE_email': 'email',
           },
           ExpressionAttributeValues: {
-            ':val0': 'new@examil.com',
+            ':UE_email': 'new@examil.com',
           },
           Key: {
             PK: 'USER#1',
             SK: 'USER#1',
           },
           TableName: 'test-table',
-          UpdateExpression: 'SET #attr0 = :val0',
+          UpdateExpression: 'SET #UE_email = :UE_email',
         },
       },
       {
