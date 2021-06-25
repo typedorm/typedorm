@@ -5,7 +5,6 @@ import {ExpressionInputParser} from '../expression-input-parser';
 import {Filter} from '../filter';
 import {KeyCondition} from '../key-condition';
 import {Projection} from '../projection';
-import {SetUpdate} from '../update/set-update';
 import {Update} from '../update/update';
 
 let expInputParser: ExpressionInputParser;
@@ -395,6 +394,79 @@ test('parses explicit "REMOVE" update body', () => {
     _values: {},
     expression:
       'REMOVE #UE_age, #UE_newAddresses[1], #UE_newAddresses[3], #UE_newAddresses[4]',
+    prefix: '',
+  });
+});
+
+test('parses explicit "DELETE" update body', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {newAddresses: Array<Buffer>}
+  >({
+    addresses: {
+      DELETE: ['123'],
+    },
+    newAddresses: {
+      DELETE: [Buffer.from('12')],
+    },
+  });
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_newAddresses': 'newAddresses',
+    },
+    _values: {
+      ':UE_addresses': ['123'],
+      ':UE_newAddresses': [Buffer.from('12')],
+    },
+    expression:
+      'DELETE #UE_addresses :UE_addresses, #UE_newAddresses :UE_newAddresses',
+    prefix: '',
+  });
+});
+
+test('parses update body with mixed actions', () => {
+  const update = expInputParser.parseToUpdate<User>({
+    id: '2',
+    name: {
+      IF_NOT_EXISTS: {
+        $PATH: 'id',
+        $VALUE: '123',
+      },
+    },
+    status: {
+      SET: {
+        IF_NOT_EXISTS: 'active',
+      },
+    },
+    age: {
+      ADD: 1,
+    },
+    addresses: {
+      DELETE: ['123'],
+    },
+  });
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_age': 'age',
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
+    },
+    _values: {
+      ':UE_addresses': ['123'],
+      ':UE_age': 1,
+      ':UE_id': '2',
+      ':UE_name': '123',
+      ':UE_status': 'active',
+    },
+    expression:
+      'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name), #UE_status = if_not_exists(#UE_status, :UE_status) ADD #UE_age :UE_age DELETE #UE_addresses :UE_addresses',
     prefix: '',
   });
 });
