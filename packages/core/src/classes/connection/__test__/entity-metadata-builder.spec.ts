@@ -229,6 +229,38 @@ test('builds metadata of derived entity with multiple levels of inheritance', ()
   ]);
 });
 
+/**
+ * Issue #138
+ */
+test('builds metadata of derived entity where derived entity does not have any explicit metadata defined', () => {
+  abstract class BaseEntity {
+    @Attribute()
+    id: string;
+  }
+
+  @Entity({
+    name: 'SubEntity',
+    primaryKey: {
+      partitionKey: 'SubEntity#{{id}}',
+      sortKey: 'SubEntity#{{id}}',
+    },
+  })
+  class SubEntity extends BaseEntity {
+    // no attributes
+  }
+
+  const [entityMetadata] = metadataBuilder.build([SubEntity]);
+
+  expect(entityMetadata.attributes).toEqual([
+    {
+      entityClass: SubEntity,
+      name: 'id',
+      table,
+      type: 'String',
+    },
+  ]);
+});
+
 test('builds entity metadata with global table config', () => {
   const globalTable = new Table({
     name: 'GlobalTable',
