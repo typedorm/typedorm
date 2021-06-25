@@ -481,6 +481,10 @@ test('updates item with multiple body actions', async () => {
   expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
 });
 
+test.only('fails to transform when trying to use dynamic update expression for attribute that is also referenced in a index', () => {
+  // FIXME:
+});
+
 test('updates item and attributes marked to be autoUpdated', async () => {
   jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
 

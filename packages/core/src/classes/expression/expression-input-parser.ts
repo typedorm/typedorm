@@ -57,31 +57,54 @@ export class ExpressionInputParser {
   }
 
   /**
-   * Parses complex update object to a value
+   * Parses complex update object to a value and type
    */
-  parseToUpdateValue(attr: string, value: any) {
+  parseAttributeToUpdateValue(
+    attr: string,
+    value: any
+  ): {value: any; type: 'static' | 'dynamic'} {
+    const nestedKeyAccessRegex = /[\d+]/g;
     if (isObject(value) && !isEmptyObject(value)) {
-      const [operator, operatorValue] = Object.entries(value as any)[0] as [
-        (
-          | UpdateType.ArithmeticOperator
-          | UpdateType.SetUpdateOperator
-          | UpdateType.Action
-        ),
-        any
-      ];
+      const [operator, operatorValue] = Object.entries(value as any)[0];
 
       const parsedUpdate = this.parseValueToUpdateExp(
         attr,
         value,
-        operator,
+        operator as any,
         operatorValue
       );
-      const originalValues = Object.values(parsedUpdate.values);
-      // return first result as the response
-      return originalValues[0];
+
+      const parsedValue = Object.values(parsedUpdate.values ?? {})[0];
+
+      // if expression contains any dynamic operation such as value manipulation or nested attribute manipulation in a list
+      // throw a new error
+      if (
+        !(parsedUpdate instanceof SetUpdate) ||
+        parsedUpdate.expression.includes(' + ') ||
+        parsedUpdate.expression.includes(' - ') ||
+        nestedKeyAccessRegex.test(parsedUpdate.expression)
+      ) {
+        return {
+          value: parsedValue,
+          type: 'dynamic',
+        };
+      }
+
+      // return static value
+      return {
+        type: 'static',
+        value: parsedValue,
+      };
     } else {
+      // if tried to update nested value for key, it is considered dynamic, as we do not know full value of updating attribute
+      if (nestedKeyAccessRegex.test(attr)) {
+        return {
+          type: 'dynamic',
+          value,
+        };
+      }
       // return value as a default value
-      return value;
+      return {type: 'static', value};
     }
   }
 

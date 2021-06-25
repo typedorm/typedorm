@@ -474,16 +474,49 @@ test('parses update body with mixed actions', () => {
 /**
  * @group parseToUpdateValue
  */
-test('correctly parses and returns update values', () => {
-  const value = expInputParser.parseToUpdateValue('age', {
+test('correctly parses ADD and returns update values', () => {
+  const value = expInputParser.parseAttributeToUpdateValue('age', {
     ADD: 1,
   });
-  expect(value).toEqual(1);
+  expect(value).toEqual({type: 'dynamic', value: 1});
 });
 
 test('skips parsing and returns update values', () => {
-  const value = expInputParser.parseToUpdateValue('name', {
+  const value = expInputParser.parseAttributeToUpdateValue('name', {
     firstName: 'test',
   });
-  expect(value).toEqual({firstName: 'test'});
+  expect(value).toEqual({
+    type: 'static',
+    value: {
+      firstName: 'test',
+    },
+  });
+});
+test('parses SET action with static value', () => {
+  const value = expInputParser.parseAttributeToUpdateValue('name', {
+    IF_NOT_EXISTS: 'new name',
+  });
+  expect(value).toEqual({
+    type: 'static',
+    value: 'new name',
+  });
+});
+test('parses SET action as dynamic value', () => {
+  const value = expInputParser.parseAttributeToUpdateValue('age', {
+    INCREMENT_BY: 2,
+  });
+  expect(value).toEqual({
+    type: 'dynamic',
+    value: 2,
+  });
+});
+test('parses SET action as dynamic value for nested list actions', () => {
+  const value = expInputParser.parseAttributeToUpdateValue(
+    'addresses[1]',
+    'new address'
+  );
+  expect(value).toEqual({
+    type: 'dynamic',
+    value: 'new address',
+  });
 });

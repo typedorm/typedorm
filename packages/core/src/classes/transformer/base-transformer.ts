@@ -8,6 +8,7 @@ import {
   SparseIndexParseError,
   CONSUMED_CAPACITY_TYPE,
   UpdateAttributes,
+  InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
@@ -148,15 +149,15 @@ export abstract class BaseTransformer {
     }
 
     const affectedKeyAttributes = Object.entries(attributes).reduce(
-      (acc, [attrKey, attrValue]) => {
+      (acc, [attrKey, attrValue]: [string, any]) => {
         // parse update body to retrieve actual value
-        const parsedAttrValue = this._expressionInputParser.parseToUpdateValue(
+        const parsedAttrValue = this._expressionInputParser.parseAttributeToUpdateValue(
           attrKey,
           attrValue
         );
 
         // bail early if current attribute type is not of type scalar
-        if (!isScalarType(parsedAttrValue)) {
+        if (!isScalarType(parsedAttrValue.value)) {
           return acc;
         }
 
@@ -168,13 +169,23 @@ export abstract class BaseTransformer {
               return;
             }
 
+            // if parsed value was of type we can not auto resolve indexes
+            // this must be resolved by the dev
+            if (parsedAttrValue.type === 'dynamic') {
+              throw new InvalidDynamicUpdateAttributeValueError(
+                primaryKey.attributes[primaryKeyAttrName],
+                attrKey,
+                attrValue
+              );
+            }
+
             const parsedKey = parseKey(
               primaryKey.attributes[primaryKeyAttrName],
               // override current attribute body with parsed value
               // this is required since update expression can sometimes contain special update syntax
               {
                 ...attributes,
-                [attrKey]: parsedAttrValue,
+                [attrKey]: parsedAttrValue.value,
               }
             );
             acc[primaryKeyAttrName] = parsedKey;
@@ -209,7 +220,7 @@ export abstract class BaseTransformer {
       (acc, attrKey: string) => {
         const currAttrValue = (attributes as any)[attrKey];
         // parse update body to retrieve actual value
-        const parsedAttrValue = this._expressionInputParser.parseToUpdateValue(
+        const parsedAttrValue = this._expressionInputParser.parseAttributeToUpdateValue(
           attrKey,
           currAttrValue
         );
@@ -217,7 +228,7 @@ export abstract class BaseTransformer {
         // if current value is not of scalar type skip checking index
         if (
           attrKey.includes(nestedKeySeparator) ||
-          !isScalarType(parsedAttrValue)
+          !isScalarType(parsedAttrValue.value)
         ) {
           return acc;
         }
@@ -242,6 +253,16 @@ export abstract class BaseTransformer {
               interpolationsForCurrIndex[interpolationKey];
 
             if (currentInterpolation.includes(attrKey)) {
+              // if parsed value was of type we can not auto resolve indexes
+              // this must be resolved by the dev
+              if (parsedAttrValue.type === 'dynamic') {
+                throw new InvalidDynamicUpdateAttributeValueError(
+                  currIndex.attributes[interpolationKey],
+                  attrKey,
+                  currAttrValue
+                );
+              }
+
               try {
                 const parsedIndex = parseKey(
                   currIndex.attributes[interpolationKey],
@@ -249,7 +270,7 @@ export abstract class BaseTransformer {
                   // this is required since update expression can sometimes contain special update syntax
                   {
                     ...attributes,
-                    [attrKey]: parsedAttrValue,
+                    [attrKey]: parsedAttrValue.value,
                   }
                 );
                 acc[interpolationKey] = parsedIndex;
