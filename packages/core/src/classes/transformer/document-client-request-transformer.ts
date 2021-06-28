@@ -29,6 +29,7 @@ import {BaseTransformer, MetadataOptions} from './base-transformer';
 import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
 import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
+import {isObject} from '../../helpers/is-object';
 
 export interface ManagerToDynamoPutItemOptions {
   /**
@@ -423,20 +424,47 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       {} as {[key: string]: any}
     );
 
+    // static or dynamic update attributes
+    // Here we parse all attributes to it's update value and determine
+    // if it's value can be statically inferred
+    const staticOrDynamicUpdateAttributesWithMetadata = Object.entries({
+      ...body,
+      ...formattedAutoUpdateAttributes,
+    }).reduce(
+      (acc, [attrName, attrValue]) => {
+        const valueWithType = this.expressionInputParser.parseAttributeToUpdateValue(
+          attrName,
+          attrValue
+        ) as {value: any; type: 'static' | 'dynamic'};
+
+        acc.transformed[attrName] = valueWithType.value;
+        acc.typeMetadata[attrName] = valueWithType.type;
+        return acc;
+      },
+      {transformed: {}, typeMetadata: {}} as {
+        transformed: Record<string, any>;
+        typeMetadata: Record<string, 'dynamic' | 'static'>;
+      }
+    );
+
     // we manually need to replace the constructor of the attributes to update
     // with the entity class, so that we can pass it through to class-transformer
     // to have all transformer metadata applied.
-    const attributesToUpdateRaw = {...body, ...formattedAutoUpdateAttributes};
-    attributesToUpdateRaw.constructor = entityClass;
+    // FIXME:fix attributesToUpdate to not drop advanced update expression
+    staticOrDynamicUpdateAttributesWithMetadata.transformed.constructor = entityClass;
     const attributesToUpdate = this.applyClassTransformerFormations(
-      attributesToUpdateRaw
-    ) as typeof attributesToUpdateRaw;
+      staticOrDynamicUpdateAttributesWithMetadata.transformed
+    ) as Entity;
 
     // check if attributes to update references a primary key, if it does update must be done lazily
     const affectedPrimaryKeyAttributes = this.getAffectedPrimaryKeyAttributes<
       Entity,
       PrimaryKey
-    >(entityClass, attributesToUpdate);
+    >(
+      entityClass,
+      attributesToUpdate,
+      staticOrDynamicUpdateAttributesWithMetadata.typeMetadata
+    );
 
     const uniqueAttributesToUpdate = this.connection
       .getUniqueAttributesForEntity(entityClass)
@@ -472,9 +500,14 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const affectedIndexes = this.getAffectedIndexesForAttributes<
       Entity,
       PrimaryKey
-    >(entityClass, attributesToUpdate, {
-      nestedKeySeparator,
-    });
+    >(
+      entityClass,
+      attributesToUpdate,
+      staticOrDynamicUpdateAttributesWithMetadata.typeMetadata,
+      {
+        nestedKeySeparator,
+      }
+    );
 
     const itemToUpdate:
       | DynamoDB.DocumentClient.UpdateItemInput
@@ -522,7 +555,10 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // 1.1 update contains primary key attributes
     // if tried updating attribute that is referenced in a primary key build lazy expression
-    if (!isEmptyObject(affectedPrimaryKeyAttributes)) {
+    if (
+      isObject(affectedPrimaryKeyAttributes) &&
+      !isEmptyObject(affectedPrimaryKeyAttributes)
+    ) {
       const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdatePrimaryKeyFactory(
         metadata.table,
         metadata.name,

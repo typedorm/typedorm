@@ -1,11 +1,7 @@
 export class InvalidDynamicUpdateAttributeValueError extends Error {
   name = 'InvalidDynamicUpdateAttributeValueError';
 
-  constructor(
-    indexName: string,
-    attributeName: string,
-    attributeValue: string
-  ) {
+  constructor(indexName: string, attributeName: string, attributeValue: any) {
     super();
     this.message = `Invalid dynamic value "${JSON.stringify(
       attributeValue

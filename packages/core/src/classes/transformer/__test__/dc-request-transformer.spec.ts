@@ -475,6 +475,57 @@ test('transforms update item request', () => {
   });
 });
 
+test('transforms update item request respects custom transforms applied via class transformer', () => {
+  const updatedItem = transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
+    Photo,
+    {
+      id: 1,
+      category: CATEGORY.KIDS,
+    },
+    {
+      category: {
+        // even tho we try to update `category` attribute to `KIDS` final result will have `new-kids`
+        // due to custom transformation defined on the Photo entity
+        SET: CATEGORY.KIDS,
+      },
+    }
+  );
+  const writeItemList = (updatedItem as any).lazyLoadTransactionWriteItems({
+    id: 1,
+    category: CATEGORY.PETS,
+    PK: 'PHOTO#PETS',
+    SK: 'PHOTO#1',
+    GSI1PK: 'PHOTO#1',
+    GSI1SK: 'PHOTO#PETS',
+  });
+  expect(writeItemList).toEqual([
+    {
+      Put: {
+        Item: {
+          GSI1SK: 'PHOTO#kids-new',
+          GSI1PK: 'PHOTO#1',
+          PK: 'PHOTO#kids-new',
+          SK: 'PHOTO#1',
+          category: 'kids-new',
+          id: 1,
+          updatedAt: '1622530750',
+        },
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'PHOTO#PETS',
+          SK: 'PHOTO#1',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
 test('transforms update item record with unique attributes', () => {
   const updatedItem = transformer.toDynamoUpdateItem<
     UserUniqueEmail,

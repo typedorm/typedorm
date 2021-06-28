@@ -374,7 +374,7 @@ test('performs write transactions when removing entities with unique attributes 
   });
 });
 
-test('performs write transactions when with mixed update actions ', async () => {
+test.only('performs write transactions when with mixed update actions ', async () => {
   dcMock.transactWrite.mockReturnValue({
     on: jest.fn(),
     send: jest.fn().mockImplementation(cb => {

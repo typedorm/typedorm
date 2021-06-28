@@ -46,7 +46,7 @@ export abstract class BaseTransformer {
   applyClassTransformerFormations<Entity>(entity: Entity) {
     const transformedPlainEntity = classToPlain<Entity>(entity, {
       enableImplicitConversion: true,
-      excludePrefixes: ['__'],
+      excludePrefixes: ['__'], // exclude internal attributes
     });
 
     return transformedPlainEntity as Entity;
@@ -135,7 +135,8 @@ export abstract class BaseTransformer {
 
   getAffectedPrimaryKeyAttributes<Entity, AdditionAttributes>(
     entityClass: EntityTarget<Entity>,
-    attributes: UpdateBody<Entity, AdditionAttributes>
+    attributes: UpdateBody<Entity, AdditionAttributes>,
+    attributesTypeMetadata: Record<string, 'static' | 'dynamic'>
   ) {
     const {
       schema: {primaryKey},
@@ -150,14 +151,8 @@ export abstract class BaseTransformer {
 
     const affectedKeyAttributes = Object.entries(attributes).reduce(
       (acc, [attrKey, attrValue]: [string, any]) => {
-        // parse update body to retrieve actual value
-        const parsedAttrValue = this._expressionInputParser.parseAttributeToUpdateValue(
-          attrKey,
-          attrValue
-        );
-
         // bail early if current attribute type is not of type scalar
-        if (!isScalarType(parsedAttrValue.value)) {
+        if (!isScalarType(attrValue)) {
           return acc;
         }
 
@@ -171,7 +166,7 @@ export abstract class BaseTransformer {
 
             // if parsed value was of type we can not auto resolve indexes
             // this must be resolved by the dev
-            if (parsedAttrValue.type === 'dynamic') {
+            if (attributesTypeMetadata[attrKey] === 'dynamic') {
               throw new InvalidDynamicUpdateAttributeValueError(
                 primaryKey.attributes[primaryKeyAttrName],
                 attrKey,
@@ -185,7 +180,7 @@ export abstract class BaseTransformer {
               // this is required since update expression can sometimes contain special update syntax
               {
                 ...attributes,
-                [attrKey]: parsedAttrValue.value,
+                [attrKey]: attrValue,
               }
             );
             acc[primaryKeyAttrName] = parsedKey;
@@ -209,6 +204,7 @@ export abstract class BaseTransformer {
   getAffectedIndexesForAttributes<Entity, AdditionalAttributes>(
     entityClass: EntityTarget<Entity>,
     attributes: UpdateBody<Entity, AdditionalAttributes>,
+    attributesTypeMetadata: Record<string, 'static' | 'dynamic'>,
     options?: {nestedKeySeparator: string}
   ) {
     const nestedKeySeparator = options?.nestedKeySeparator ?? '.';
@@ -216,19 +212,12 @@ export abstract class BaseTransformer {
       schema: {indexes},
     } = this.connection.getEntityByTarget(entityClass);
 
-    const affectedIndexes = Object.keys(attributes).reduce(
-      (acc, attrKey: string) => {
-        const currAttrValue = (attributes as any)[attrKey];
-        // parse update body to retrieve actual value
-        const parsedAttrValue = this._expressionInputParser.parseAttributeToUpdateValue(
-          attrKey,
-          currAttrValue
-        );
-
+    const affectedIndexes = Object.entries(attributes).reduce(
+      (acc, [attrKey, currAttrValue]) => {
         // if current value is not of scalar type skip checking index
         if (
           attrKey.includes(nestedKeySeparator) ||
-          !isScalarType(parsedAttrValue.value)
+          !isScalarType(currAttrValue)
         ) {
           return acc;
         }
@@ -255,7 +244,7 @@ export abstract class BaseTransformer {
             if (currentInterpolation.includes(attrKey)) {
               // if parsed value was of type we can not auto resolve indexes
               // this must be resolved by the dev
-              if (parsedAttrValue.type === 'dynamic') {
+              if (attributesTypeMetadata[attrKey] === 'dynamic') {
                 throw new InvalidDynamicUpdateAttributeValueError(
                   currIndex.attributes[interpolationKey],
                   attrKey,
@@ -270,7 +259,7 @@ export abstract class BaseTransformer {
                   // this is required since update expression can sometimes contain special update syntax
                   {
                     ...attributes,
-                    [attrKey]: parsedAttrValue.value,
+                    [attrKey]: currAttrValue,
                   }
                 );
                 acc[interpolationKey] = parsedIndex;

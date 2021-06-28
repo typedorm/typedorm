@@ -278,7 +278,7 @@ export class ExpressionInputParser {
          * behaves similar to {id: '1'}
          */
         // handle explicit set exp
-        if (!isEmptyObject(operatorValue)) {
+        if (isObject(operatorValue) && !isEmptyObject(operatorValue)) {
           const [nestedOperator, nestedOperatorValue] = Object.entries(
             operatorValue
           )[0] as [

@@ -51,7 +51,7 @@ export class TransactionManager {
 
     const lazyTransactionItems = (
       await Promise.all(
-        lazyTransactionWriteItemListLoader.map(async item => {
+        lazyTransactionWriteItemListLoader.map(async (item: any) => {
           // if updating/removing unique attribute in transaction, get previous value of attributes
           const existingItem = await this.connection.entityManager.findOne(
             item.entityClass,
