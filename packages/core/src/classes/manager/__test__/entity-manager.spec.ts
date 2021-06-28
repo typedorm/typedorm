@@ -12,7 +12,14 @@ import {
   UserAutoGenerateAttributes,
 } from '../../../../__mocks__/user-auto-generate-attributes';
 import {Connection} from '../../connection/connection';
-import {CONSUMED_CAPACITY_TYPE} from '@typedorm/common';
+import {
+  CONSUMED_CAPACITY_TYPE,
+  InvalidDynamicUpdateAttributeValueError,
+} from '@typedorm/common';
+import {
+  UserAttrAlias,
+  UserAttrAliasPrimaryKey,
+} from '@typedorm/core/__mocks__/user-with-attribute-alias';
 
 let manager: EntityManager;
 let connection: Connection;
@@ -26,7 +33,12 @@ const dcMock = {
 };
 beforeEach(() => {
   connection = createTestConnection({
-    entities: [User, UserUniqueEmail, UserAutoGenerateAttributes],
+    entities: [
+      User,
+      UserUniqueEmail,
+      UserAutoGenerateAttributes,
+      UserAttrAlias,
+    ],
     documentClient: dcMock,
   });
 
@@ -481,8 +493,53 @@ test('updates item with multiple body actions', async () => {
   expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
 });
 
-test.only('fails to transform when trying to use dynamic update expression for attribute that is also referenced in a index', () => {
-  // FIXME:
+test('updates item when trying to update attribute with dynamic value that is not referenced in any index', async () => {
+  dcMock.update.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  await manager.update<User, UserPrimaryKey>(
+    User,
+    {id: '1'},
+    {
+      age: {
+        INCREMENT_BY: 3,
+      },
+    }
+  );
+
+  expect(dcMock.update).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#UE_age': 'age',
+    },
+    ExpressionAttributeValues: {
+      ':UE_age': 3,
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression: 'SET #UE_age = #UE_age + :UE_age',
+  });
+});
+test('fails to transform when trying to use dynamic update expression for attribute that is also referenced in a index', async () => {
+  // this should fail as update to age is not static and is also referenced by GSI1
+  const updatedItem = async () =>
+    manager.update<UserAttrAlias, UserAttrAliasPrimaryKey>(
+      UserAttrAlias,
+      {id: '1'},
+      {
+        age: {
+          INCREMENT_BY: 3,
+        },
+      }
+    );
+  await expect(updatedItem).rejects.toThrow(
+    InvalidDynamicUpdateAttributeValueError
+  );
+  expect(dcMock.update).not.toHaveBeenCalled();
 });
 
 test('updates item and attributes marked to be autoUpdated', async () => {

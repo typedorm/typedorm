@@ -7,7 +7,6 @@ import {
   Table,
   SparseIndexParseError,
   CONSUMED_CAPACITY_TYPE,
-  UpdateAttributes,
   InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
@@ -21,6 +20,7 @@ import {isDynamoEntityKeySchema} from '../../helpers/is-dynamo-entity-key-schema
 import {isKeyOfTypeAliasSchema} from '../../helpers/is-key-of-type-alias-schema';
 import {classToPlain} from 'class-transformer';
 import {ExpressionInputParser} from '../expression/expression-input-parser';
+import {UpdateBody} from '../expression/update-body-type';
 
 export interface MetadataOptions {
   requestId?: string;
@@ -133,9 +133,9 @@ export abstract class BaseTransformer {
     return {...parsedEntity, ...formattedSchema};
   }
 
-  getAffectedPrimaryKeyAttributes<Entity, PrimaryKey>(
+  getAffectedPrimaryKeyAttributes<Entity, AdditionAttributes>(
     entityClass: EntityTarget<Entity>,
-    attributes: UpdateAttributes<Entity, PrimaryKey>
+    attributes: UpdateBody<Entity, AdditionAttributes>
   ) {
     const {
       schema: {primaryKey},
@@ -206,9 +206,9 @@ export abstract class BaseTransformer {
    * @param attributes Attributes to check affected indexes for
    * @param options
    */
-  getAffectedIndexesForAttributes<Entity, PrimaryKey>(
+  getAffectedIndexesForAttributes<Entity, AdditionalAttributes>(
     entityClass: EntityTarget<Entity>,
-    attributes: UpdateAttributes<Entity, PrimaryKey>,
+    attributes: UpdateBody<Entity, AdditionalAttributes>,
     options?: {nestedKeySeparator: string}
   ) {
     const nestedKeySeparator = options?.nestedKeySeparator ?? '.';

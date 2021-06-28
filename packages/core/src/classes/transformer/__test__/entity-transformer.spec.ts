@@ -404,6 +404,18 @@ test('returns all affected indexes for simple attributes', () => {
   });
 });
 
+test('returns all affected indexes for advanced update body', () => {
+  const affectedIndexes = transformer.getAffectedIndexesForAttributes<User, {}>(
+    User,
+    {
+      age: {
+        DECREMENT_BY: 2,
+      },
+    }
+  );
+  expect(affectedIndexes).toEqual({});
+});
+
 test('returns all affected indexes for alias attributes', () => {
   const affectedIndexes = transformer.getAffectedIndexesForAttributes(
     UserAttrAlias,
