@@ -20,9 +20,10 @@ export function isTransactionAddGetItem<Entity, PrimaryKey>(
 
 export function isTransactionAddUpdateItem<Entity, PrimaryKey>(
   item: any
-): item is WriteTransactionUpdate<Entity, PrimaryKey> {
+): item is WriteTransactionUpdate<Entity, PrimaryKey, {}> {
   return (
-    (item as WriteTransactionUpdate<Entity, PrimaryKey>).update !== undefined
+    (item as WriteTransactionUpdate<Entity, PrimaryKey, {}>).update !==
+    undefined
   );
 }
 

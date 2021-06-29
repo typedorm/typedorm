@@ -409,7 +409,7 @@ test('returns all affected indexes for static attributes', () => {
 });
 
 test('returns all affected indexes for dynamic update body', () => {
-  const affectedIndexes = transformer.getAffectedIndexesForAttributes<User, {}>(
+  const affectedIndexes = transformer.getAffectedIndexesForAttributes<User>(
     User,
     {
       age: {

@@ -51,9 +51,10 @@ export class ExpressionInputParser {
   }
 
   parseToUpdate<Entity, AdditionalProperties = {}>(
-    body: UpdateBody<Entity, AdditionalProperties>
+    body: UpdateBody<Entity, AdditionalProperties>,
+    attrValueOverrideMap: Record<string, any> = {}
   ) {
-    return this.parseToUpdateExpression(body);
+    return this.parseToUpdateExpression(body, attrValueOverrideMap);
   }
 
   /**
@@ -180,7 +181,10 @@ export class ExpressionInputParser {
    * Parses input to update expression
    * @param body body to parse
    */
-  private parseToUpdateExpression(body: any) {
+  private parseToUpdateExpression(
+    body: any,
+    attrValueOverrideMap: Record<string, any>
+  ) {
     return (
       Object.entries(body)
         .map(([attr, value]) => {
@@ -200,7 +204,8 @@ export class ExpressionInputParser {
               attr,
               value,
               operator,
-              operatorValue
+              operatorValue,
+              attrValueOverrideMap[attr] // get any override value if exists
             );
           } else {
             // fallback to default `SET` action based update
@@ -242,7 +247,8 @@ export class ExpressionInputParser {
       | UpdateType.ArithmeticOperator
       | UpdateType.SetUpdateOperator
       | UpdateType.Action,
-    operatorValue: any
+    operatorValue: any,
+    staticValueToOverride?: any // value to override for attribute, this is set in cases where there was a custom property transform was requested
   ): Update {
     switch (operator) {
       case 'INCREMENT_BY':
@@ -253,7 +259,7 @@ export class ExpressionInputParser {
         if (isSetOperatorComplexValueType(operatorValue)) {
           return new SetUpdate().setToIfNotExists(
             attribute,
-            operatorValue.$VALUE,
+            staticValueToOverride || operatorValue.$VALUE,
             operatorValue.$PATH
           );
         } else {
@@ -290,11 +296,15 @@ export class ExpressionInputParser {
             attribute,
             nestedOperatorValue,
             nestedOperator,
-            nestedOperatorValue
+            nestedOperatorValue,
+            staticValueToOverride
           );
         } else {
           // handle attribute with map type
-          return new SetUpdate().setTo(attribute, operatorValue);
+          return new SetUpdate().setTo(
+            attribute,
+            staticValueToOverride || operatorValue
+          );
         }
       }
       case 'ADD': {
@@ -327,7 +337,10 @@ export class ExpressionInputParser {
       }
       default: {
         // handle attribute with map type
-        return new SetUpdate().setTo(attribute, attributeValue);
+        return new SetUpdate().setTo(
+          attribute,
+          staticValueToOverride || attributeValue
+        );
       }
     }
   }

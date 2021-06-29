@@ -14,6 +14,7 @@ import {
   InvalidSelectInputError,
   InvalidUniqueAttributeUpdateError,
   InvalidPrimaryKeyAttributesUpdateError,
+  InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
 import {dropProp} from '../../helpers/drop-prop';
@@ -423,13 +424,19 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       },
       {} as {[key: string]: any}
     );
-
-    // static or dynamic update attributes
-    // Here we parse all attributes to it's update value and determine
-    // if it's value can be statically inferred
-    const staticOrDynamicUpdateAttributesWithMetadata = Object.entries({
+    const attributesToUpdate = {
       ...body,
       ...formattedAutoUpdateAttributes,
+    };
+
+    /**
+     * 1.0 - analyze attributes' value type (static/dynamic)
+     *
+     * Here we parse all attributes to it's update value and determine
+     * if it's value can be statically inferred
+     */
+    const staticOrDynamicUpdateAttributesWithMetadata = Object.entries({
+      ...attributesToUpdate,
     }).reduce(
       (acc, [attrName, attrValue]) => {
         const valueWithType = this.expressionInputParser.parseAttributeToUpdateValue(
@@ -447,30 +454,68 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       }
     );
 
-    // we manually need to replace the constructor of the attributes to update
-    // with the entity class, so that we can pass it through to class-transformer
-    // to have all transformer metadata applied.
-    // FIXME:fix attributesToUpdate to not drop advanced update expression
-    staticOrDynamicUpdateAttributesWithMetadata.transformed.constructor = entityClass;
-    const attributesToUpdate = this.applyClassTransformerFormations(
-      staticOrDynamicUpdateAttributesWithMetadata.transformed
-    ) as Entity;
+    /**
+     * 2.0 - apply custom class transformation on static attributes
+     *
+     * we manually need to replace the constructor of the attributes to update
+     * with the entity class, so that we can pass it through to class-transformer
+     * to have all transformer metadata applied.
+     */
 
-    // check if attributes to update references a primary key, if it does update must be done lazily
+    const onlyStaticAttributes = Object.entries(
+      staticOrDynamicUpdateAttributesWithMetadata.transformed
+    ).reduce((acc, [attrKey, attrValue]) => {
+      if (
+        staticOrDynamicUpdateAttributesWithMetadata.typeMetadata[attrKey] ===
+        'static'
+      ) {
+        acc[attrKey] = attrValue;
+      }
+      return acc;
+    }, {} as any);
+    onlyStaticAttributes.constructor = entityClass;
+    const classTransformedStaticAttributes = this.applyClassTransformerFormations(
+      onlyStaticAttributes
+    ) as Entity;
+    staticOrDynamicUpdateAttributesWithMetadata.transformed = {
+      ...staticOrDynamicUpdateAttributesWithMetadata.transformed,
+      ...classTransformedStaticAttributes,
+    };
+
+    /**
+     * 3.0 - Get referenced unique attributes and validate that current update body can be safely applied
+     */
+    const uniqueAttributesToUpdate = this.connection
+      .getUniqueAttributesForEntity(entityClass)
+      .filter(attr => !!(body as any)[attr.name])
+      .map(attr => {
+        // TODO: support updating unique attributes with dynamic exp
+        // we can't allow updating unique attributes when they contain dynamic update value
+        if (
+          staticOrDynamicUpdateAttributesWithMetadata.typeMetadata[
+            attr.name
+          ] === 'dynamic'
+        ) {
+          throw new InvalidDynamicUpdateAttributeValueError(
+            attr.name,
+            staticOrDynamicUpdateAttributesWithMetadata.transformed[attr.name]
+          );
+        }
+        return attr;
+      });
+
+    /**
+     * 3.1 - Get referenced primary key attributes and validate that current update body can be safely applied
+     */
     const affectedPrimaryKeyAttributes = this.getAffectedPrimaryKeyAttributes<
-      Entity,
-      PrimaryKey
+      Entity
     >(
       entityClass,
-      attributesToUpdate,
+      staticOrDynamicUpdateAttributesWithMetadata.transformed,
       staticOrDynamicUpdateAttributesWithMetadata.typeMetadata
     );
 
-    const uniqueAttributesToUpdate = this.connection
-      .getUniqueAttributesForEntity(entityClass)
-      .filter(attr => !!(body as any)[attr.name]);
-
-    // validate update attributes
+    // validate primary key attributes
     if (!isEmptyObject(affectedPrimaryKeyAttributes)) {
       const primaryKeyReferencedAttributes = this.connection.getPrimaryKeyAttributeInterpolationsForEntity(
         entityClass
@@ -496,19 +541,21 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       }
     }
 
-    // get all affected indexes for attributes
-    const affectedIndexes = this.getAffectedIndexesForAttributes<
-      Entity,
-      PrimaryKey
-    >(
+    /**
+     * 3.2 - Get referenced indexes' attributes and validate that current update body can be safely applied
+     */
+    const affectedIndexes = this.getAffectedIndexesForAttributes<Entity>(
       entityClass,
-      attributesToUpdate,
+      staticOrDynamicUpdateAttributesWithMetadata.transformed,
       staticOrDynamicUpdateAttributesWithMetadata.typeMetadata,
       {
         nestedKeySeparator,
       }
     );
 
+    /**
+     * 4.0 - Build update Item body with given condition and options
+     */
     const itemToUpdate:
       | DynamoDB.DocumentClient.UpdateItemInput
       | DynamoDB.DocumentClient.PutItemInput = {
@@ -521,7 +568,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ReturnValues: RETURN_VALUES.ALL_NEW,
     };
 
-    // if 'where' was provided, build condition expression
+    /**
+     * 4.1 - if 'where' was provided, build condition expression
+     */
     if (options.where && !isEmptyObject(options.where)) {
       const condition = this.expressionInputParser.parseToCondition(
         options.where
@@ -553,8 +602,10 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
     }
 
-    // 1.1 update contains primary key attributes
-    // if tried updating attribute that is referenced in a primary key build lazy expression
+    /**
+     * 5.0 - update contains primary key attributes so it must be lazily updated
+     * This requires deleting old item and writing new item to the table both in a transaction
+     */
     if (
       isObject(affectedPrimaryKeyAttributes) &&
       !isEmptyObject(affectedPrimaryKeyAttributes)
@@ -567,7 +618,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           Item: {
             ...affectedPrimaryKeyAttributes,
             ...affectedIndexes,
-            ...attributesToUpdate,
+            ...staticOrDynamicUpdateAttributesWithMetadata.transformed,
           },
           TableName: metadata.table.name,
           ReturnConsumedCapacity: itemToUpdate.ReturnConsumedCapacity,
@@ -586,11 +637,16 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       };
     }
 
-    // for any other non key attribute updates, build update expression
-    const update = this.expressionInputParser.parseToUpdate({
-      ...attributesToUpdate,
-      ...affectedIndexes,
-    });
+    /**
+     * 5.0.1 - build update expression with user provided body and all other auto transformation
+     */
+    const update = this.expressionInputParser.parseToUpdate(
+      {
+        ...attributesToUpdate,
+        ...affectedIndexes,
+      },
+      staticOrDynamicUpdateAttributesWithMetadata.transformed
+    );
     const {
       UpdateExpression,
       ExpressionAttributeNames,
@@ -606,8 +662,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ...itemToUpdate.ExpressionAttributeValues,
     };
 
-    // 1.2 update contains unique attributes
-    // if tried updating a unique attribute, build a lazy expression
+    /**
+     * 5.1 - Update contains unique attributes, build a lazy unique attributes loader and return
+     */
     if (uniqueAttributesToUpdate.length) {
       // if there are unique attributes, return a lazy loader, which will return write item list
       const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdateUniqueItemFactory<
@@ -627,20 +684,20 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         entityClass,
         lazyLoadTransactionWriteItems,
       };
-
-      // 1.3 update contains simple attribute updates
-    } else {
-      // return default transform
-      this.connection.logger.logTransform({
-        requestId: metadataOptions?.requestId,
-        operation: TRANSFORM_TYPE.UPDATE,
-        prefix: 'After',
-        entityName: metadata.name,
-        primaryKey: null,
-        body: itemToUpdate,
-      });
-      return itemToUpdate;
     }
+
+    /**
+     * 5.2 - return simple update body
+     */
+    this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_TYPE.UPDATE,
+      prefix: 'After',
+      entityName: metadata.name,
+      primaryKey: null,
+      body: itemToUpdate,
+    });
+    return itemToUpdate;
   }
 
   toDynamoDeleteItem<Entity, PrimaryKey>(

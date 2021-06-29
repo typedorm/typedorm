@@ -20,7 +20,6 @@ import {isDynamoEntityKeySchema} from '../../helpers/is-dynamo-entity-key-schema
 import {isKeyOfTypeAliasSchema} from '../../helpers/is-key-of-type-alias-schema';
 import {classToPlain} from 'class-transformer';
 import {ExpressionInputParser} from '../expression/expression-input-parser';
-import {UpdateBody} from '../expression/update-body-type';
 
 export interface MetadataOptions {
   requestId?: string;
@@ -133,9 +132,9 @@ export abstract class BaseTransformer {
     return {...parsedEntity, ...formattedSchema};
   }
 
-  getAffectedPrimaryKeyAttributes<Entity, AdditionAttributes>(
+  getAffectedPrimaryKeyAttributes<Entity>(
     entityClass: EntityTarget<Entity>,
-    attributes: UpdateBody<Entity, AdditionAttributes>,
+    attributes: Record<string, any>,
     attributesTypeMetadata: Record<string, 'static' | 'dynamic'>
   ) {
     const {
@@ -168,7 +167,6 @@ export abstract class BaseTransformer {
             // this must be resolved by the dev
             if (attributesTypeMetadata[attrKey] === 'dynamic') {
               throw new InvalidDynamicUpdateAttributeValueError(
-                primaryKey.attributes[primaryKeyAttrName],
                 attrKey,
                 attrValue
               );
@@ -176,12 +174,7 @@ export abstract class BaseTransformer {
 
             const parsedKey = parseKey(
               primaryKey.attributes[primaryKeyAttrName],
-              // override current attribute body with parsed value
-              // this is required since update expression can sometimes contain special update syntax
-              {
-                ...attributes,
-                [attrKey]: attrValue,
-              }
+              attributes
             );
             acc[primaryKeyAttrName] = parsedKey;
           }
@@ -201,9 +194,9 @@ export abstract class BaseTransformer {
    * @param attributes Attributes to check affected indexes for
    * @param options
    */
-  getAffectedIndexesForAttributes<Entity, AdditionalAttributes>(
+  getAffectedIndexesForAttributes<Entity>(
     entityClass: EntityTarget<Entity>,
-    attributes: UpdateBody<Entity, AdditionalAttributes>,
+    attributes: Record<string, any>,
     attributesTypeMetadata: Record<string, 'static' | 'dynamic'>,
     options?: {nestedKeySeparator: string}
   ) {
@@ -246,7 +239,6 @@ export abstract class BaseTransformer {
               // this must be resolved by the dev
               if (attributesTypeMetadata[attrKey] === 'dynamic') {
                 throw new InvalidDynamicUpdateAttributeValueError(
-                  currIndex.attributes[interpolationKey],
                   attrKey,
                   currAttrValue
                 );
@@ -255,12 +247,7 @@ export abstract class BaseTransformer {
               try {
                 const parsedIndex = parseKey(
                   currIndex.attributes[interpolationKey],
-                  // override current attribute body with parsed value
-                  // this is required since update expression can sometimes contain special update syntax
-                  {
-                    ...attributes,
-                    [attrKey]: currAttrValue,
-                  }
+                  attributes
                 );
                 acc[interpolationKey] = parsedIndex;
               } catch (err) {
