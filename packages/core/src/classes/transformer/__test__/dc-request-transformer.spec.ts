@@ -486,7 +486,9 @@ test('transforms update item request respects custom transforms applied via clas
       category: {
         // even tho we try to update `category` attribute to `KIDS` final result will have `new-kids`
         // due to custom transformation defined on the Photo entity
-        SET: CATEGORY.KIDS,
+        SET: {
+          IF_NOT_EXISTS: CATEGORY.KIDS,
+        },
       },
     }
   );

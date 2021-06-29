@@ -290,6 +290,74 @@ test('parses update body to update expression', () => {
   });
 });
 
+test('parses update body to update expression with custom transform overrides ', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {'user.newAddresses': Array<string>}
+  >(
+    {
+      id: '2',
+      name: {
+        IF_NOT_EXISTS: {
+          $PATH: 'id',
+          $VALUE: '123',
+        },
+      },
+    },
+    {
+      // when custom transformation is applied
+      name: 'custom-transformed-name',
+    }
+  );
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+    },
+    _values: {
+      ':UE_id': '2',
+      ':UE_name': 'custom-transformed-name',
+    },
+    expression:
+      'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name)',
+    prefix: '',
+  });
+});
+
+test('parses dynamic body to update expression with custom transform overrides', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {'user.newAddresses': Array<string>}
+  >(
+    {
+      id: '2',
+      age: {
+        ADD: 2,
+      },
+    },
+    {
+      // even tho we provided custom transformed value here, it should not be included
+      age: 200,
+    }
+  );
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_age': 'age',
+      '#UE_id': 'id',
+    },
+    _values: {
+      ':UE_age': 2,
+      ':UE_id': '2',
+    },
+    expression: 'SET #UE_id = :UE_id ADD #UE_age :UE_age',
+    prefix: '',
+  });
+});
+
 test('parses explicit set update body', () => {
   const update = expInputParser.parseToUpdate<User, UserPrimaryKey>({
     id: {
