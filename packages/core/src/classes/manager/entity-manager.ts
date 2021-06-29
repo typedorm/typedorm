@@ -375,7 +375,11 @@ export class EntityManager {
    * @param body Attributes to update
    * @param options update options
    */
-  async update<Entity, PrimaryKey = Partial<Entity>, AdditionalProperties = {}>(
+  async update<
+    Entity,
+    PrimaryKey = Partial<Entity>,
+    AdditionalProperties = Entity
+  >(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
     body: UpdateBody<Entity, AdditionalProperties>,

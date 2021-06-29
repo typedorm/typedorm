@@ -476,7 +476,7 @@ test('transforms update item request', () => {
 });
 
 test('transforms update item request respects custom transforms applied via class transformer', () => {
-  const updatedItem = transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
+  const updatedItem = transformer.toDynamoUpdateItem(
     Photo,
     {
       id: 1,

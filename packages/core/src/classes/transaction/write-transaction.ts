@@ -32,8 +32,8 @@ interface WriteTransactionUpdateOptions<Entity> {
 }
 export interface WriteTransactionUpdate<
   Entity,
-  PrimaryKey,
-  AdditionalProperties
+  PrimaryKey = Partial<Entity>,
+  AdditionalProperties = Entity
 > {
   update: {
     item: EntityTarget<Entity>;
@@ -117,7 +117,7 @@ export class WriteTransaction extends Transaction<
   addUpdateItem<
     Entity,
     PrimaryKey = Partial<Entity>,
-    AdditionalProperties = {}
+    AdditionalProperties = Entity
   >(
     item: EntityTarget<Entity>,
     primaryKey: PrimaryKey,

@@ -373,7 +373,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     return transformBody;
   }
 
-  toDynamoUpdateItem<Entity, PrimaryKey, AdditionalProperties = {}>(
+  toDynamoUpdateItem<Entity, PrimaryKey, AdditionalProperties = Entity>(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
     body: UpdateBody<Entity, AdditionalProperties>,
