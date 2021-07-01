@@ -5,7 +5,6 @@ import {
   Replace,
   RETURN_VALUES,
   Table,
-  UpdateAttributes,
   TRANSFORM_TYPE,
   IndexOptions,
   QUERY_SELECT_TYPE,
@@ -669,8 +668,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     if (uniqueAttributesToUpdate.length) {
       // if there are unique attributes, return a lazy loader, which will return write item list
       const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdateUniqueItemFactory<
-        Entity,
-        PrimaryKey
+        Entity
       >(
         metadata.table,
         metadata.name,
@@ -1087,7 +1085,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
    * to perform some sort of async call in order to fetch attributes and proceed with build
    *
    */
-  private lazyToDynamoUpdateUniqueItemFactory<Entity, PrimaryKey>(
+  private lazyToDynamoUpdateUniqueItemFactory<Entity>(
     table: Table,
     entityName: string,
     uniqueAttributesToUpdate: Replace<
@@ -1098,7 +1096,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       }
     >[],
     mainItem: DynamoDB.DocumentClient.UpdateItemInput,
-    newBody: UpdateAttributes<Entity, PrimaryKey>,
+    newBody: any,
     metadataOptions?: MetadataOptions
   ) {
     // returns transact write item list
