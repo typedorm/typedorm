@@ -424,7 +424,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       },
       {} as {[key: string]: any}
     );
-    const attributesToUpdate = {
+    const rawAttributesToUpdate = {
       ...body,
       ...formattedAutoUpdateAttributes,
     };
@@ -436,7 +436,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
      * if it's value can be statically inferred
      */
     const staticOrDynamicUpdateAttributesWithMetadata = Object.entries({
-      ...attributesToUpdate,
+      ...rawAttributesToUpdate,
     }).reduce(
       (acc, [attrName, attrValue]) => {
         const valueWithType = this.expressionInputParser.parseAttributeToUpdateValue(
@@ -642,11 +642,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
      */
     const update = this.expressionInputParser.parseToUpdate(
       {
-        ...attributesToUpdate,
+        ...rawAttributesToUpdate,
         ...affectedIndexes,
       },
       staticOrDynamicUpdateAttributesWithMetadata.transformed
     );
+
     const {
       UpdateExpression,
       ExpressionAttributeNames,
@@ -675,7 +676,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         metadata.name,
         uniqueAttributesToUpdate,
         dropProp(itemToUpdate, 'ReturnValues'),
-        body,
+        staticOrDynamicUpdateAttributesWithMetadata.transformed,
         metadataOptions
       );
 

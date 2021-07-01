@@ -594,6 +594,70 @@ test('transforms update item record with unique attributes', () => {
   ]);
 });
 
+test('transforms update item request with unique attributes and complex update value', () => {
+  const updatedItem = transformer.toDynamoUpdateItem(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      email: {
+        SET: 'new@email.com',
+      },
+    }
+  );
+  const lazyWriteItemListLoader = (updatedItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  const writeItemList = lazyWriteItemListLoader({
+    email: 'old@email.com',
+  });
+
+  expect(writeItemList).toEqual([
+    {
+      Update: {
+        ExpressionAttributeNames: {
+          '#UE_email': 'email',
+        },
+        ExpressionAttributeValues: {
+          ':UE_email': 'new@email.com',
+        },
+        Key: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+        },
+        TableName: 'test-table',
+        UpdateExpression: 'SET #UE_email = :UE_email',
+      },
+    },
+    {
+      Put: {
+        ConditionExpression:
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+        ExpressionAttributeNames: {
+          '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
+        },
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
 test('transforms update item request with condition input', () => {
   const updatedItem = transformer.toDynamoUpdateItem<User, UserPrimaryKey>(
     User,
