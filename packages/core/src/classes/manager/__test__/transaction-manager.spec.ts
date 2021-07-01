@@ -112,19 +112,20 @@ test('performs write transactions for simple writes', async () => {
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'status',
-            '#attr1': 'GSI1PK',
+            '#UE_status': 'status',
+            '#UE_GSI1PK': 'GSI1PK',
           },
           ExpressionAttributeValues: {
-            ':val0': 'active',
-            ':val1': 'USER#STATUS#active',
+            ':UE_status': 'active',
+            ':UE_GSI1PK': 'USER#STATUS#active',
           },
           Key: {
             PK: 'USER#1',
             SK: 'USER#1',
           },
           TableName: 'test-table',
-          UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+          UpdateExpression:
+            'SET #UE_status = :UE_status, #UE_GSI1PK = :UE_GSI1PK',
         },
       },
       {
@@ -195,14 +196,14 @@ test('performs write transactions for entities with unique attributes ', async (
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'email',
-            '#attr1': 'status',
-            '#attr2': 'GSI1PK',
+            '#UE_email': 'email',
+            '#UE_status': 'status',
+            '#UE_GSI1PK': 'GSI1PK',
           },
           ExpressionAttributeValues: {
-            ':val0': 'new@example.com',
-            ':val1': 'active',
-            ':val2': 'USER#STATUS#active',
+            ':UE_email': 'new@example.com',
+            ':UE_status': 'active',
+            ':UE_GSI1PK': 'USER#STATUS#active',
           },
           Key: {
             PK: 'USER#1',
@@ -210,7 +211,7 @@ test('performs write transactions for entities with unique attributes ', async (
           },
           TableName: 'test-table',
           UpdateExpression:
-            'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+            'SET #UE_email = :UE_email, #UE_status = :UE_status, #UE_GSI1PK = :UE_GSI1PK',
         },
       },
       {
@@ -281,14 +282,14 @@ test('performs write transactions for entities with non existing unique attribut
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'email',
-            '#attr1': 'status',
-            '#attr2': 'GSI1PK',
+            '#UE_email': 'email',
+            '#UE_status': 'status',
+            '#UE_GSI1PK': 'GSI1PK',
           },
           ExpressionAttributeValues: {
-            ':val0': 'new@example.com',
-            ':val1': 'active',
-            ':val2': 'USER#STATUS#active',
+            ':UE_email': 'new@example.com',
+            ':UE_status': 'active',
+            ':UE_GSI1PK': 'USER#STATUS#active',
           },
           Key: {
             PK: 'USER#1',
@@ -296,7 +297,7 @@ test('performs write transactions for entities with non existing unique attribut
           },
           TableName: 'test-table',
           UpdateExpression:
-            'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+            'SET #UE_email = :UE_email, #UE_status = :UE_status, #UE_GSI1PK = :UE_GSI1PK',
         },
       },
       {
@@ -367,6 +368,68 @@ test('performs write transactions when removing entities with unique attributes 
             SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#olduser@example.com',
           },
           TableName: 'test-table',
+        },
+      },
+    ],
+  });
+});
+
+test('performs write transactions when with mixed update actions ', async () => {
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const transaction = new WriteTransaction(connection).addUpdateItem<
+    User,
+    UserPrimaryKey
+  >(
+    User,
+    {id: '1'},
+    {
+      addresses: {
+        REMOVE: {
+          $AT_INDEX: [1],
+        },
+      },
+      name: {
+        IF_NOT_EXISTS: {
+          $PATH: 'updated',
+          $VALUE: 'active',
+        },
+      },
+    }
+  );
+
+  await manager.write(transaction);
+
+  expect(dcMock.transactWrite).toHaveBeenCalledTimes(1);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Update: {
+          ExpressionAttributeNames: {
+            '#UE_addresses': 'addresses',
+            '#UE_name': 'name',
+            '#UE_updated': 'updated',
+            '#UE_GSI1SK': 'GSI1SK',
+          },
+          ExpressionAttributeValues: {
+            ':UE_GSI1SK': 'USER#active',
+            ':UE_name': 'active',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+          UpdateExpression:
+            'SET #UE_name = if_not_exists(#UE_updated, :UE_name), #UE_GSI1SK = :UE_GSI1SK REMOVE #UE_addresses[1]',
         },
       },
     ],

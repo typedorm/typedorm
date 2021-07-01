@@ -8,8 +8,8 @@ export enum MERGE_STRATEGY {
 
 export abstract class BaseExpressionInput {
   expression: string;
-  _names?: {[key: string]: any};
-  _values?: {[key: string]: any};
+  protected _names?: {[key: string]: any};
+  protected _values?: {[key: string]: any};
 
   constructor() {
     this.expression = '';
@@ -124,16 +124,16 @@ export abstract class BaseExpressionInput {
   ): this {
     const {expression, names, values} = condition;
 
-    // if base condition does not have any expression replace
-    if (!this.expression) {
-      this.expression = expression;
-      this.names = names;
-      this.values = values;
+    // if merging condition does not have anything to merge return
+    if (!expression) {
       return this;
     }
 
-    // if merging condition does not have anything to merge return
-    if (!expression) {
+    // if base condition does not have any expression replace
+    if (!this.expression) {
+      this.expression += expression;
+      this.names = names;
+      this.values = values;
       return this;
     }
 
@@ -226,7 +226,8 @@ export abstract class BaseExpressionInput {
     }
   }
 
-  /** Use merge instead
+  /**
+   * Use merge instead
    * @deprecated
    */
   or(): this {
@@ -346,7 +347,11 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
-  addBaseOperator(operator: SimpleOperator, key: string, value: any): this {
+  protected addBaseOperator(
+    operator: SimpleOperator,
+    key: string,
+    value: any
+  ): this {
     const attrExpName = this.addExpressionName(key);
     const attrExpValue = this.addExpressionValue(key, value);
     this.appendToExpression(
@@ -355,7 +360,7 @@ export abstract class BaseExpressionInput {
     return this;
   }
 
-  private getSymbolForOperator(operator: SimpleOperator): string {
+  protected getSymbolForOperator(operator: SimpleOperator): string {
     const symbolMap = {
       EQ: '=',
       LE: '<=',

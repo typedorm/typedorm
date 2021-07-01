@@ -38,4 +38,7 @@ export class User implements UserPrimaryKey, UserGSI1 {
 
   @Attribute()
   age: number;
+
+  @Attribute()
+  addresses: string[];
 }

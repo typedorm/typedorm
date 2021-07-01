@@ -18,11 +18,11 @@ export * from './src/helpers/require-at-least-one-type';
 export * from './src/helpers/require-at-least-two-type';
 export * from './src/helpers/require-only-one-type';
 export * from './src/helpers/scalar-type';
-export * from './src/helpers/update-attributes-type';
 export * from './src/helpers/replace-type';
 export * from './src/helpers/is-primary-key';
 export * from './src/helpers/nested-attributes-type';
 export * from './src/utils/get-entity-definition';
+export * from './src/helpers/invalid-type';
 
 // exceptions
 export * from './src/exceptions';

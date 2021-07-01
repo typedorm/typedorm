@@ -6,8 +6,8 @@ import {
   EntityTarget,
   Table,
   SparseIndexParseError,
-  UpdateAttributes,
   CONSUMED_CAPACITY_TYPE,
+  InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
@@ -19,6 +19,7 @@ import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
 import {isDynamoEntityKeySchema} from '../../helpers/is-dynamo-entity-key-schema';
 import {isKeyOfTypeAliasSchema} from '../../helpers/is-key-of-type-alias-schema';
 import {classToPlain} from 'class-transformer';
+import {ExpressionInputParser} from '../expression/expression-input-parser';
 
 export interface MetadataOptions {
   requestId?: string;
@@ -26,7 +27,11 @@ export interface MetadataOptions {
 }
 
 export abstract class BaseTransformer {
-  constructor(protected connection: Connection) {}
+  protected _expressionInputParser: ExpressionInputParser;
+
+  constructor(protected connection: Connection) {
+    this._expressionInputParser = new ExpressionInputParser();
+  }
   /**
    * Returns table name decorated for given entity class
    * @param entityClass Entity Class
@@ -40,7 +45,7 @@ export abstract class BaseTransformer {
   applyClassTransformerFormations<Entity>(entity: Entity) {
     const transformedPlainEntity = classToPlain<Entity>(entity, {
       enableImplicitConversion: true,
-      excludePrefixes: ['__'],
+      excludePrefixes: ['__'], // exclude internal attributes
     });
 
     return transformedPlainEntity as Entity;
@@ -127,9 +132,10 @@ export abstract class BaseTransformer {
     return {...parsedEntity, ...formattedSchema};
   }
 
-  getAffectedPrimaryKeyAttributes<Entity, PrimaryKey>(
+  getAffectedPrimaryKeyAttributes<Entity>(
     entityClass: EntityTarget<Entity>,
-    attributes: UpdateAttributes<Entity, PrimaryKey>
+    attributes: Record<string, any>,
+    attributesTypeMetadata: Record<string, 'static' | 'dynamic'>
   ) {
     const {
       schema: {primaryKey},
@@ -143,7 +149,7 @@ export abstract class BaseTransformer {
     }
 
     const affectedKeyAttributes = Object.entries(attributes).reduce(
-      (acc, [attrKey, attrValue]) => {
+      (acc, [attrKey, attrValue]: [string, any]) => {
         // bail early if current attribute type is not of type scalar
         if (!isScalarType(attrValue)) {
           return acc;
@@ -155,6 +161,15 @@ export abstract class BaseTransformer {
             // if no attributes are referenced for current primary key attribute, return
             if (!primaryKeyAttrRefs.includes(attrKey)) {
               return;
+            }
+
+            // if parsed value was of type we can not auto resolve indexes
+            // this must be resolved by the dev
+            if (attributesTypeMetadata[attrKey] === 'dynamic') {
+              throw new InvalidDynamicUpdateAttributeValueError(
+                attrKey,
+                attrValue
+              );
             }
 
             const parsedKey = parseKey(
@@ -179,9 +194,10 @@ export abstract class BaseTransformer {
    * @param attributes Attributes to check affected indexes for
    * @param options
    */
-  getAffectedIndexesForAttributes<Entity, PrimaryKey>(
+  getAffectedIndexesForAttributes<Entity>(
     entityClass: EntityTarget<Entity>,
-    attributes: UpdateAttributes<Entity, PrimaryKey>,
+    attributes: Record<string, any>,
+    attributesTypeMetadata: Record<string, 'static' | 'dynamic'>,
     options?: {nestedKeySeparator: string}
   ) {
     const nestedKeySeparator = options?.nestedKeySeparator ?? '.';
@@ -189,9 +205,8 @@ export abstract class BaseTransformer {
       schema: {indexes},
     } = this.connection.getEntityByTarget(entityClass);
 
-    const affectedIndexes = Object.keys(attributes).reduce(
-      (acc, attrKey: string) => {
-        const currAttrValue = (attributes as any)[attrKey];
+    const affectedIndexes = Object.entries(attributes).reduce(
+      (acc, [attrKey, currAttrValue]) => {
         // if current value is not of scalar type skip checking index
         if (
           attrKey.includes(nestedKeySeparator) ||
@@ -220,6 +235,15 @@ export abstract class BaseTransformer {
               interpolationsForCurrIndex[interpolationKey];
 
             if (currentInterpolation.includes(attrKey)) {
+              // if parsed value was of type we can not auto resolve indexes
+              // this must be resolved by the dev
+              if (attributesTypeMetadata[attrKey] === 'dynamic') {
+                throw new InvalidDynamicUpdateAttributeValueError(
+                  attrKey,
+                  currAttrValue
+                );
+              }
+
               try {
                 const parsedIndex = parseKey(
                   currIndex.attributes[interpolationKey],

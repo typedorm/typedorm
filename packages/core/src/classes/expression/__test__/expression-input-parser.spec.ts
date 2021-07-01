@@ -5,6 +5,7 @@ import {ExpressionInputParser} from '../expression-input-parser';
 import {Filter} from '../filter';
 import {KeyCondition} from '../key-condition';
 import {Projection} from '../projection';
+import {Update} from '../update/update';
 
 let expInputParser: ExpressionInputParser;
 beforeEach(() => {
@@ -229,4 +230,361 @@ test('parses options to valid projection', () => {
   expect(projection.expression).toEqual(
     '#PE_id, #PE_name, #PE_status.#PE_status_active'
   );
+});
+
+/**
+ * @group parseToUpdate
+ *
+ */
+test('parses update body to update expression', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {'user.newAddresses': Array<string>}
+  >({
+    id: '2',
+    name: {
+      IF_NOT_EXISTS: {
+        $PATH: 'id',
+        $VALUE: '123',
+      },
+    },
+    status: {
+      IF_NOT_EXISTS: '1',
+    },
+    age: {
+      INCREMENT_BY: 2,
+    },
+    addresses: {
+      LIST_APPEND: ['1234'],
+    },
+    'user.newAddresses': {
+      LIST_APPEND: {
+        $PATH: 'addresses',
+        $VALUE: ['123'],
+      },
+    },
+  });
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_age': 'age',
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
+      '#UE_user': 'user',
+      '#UE_user_newAddresses': 'newAddresses',
+    },
+    _values: {
+      ':UE_addresses': ['1234'],
+      ':UE_user_newAddresses': ['123'],
+      ':UE_age': 2,
+      ':UE_id': '2',
+      ':UE_name': '123',
+      ':UE_status': '1',
+    },
+    expression:
+      'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name), #UE_status = if_not_exists(#UE_status, :UE_status), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses), #UE_user.#UE_user_newAddresses = list_append(#UE_addresses, :UE_user_newAddresses)',
+    prefix: '',
+  });
+});
+
+test('parses update body to update expression with custom transform overrides ', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {'user.newAddresses': Array<string>}
+  >(
+    {
+      id: '2',
+      name: {
+        IF_NOT_EXISTS: {
+          $PATH: 'id',
+          $VALUE: '123',
+        },
+      },
+    },
+    {
+      // when custom transformation is applied
+      name: 'custom-transformed-name',
+    }
+  );
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+    },
+    _values: {
+      ':UE_id': '2',
+      ':UE_name': 'custom-transformed-name',
+    },
+    expression:
+      'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name)',
+    prefix: '',
+  });
+});
+
+test('parses dynamic body to update expression with custom transform overrides', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {'user.newAddresses': Array<string>}
+  >(
+    {
+      id: '2',
+      age: {
+        ADD: 2,
+      },
+    },
+    {
+      // even tho we provided custom transformed value here, it should not be included
+      age: 200,
+    }
+  );
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_age': 'age',
+      '#UE_id': 'id',
+    },
+    _values: {
+      ':UE_age': 2,
+      ':UE_id': '2',
+    },
+    expression: 'SET #UE_id = :UE_id ADD #UE_age :UE_age',
+    prefix: '',
+  });
+});
+
+test('parses explicit set update body', () => {
+  const update = expInputParser.parseToUpdate<User, UserPrimaryKey>({
+    id: {
+      SET: '2',
+    },
+    name: {
+      SET: {
+        IF_NOT_EXISTS: {
+          $PATH: 'age',
+          $VALUE: '2',
+        },
+      },
+    },
+    age: {
+      SET: {
+        INCREMENT_BY: 2,
+      },
+    },
+    addresses: {
+      SET: {
+        LIST_APPEND: ['1234'],
+      },
+    },
+  });
+  expect(update).toBeInstanceOf(Update);
+  expect(update.expression).toEqual(
+    'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_age, :UE_name), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses)'
+  );
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_age': 'age',
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+    },
+    _values: {
+      ':UE_addresses': ['1234'],
+      ':UE_age': 2,
+      ':UE_id': '2',
+      ':UE_name': '2',
+    },
+    expression:
+      'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_age, :UE_name), #UE_age = #UE_age + :UE_age, #UE_addresses = list_append(#UE_addresses, :UE_addresses)',
+    prefix: '',
+  });
+});
+
+test('parses explicit "ADD" update body', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {newAddresses: Array<number>}
+  >({
+    age: {
+      ADD: 1,
+    },
+    addresses: {
+      ADD: ['123'],
+    },
+    newAddresses: {
+      ADD: [1234],
+    },
+  });
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_age': 'age',
+      '#UE_newAddresses': 'newAddresses',
+    },
+    _values: {
+      ':UE_addresses': ['123'],
+      ':UE_age': 1,
+      ':UE_newAddresses': [1234],
+    },
+    expression:
+      'ADD #UE_age :UE_age, #UE_addresses :UE_addresses, #UE_newAddresses :UE_newAddresses',
+    prefix: '',
+  });
+});
+
+test('parses explicit "REMOVE" update body', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {newAddresses: Array<Buffer>}
+  >({
+    age: {
+      REMOVE: true,
+    },
+    newAddresses: {
+      REMOVE: {
+        $AT_INDEX: [1, 3, 4],
+      },
+    },
+  });
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_age': 'age',
+      '#UE_newAddresses': 'newAddresses',
+    },
+    _values: {},
+    expression:
+      'REMOVE #UE_age, #UE_newAddresses[1], #UE_newAddresses[3], #UE_newAddresses[4]',
+    prefix: '',
+  });
+});
+
+test('parses explicit "DELETE" update body', () => {
+  const update = expInputParser.parseToUpdate<
+    User,
+    {newAddresses: Array<Buffer>}
+  >({
+    addresses: {
+      DELETE: ['123'],
+    },
+    newAddresses: {
+      DELETE: [Buffer.from('12')],
+    },
+  });
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_newAddresses': 'newAddresses',
+    },
+    _values: {
+      ':UE_addresses': ['123'],
+      ':UE_newAddresses': [Buffer.from('12')],
+    },
+    expression:
+      'DELETE #UE_addresses :UE_addresses, #UE_newAddresses :UE_newAddresses',
+    prefix: '',
+  });
+});
+
+test('parses update body with mixed actions', () => {
+  const update = expInputParser.parseToUpdate<User>({
+    id: '2',
+    name: {
+      IF_NOT_EXISTS: {
+        $PATH: 'id',
+        $VALUE: '123',
+      },
+    },
+    status: {
+      SET: {
+        IF_NOT_EXISTS: 'active',
+      },
+    },
+    age: {
+      ADD: 1,
+    },
+    addresses: {
+      DELETE: ['123'],
+    },
+  });
+
+  expect(update).toBeInstanceOf(Update);
+  expect(update).toEqual({
+    _names: {
+      '#UE_addresses': 'addresses',
+      '#UE_age': 'age',
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
+    },
+    _values: {
+      ':UE_addresses': ['123'],
+      ':UE_age': 1,
+      ':UE_id': '2',
+      ':UE_name': '123',
+      ':UE_status': 'active',
+    },
+    expression:
+      'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name), #UE_status = if_not_exists(#UE_status, :UE_status) ADD #UE_age :UE_age DELETE #UE_addresses :UE_addresses',
+    prefix: '',
+  });
+});
+
+/**
+ * @group parseToUpdateValue
+ */
+test('correctly parses ADD and returns update values', () => {
+  const value = expInputParser.parseAttributeToUpdateValue('age', {
+    ADD: 1,
+  });
+  expect(value).toEqual({type: 'dynamic', value: 1});
+});
+
+test('skips parsing and returns update values', () => {
+  const value = expInputParser.parseAttributeToUpdateValue('name', {
+    firstName: 'test',
+  });
+  expect(value).toEqual({
+    type: 'static',
+    value: {
+      firstName: 'test',
+    },
+  });
+});
+test('parses SET action with static value', () => {
+  const value = expInputParser.parseAttributeToUpdateValue('name', {
+    IF_NOT_EXISTS: 'new name',
+  });
+  expect(value).toEqual({
+    type: 'static',
+    value: 'new name',
+  });
+});
+test('parses SET action as dynamic value', () => {
+  const value = expInputParser.parseAttributeToUpdateValue('age', {
+    INCREMENT_BY: 2,
+  });
+  expect(value).toEqual({
+    type: 'dynamic',
+    value: 2,
+  });
+});
+test('parses SET action as dynamic value for nested list actions', () => {
+  const value = expInputParser.parseAttributeToUpdateValue(
+    'addresses[1]',
+    'new address'
+  );
+  expect(value).toEqual({
+    type: 'dynamic',
+    value: 'new address',
+  });
 });

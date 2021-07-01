@@ -43,6 +43,7 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 - Supports updating Primary key attributes
 - Auto Generated values for attributes
 - Auto update attribute values on UPDATE operations
+- Most type safe, powerful and flexible update expression generator engine
 - Dynamic & Static default values for attributes
 - Complex update, key condition and condition expression all made easy to work with
 - Powerful expression builder to auto generate expressions from input

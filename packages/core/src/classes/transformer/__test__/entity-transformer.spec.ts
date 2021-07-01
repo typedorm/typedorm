@@ -417,13 +417,30 @@ test('transforms complex model model to dynamo entity', () => {
 /**
  * @group getAffectedIndexesForAttributes
  */
-test('returns all affected indexes for simple attributes', () => {
-  const affectedIndexes = transformer.getAffectedIndexesForAttributes(User, {
-    name: 'new updated name',
-  });
+test('returns all affected indexes for static attributes', () => {
+  const affectedIndexes = transformer.getAffectedIndexesForAttributes(
+    User,
+    {
+      name: 'new updated name',
+    },
+    {name: 'static'}
+  );
   expect(affectedIndexes).toEqual({
     GSI1SK: 'USER#new updated name',
   });
+});
+
+test('returns all affected indexes for dynamic update body', () => {
+  const affectedIndexes = transformer.getAffectedIndexesForAttributes<User>(
+    User,
+    {
+      age: {
+        DECREMENT_BY: 2,
+      },
+    },
+    {age: 'dynamic'}
+  );
+  expect(affectedIndexes).toEqual({});
 });
 
 test('returns all affected indexes for alias attributes', () => {
@@ -432,7 +449,8 @@ test('returns all affected indexes for alias attributes', () => {
     {
       age: 10,
       status: 'inactive',
-    }
+    },
+    {age: 'static', status: 'static'}
   );
   expect(affectedIndexes).toEqual({
     LSI1SK: 10, // <-- aliased indexes are correctly persisting attribute types
@@ -447,6 +465,11 @@ test('returns all affected indexes for complex attributes', () => {
       name: 'Updated name',
       teamCount: 12,
       active: false,
+    },
+    {
+      name: 'static',
+      teamCount: 'static',
+      active: 'static',
     }
   );
   expect(affectedIndexes).toEqual({
