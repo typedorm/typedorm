@@ -78,7 +78,6 @@ export class ExpressionInputParser {
       const parsedValue = Object.values(parsedUpdate.values ?? {})[0];
 
       // if expression contains any dynamic operation such as value manipulation or nested attribute manipulation in a list
-      // throw a new error
       if (
         !(parsedUpdate instanceof SetUpdate) ||
         parsedUpdate.expression.includes(' + ') ||
