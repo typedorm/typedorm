@@ -14,8 +14,11 @@ This page will walk you through some of the unique recipes to enhance your devel
     - [Dynamic Default values](#dynamic-default-values)
   - [Advanced updates](#advanced-updates)
     - [Static vs Dynamic updates](#static-vs-dynamic-updates)
-    - [Using SET Operator](#using-set-operator)
-    - [Using ADD Operator](#using-add-operator)
+    - [Using SET Action](#using-set-action)
+    - [Using ADD Action](#using-add-action)
+    - [Using REMOVE Action](#using-remove-action)
+    - [Using DELETE Action](#using-delete-action)
+    - [Using multiple actions in single update](#using-multiple-actions-in-single-update)
   - [Conditional update](#conditional-update)
     - [Specify condition when using entity manager](#specify-condition-when-using-entity-manager)
   - [Conditional create](#conditional-create)
@@ -229,7 +232,7 @@ Please have a look at the table below to determine if the update you are trying 
 | DELETE | \*               |                                                                         | dynamic |
 | REMOVE | \*               |                                                                         | dynamic |
 
-### Using SET Operator
+### Using SET Action
 
 Set operations support Implicit and Explicit syntax. For example, writing `name: {SET: "new name"}` is identical to writing `name: "new name'`.
 
@@ -254,9 +257,107 @@ const updatedResponse = await entityManager.update(
 // UpdateExpression: 'SET #UE_name :UE_name, #UE_email :UE_email',
 ```
 
-### Using ADD Operator
+### Using ADD Action
 
-TODO://
+`ADD` action is only supported for number and list types. For more up-to-date information always look at the
+[official aws-sdk guide](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html).
+
+```Typescript
+const updatedResponse = await entityManager.update(
+  User,
+  {
+    id: '1'
+  },
+  {
+    age: {
+      ADD: 2
+    },
+    addresses: {
+      ADD: ["new address"]
+    }
+  }
+)
+
+// this will generate following update expression with given values
+// UpdateExpression: 'ADD #UE_age :UE_age, #UE_addresses :UE_addresses',
+```
+
+### Using REMOVE Action
+
+For more up-to-date information always look at the
+[official aws-sdk guide](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html).
+
+```Typescript
+const updatedResponse = await entityManager.update(
+  User,
+  {
+    id: '1'
+  },
+  {
+    age: {
+      REMOVE: true
+    },
+    addresses: {
+      REMOVE: {
+        $AT_INDEX: [2]
+      }
+    }
+  }
+)
+
+// this will generate following update expression with given values
+// UpdateExpression: 'REMOVE #UE_age, #UE_addresses[2]',
+```
+
+### Using DELETE Action
+
+`DELETE` action is only supported with Set data types. For more up-to-date information always look at the
+[official aws-sdk guide](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html).
+
+```Typescript
+const updatedResponse = await entityManager.update(
+  User,
+  {
+    id: '1'
+  },
+  {
+    color: {
+      DELETE: ["red", "blue"]
+    }
+  }
+)
+
+// this will generate following update expression with given values
+// UpdateExpression: 'DELETE #UE_color :UE_color',
+```
+
+### Using multiple actions in single update
+
+```Typescript
+  const update = expInputParser.parseToUpdate<User>({
+    id: '2',
+    name: {
+      IF_NOT_EXISTS: {
+        $PATH: 'id',
+        $VALUE: '123',
+      },
+    },
+    status: {
+      SET: {
+        IF_NOT_EXISTS: 'active',
+      },
+    },
+    age: {
+      ADD: 1,
+    },
+    addresses: {
+      DELETE: ['123'],
+    },
+  });
+
+// this will generate following update expression with given values
+// UpdateExpression: 'SET #UE_id = :UE_id, #UE_name = if_not_exists(#UE_id, :UE_name), #UE_status = if_not_exists(#UE_status, :UE_status) ADD #UE_age :UE_age DELETE #UE_addresses :UE_addresses',
+```
 
 ## Conditional update
 
