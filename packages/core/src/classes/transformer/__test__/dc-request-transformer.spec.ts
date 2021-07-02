@@ -1,4 +1,10 @@
-import {Attribute, Entity, QUERY_ORDER} from '@typedorm/common';
+import {
+  Attribute,
+  Entity,
+  InvalidPrimaryKeyAttributesUpdateError,
+  InvalidUniqueAttributeUpdateError,
+  QUERY_ORDER,
+} from '@typedorm/common';
 import {Customer} from '../../../../__mocks__/inherited-customer';
 import {table} from '../../../../__mocks__/table';
 import {User, UserGSI1} from '../../../../__mocks__/user';
@@ -9,11 +15,15 @@ import {
   UserUniqueEmail,
   UserUniqueEmailPrimaryKey,
 } from '../../../../__mocks__/user-unique-email';
+import {CATEGORY, Photo, PhotoPrimaryKey} from '@typedorm/core/__mocks__/photo';
+// eslint-disable-next-line node/no-extraneous-import
+import moment from 'moment';
+jest.useFakeTimers('modern').setSystemTime(1622530750000);
 
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {
   const connection = createTestConnection({
-    entities: [User, Customer, UserUniqueEmail],
+    entities: [User, Customer, UserUniqueEmail, Photo],
   });
   transformer = new DocumentClientRequestTransformer(connection);
 });
@@ -235,7 +245,7 @@ test('transforms put item request with unique attributes and condition options',
           id: '1',
           name: 'test user',
           status: 'active',
-          __en: 'user',
+          __en: 'user-unique-email',
           GSI1PK: 'USER#STATUS#active',
           GSI1SK: 'USER#test user',
         },
@@ -448,12 +458,12 @@ test('transforms update item request', () => {
   );
   expect(updatedItem).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_GSI1SK': 'GSI1SK',
     },
     ExpressionAttributeValues: {
-      ':val0': 'new name',
-      ':val1': 'USER#new name',
+      ':UE_name': 'new name',
+      ':UE_GSI1SK': 'USER#new name',
     },
     Key: {
       PK: 'USER#1',
@@ -461,8 +471,61 @@ test('transforms update item request', () => {
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    UpdateExpression: 'SET #UE_name = :UE_name, #UE_GSI1SK = :UE_GSI1SK',
   });
+});
+
+test('transforms update item request respects custom transforms applied via class transformer', () => {
+  const updatedItem = transformer.toDynamoUpdateItem(
+    Photo,
+    {
+      id: 1,
+      category: CATEGORY.KIDS,
+    },
+    {
+      category: {
+        // even tho we try to update `category` attribute to `KIDS` final result will have `new-kids`
+        // due to custom transformation defined on the Photo entity
+        SET: {
+          IF_NOT_EXISTS: CATEGORY.KIDS,
+        },
+      },
+    }
+  );
+  const writeItemList = (updatedItem as any).lazyLoadTransactionWriteItems({
+    id: 1,
+    category: CATEGORY.PETS,
+    PK: 'PHOTO#PETS',
+    SK: 'PHOTO#1',
+    GSI1PK: 'PHOTO#1',
+    GSI1SK: 'PHOTO#PETS',
+  });
+  expect(writeItemList).toEqual([
+    {
+      Put: {
+        Item: {
+          GSI1SK: 'PHOTO#kids-new',
+          GSI1PK: 'PHOTO#1',
+          PK: 'PHOTO#kids-new',
+          SK: 'PHOTO#1',
+          category: 'kids-new',
+          id: 1,
+          updatedAt: '1622530750',
+        },
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'PHOTO#PETS',
+          SK: 'PHOTO#1',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
 });
 
 test('transforms update item record with unique attributes', () => {
@@ -492,18 +555,19 @@ test('transforms update item record with unique attributes', () => {
     {
       Update: {
         ExpressionAttributeNames: {
-          '#attr0': 'name',
-          '#attr1': 'email',
-          '#attr2': 'GSI1SK',
+          '#UE_name': 'name',
+          '#UE_email': 'email',
+          '#UE_GSI1SK': 'GSI1SK',
         },
         ExpressionAttributeValues: {
-          ':val0': 'new name',
-          ':val1': 'new@email.com',
-          ':val2': 'USER#new name',
+          ':UE_name': 'new name',
+          ':UE_email': 'new@email.com',
+          ':UE_GSI1SK': 'USER#new name',
         },
         Key: {PK: 'USER#1', SK: 'USER#1'},
         TableName: 'test-table',
-        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+        UpdateExpression:
+          'SET #UE_name = :UE_name, #UE_email = :UE_email, #UE_GSI1SK = :UE_GSI1SK',
       },
     },
     {
@@ -511,6 +575,70 @@ test('transforms update item record with unique attributes', () => {
         ConditionExpression:
           '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
         ExpressionAttributeNames: {'#CE_PK': 'PK', '#CE_SK': 'SK'},
+        Item: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+          SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#old@email.com',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
+test('transforms update item request with unique attributes and complex update value', () => {
+  const updatedItem = transformer.toDynamoUpdateItem(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      email: {
+        SET: 'new@email.com',
+      },
+    }
+  );
+  const lazyWriteItemListLoader = (updatedItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  const writeItemList = lazyWriteItemListLoader({
+    email: 'old@email.com',
+  });
+
+  expect(writeItemList).toEqual([
+    {
+      Update: {
+        ExpressionAttributeNames: {
+          '#UE_email': 'email',
+        },
+        ExpressionAttributeValues: {
+          ':UE_email': 'new@email.com',
+        },
+        Key: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+        },
+        TableName: 'test-table',
+        UpdateExpression: 'SET #UE_email = :UE_email',
+      },
+    },
+    {
+      Put: {
+        ConditionExpression:
+          '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+        ExpressionAttributeNames: {
+          '#CE_PK': 'PK',
+          '#CE_SK': 'SK',
+        },
         Item: {
           PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
           SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@email.com',
@@ -549,13 +677,13 @@ test('transforms update item request with condition input', () => {
   );
   expect(updatedItem).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_GSI1SK': 'GSI1SK',
       '#CE_age': 'age',
     },
     ExpressionAttributeValues: {
-      ':val0': 'new name',
-      ':val1': 'USER#new name',
+      ':UE_name': 'new name',
+      ':UE_GSI1SK': 'USER#new name',
       ':CE_age_end': 10,
       ':CE_age_start': 3,
     },
@@ -565,7 +693,7 @@ test('transforms update item request with condition input', () => {
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    UpdateExpression: 'SET #UE_name = :UE_name, #UE_GSI1SK = :UE_GSI1SK',
     ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
   });
 });
@@ -604,21 +732,22 @@ test('transforms update item record with unique attributes and condition options
     {
       Update: {
         ExpressionAttributeNames: {
-          '#attr0': 'name',
-          '#attr1': 'email',
-          '#attr2': 'GSI1SK',
+          '#UE_name': 'name',
+          '#UE_email': 'email',
+          '#UE_GSI1SK': 'GSI1SK',
           '#CE_user': 'user',
           '#CE_user_name': 'name',
         },
         ExpressionAttributeValues: {
-          ':val0': 'new name',
-          ':val1': 'new@email.com',
-          ':val2': 'USER#new name',
+          ':UE_name': 'new name',
+          ':UE_email': 'new@email.com',
+          ':UE_GSI1SK': 'USER#new name',
           ':CE_user_name': 'test user',
         },
         Key: {PK: 'USER#1', SK: 'USER#1'},
         TableName: 'test-table',
-        UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2',
+        UpdateExpression:
+          'SET #UE_name = :UE_name, #UE_email = :UE_email, #UE_GSI1SK = :UE_GSI1SK',
         ConditionExpression: '#CE_user.#CE_user_name <> :CE_user_name',
       },
     },
@@ -646,6 +775,150 @@ test('transforms update item record with unique attributes and condition options
   ]);
 });
 
+test('transforms update item with primary key changes', () => {
+  const updateItem = transformer.toDynamoUpdateItem<
+    UserUniqueEmail,
+    UserPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      id: '1a',
+    }
+  );
+
+  const lazyWriteItemListLoader = (updateItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  // with following existing item
+  const writeItemList = lazyWriteItemListLoader({
+    id: '1',
+    PK: 'USER#1',
+    SK: 'USER#1',
+    name: 'new name',
+    email: 'user@email.com',
+    __en: 'user',
+  });
+
+  expect(writeItemList).toEqual([
+    {
+      Put: {
+        Item: {
+          email: 'user@email.com',
+          id: '1a',
+          name: 'new name',
+          PK: 'USER#1a',
+          SK: 'USER#1a',
+          __en: 'user',
+        },
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'USER#1',
+          SK: 'USER#1',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
+test('transforms update item with attributes that reference primary key and indexes', () => {
+  const updateItem = transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
+    Photo,
+    {
+      category: CATEGORY.PETS,
+      id: 1,
+    },
+    {
+      id: 2,
+    }
+  );
+
+  const lazyWriteItemListLoader = (updateItem as any)
+    .lazyLoadTransactionWriteItems;
+  expect(typeof lazyWriteItemListLoader).toEqual('function');
+
+  // with following existing item
+  const writeItemList = lazyWriteItemListLoader({
+    id: 1,
+    PK: 'PHOTO#PETS',
+    SK: 'PHOTO#1',
+    category: 'PETS',
+    GSI1PK: 'PHOTO#1',
+    GSI1SK: 'PHOTO#PETS',
+    __en: 'photo',
+  });
+
+  expect(writeItemList).toEqual([
+    {
+      Put: {
+        Item: {
+          GSI1PK: 'PHOTO#2',
+          GSI1SK: 'PHOTO#PETS',
+          PK: 'PHOTO#PETS',
+          SK: 'PHOTO#2',
+          __en: 'photo',
+          category: 'PETS',
+          id: 2,
+          updatedAt: '1622530750',
+        },
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'PHOTO#PETS',
+          SK: 'PHOTO#1',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
+});
+
+test('throws when trying to update primary key attribute and unique attribute in the same request', () => {
+  const updateItem = () =>
+    transformer.toDynamoUpdateItem<UserUniqueEmail, UserUniqueEmailPrimaryKey>(
+      UserUniqueEmail,
+      {
+        id: 'OLD_ID',
+      },
+      {
+        id: 'NEW_ID',
+        email: 'new@email.com',
+      }
+    );
+
+  expect(updateItem).toThrow(InvalidUniqueAttributeUpdateError);
+});
+
+test('throws when trying to update primary key attribute and non key attribute in the same request', () => {
+  const updateItem = () =>
+    transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
+      Photo,
+      {
+        category: CATEGORY.PETS,
+        id: 1,
+      },
+      {
+        id: 2,
+        createdAt: moment(),
+      }
+    );
+
+  expect(updateItem).toThrow(InvalidPrimaryKeyAttributesUpdateError);
+});
+
 test('transforms update item request with complex condition input', () => {
   const updatedItem = transformer.toDynamoUpdateItem<User, UserPrimaryKey>(
     User,
@@ -670,14 +943,14 @@ test('transforms update item request with complex condition input', () => {
   );
   expect(updatedItem).toEqual({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_GSI1SK': 'GSI1SK',
       '#CE_age': 'age',
       '#CE_status': 'status',
     },
     ExpressionAttributeValues: {
-      ':val0': 'new name',
-      ':val1': 'USER#new name',
+      ':UE_name': 'new name',
+      ':UE_GSI1SK': 'USER#new name',
       ':CE_age': 3,
       ':CE_status_0': 'active',
       ':CE_status_1': 'standby',
@@ -688,7 +961,7 @@ test('transforms update item request with complex condition input', () => {
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    UpdateExpression: 'SET #UE_name = :UE_name, #UE_GSI1SK = :UE_GSI1SK',
     ConditionExpression:
       '(#CE_age >= :CE_age) AND (#CE_status IN (:CE_status_0, :CE_status_1))',
   });

@@ -15,10 +15,16 @@ export enum MANAGER_NAME {
   ENTITY_MANAGER = 'ENTITY MANAGER',
   TRANSACTION_MANAGER = 'TRANSACTION MANAGER',
   BATCH_MANAGER = 'BATCH MANAGER',
+  SCAN_MANAGER = 'SCAN_MANAGER',
 }
 export enum TRANSFORM_TRANSACTION_TYPE {
   TRANSACTION_WRITE = 'TRANSACTION_WRITE',
   TRANSACTION_READ = 'TRANSACTION_READ',
+}
+
+export enum TRANSFORM_SCAN_TYPE {
+  SCAN = 'SCAN',
+  PARALLEL_SCAN = 'PARALLEL_SCAN',
 }
 
 export enum TRANSFORM_BATCH_TYPE {
@@ -39,6 +45,8 @@ export class DebugLogger {
   private debugTransformTransactionLog = debug(
     'typedorm:transform:transaction:log'
   );
+  // scan transform logger
+  private debugTransformScanLog = debug('typedorm:transform:scan:log');
   // info logger
   private debugInfoLog = debug('typedorm:info:log');
   private debugWarnLog = debug('typedorm:warn:log');
@@ -148,6 +156,40 @@ export class DebugLogger {
   }) {
     if (this.debugTransformTransactionLog.enabled) {
       this.debugTransformTransactionLog(
+        `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
+          operation
+        )} ${chalk.magenta(prefix)}:`,
+        ...(body
+          ? [
+              chalk.blueBright('\nBody: '),
+              chalk.white(this.ensurePrintable(body)),
+            ]
+          : []),
+        ...(options
+          ? [
+              chalk.blueBright('\nOptions: '),
+              chalk.white(this.ensurePrintable(options)),
+            ]
+          : [])
+      );
+    }
+  }
+
+  logTransformScan({
+    requestId,
+    prefix,
+    operation,
+    body,
+    options,
+  }: {
+    requestId?: string;
+    operation: TRANSFORM_SCAN_TYPE;
+    prefix: string;
+    body?: any;
+    options?: any;
+  }) {
+    if (this.debugTransformScanLog.enabled) {
+      this.debugTransformScanLog(
         `${chalk.bold.bgCyanBright(requestId)} ${chalk.green(
           operation
         )} ${chalk.magenta(prefix)}:`,

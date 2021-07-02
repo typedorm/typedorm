@@ -18,6 +18,9 @@ export * from './src/classes/manager/entity-manager';
 export * from './src/classes/manager/batch-manager';
 export * from './src/classes/manager/transaction-manager';
 
+// classes
+export {Connection} from './src/classes/connection/connection';
+
 // public method exports
 
 export function createConnection(options: ConnectionOptions) {
@@ -52,6 +55,10 @@ export function getTransactionManger(connectionName?: string) {
 
 export function getBatchManager(connectionName?: string) {
   return connectionManger().get(connectionName).batchManager;
+}
+
+export function getScanManager(connectionName?: string) {
+  return connectionManger().get(connectionName).scanManager;
 }
 
 // private methods

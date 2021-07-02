@@ -2,24 +2,22 @@
 
 Working with relational data in dynamoDB can be painful, but it doesn't have to be. This guide will walk you through relational data modeling can be simplified using TypeDORM.
 
-## On this page
-
-### Setup
-
-- [Creating a table](#creating-a-table)
-- [Creating an entity](#creating-an-entity)
-- [Adding attributes to an entity](#adding-attributes-to-an-entity)
-- [Adding auto generated attributes](#adding-auto-generated-attributes)
-- [Creating a connection](#creating-a-connection)
-- [Get mangers for connection](#get-mangers-for-connection)
-
-### Operations
-
-- [Create a record](#create-a-record)
-- [Find a record](#find-a-record)
-- [Update a record](#update-a-record)
-- [Query 1-m relations](#query-1-m-relations)
-- [Delete a record](#delete-a-record)
+- [Step by step guide](#step-by-step-guide)
+  - [Creating a table](#creating-a-table)
+  - [Creating a model](#creating-a-model)
+  - [Creating an entity](#creating-an-entity)
+  - [Adding attributes to an entity](#adding-attributes-to-an-entity)
+  - [Adding auto generated attributes](#adding-auto-generated-attributes)
+  - [Creating a Connection](#creating-a-connection)
+  - [Get mangers for connection](#get-mangers-for-connection)
+    - [Get manager instance from current connection](#get-manager-instance-from-current-connection)
+    - [Get manager instance from current TypeDORM context](#get-manager-instance-from-current-typedorm-context)
+  - [Manager Operations](#manager-operations)
+    - [Create a record](#create-a-record)
+    - [Find a record](#find-a-record)
+    - [Update a record](#update-a-record)
+    - [Query 1-m relations](#query-1-m-relations)
+    - [Delete a record](#delete-a-record)
 
 ## Creating a table
 
@@ -261,7 +259,9 @@ const anotherTransactionManger = getTransactionManger('other-connection')
 // ...
 ```
 
-## Create a record
+## Manager Operations
+
+### Create a record
 
 This is all the minimum configuration we need, now let's create a user record.
 
@@ -289,7 +289,7 @@ const response = await getEntityManager().create(org);
 
 To understand how TypeDORM handles these entities under the hood see [this](./how-it-works.md#creating-a-record).
 
-## Find a record
+### Find a record
 
 Once item is created using TypeDORM, it can be retrieved/fetched using continent methods like `find`, `findOne`, `exists`.
 
@@ -312,7 +312,7 @@ const user = await getEntityManager().findOne(User, {id: 'some-auto-generated-uu
 }
 ```
 
-## Update a record
+### Update a record
 
 Items can be updated using simple update functions on entity manager and can be written like this
 
@@ -337,7 +337,7 @@ const user = await getEntityManager().update(User, {id: 'some-auto-generated-uui
 
 To get more insight on how how update works with TypeDORM, have a look at [this](./how-it-works.md#updating-a-record)
 
-## Query 1-m relations
+### Query 1-m relations
 
 Going ahead with earlier example of `User` entity, let's each of our user can have many orders, and our order entity looks like this
 
@@ -457,7 +457,7 @@ const recentPendingOrders = await getEntityManager().find(Order,
 
 To understand more on how the query input looks like when it is passed to DocumentClient, have a look at [this](./how-it-works.md#querying-items)
 
-## Delete a record
+### Delete a record
 
 Items can be updated using simple update functions on entity manager and can be written like this
 

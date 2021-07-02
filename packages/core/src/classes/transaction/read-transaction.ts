@@ -1,5 +1,5 @@
 import {EntityTarget} from '@typedorm/common';
-import {ProjectionKeys} from '../expression/expression-input-parser';
+import {ProjectionKeys} from '../expression/projection-keys-options-type';
 import {Transaction} from './transaction';
 
 interface ReadTransactionGetItemOptions<Entity> {

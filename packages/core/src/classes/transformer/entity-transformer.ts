@@ -1,5 +1,6 @@
 import {DynamoEntity, EntityTarget, TRANSFORM_TYPE} from '@typedorm/common';
 import {DocumentClient} from 'aws-sdk/clients/dynamodb';
+import {plainToClassFromExist} from 'class-transformer';
 import {unParseKey} from '../../helpers/unparse-key';
 import {Connection} from '../connection/connection';
 import {BaseTransformer, MetadataOptions} from './base-transformer';
@@ -49,19 +50,29 @@ export class EntityTransformer extends BaseTransformer {
       })
       .flat();
 
-    const transformedEntity = Object.keys(dynamoEntity).reduce((acc, key) => {
-      // if any of the below conditions are true, skip adding given attribute from returning response
-      if (
-        entityPrimaryKeys.includes(key) ||
-        entityIndexes.includes(key) ||
-        entityInternalAttributeKeys.includes(key) ||
-        entityHiddenAttributeKeys.includes(key)
-      ) {
+    const plainEntityAttributes = Object.keys(dynamoEntity).reduce(
+      (acc, key) => {
+        // if any of the below conditions are true, skip adding given attribute from returning response
+        if (
+          entityPrimaryKeys.includes(key) ||
+          entityIndexes.includes(key) ||
+          entityInternalAttributeKeys.includes(key) ||
+          entityHiddenAttributeKeys.includes(key)
+        ) {
+          return acc;
+        }
+        (acc as any)[key] = (dynamoEntity as any)[key];
         return acc;
-      }
-      (acc as any)[key] = (dynamoEntity as any)[key];
-      return acc;
-    }, {} as Entity);
+      },
+      {} as Object
+    );
+
+    // get reflected constructor to avoid initialization issues with custom constructor
+    const reflectedConstructor = Reflect.construct(Object, [], entityClass);
+    const transformedEntity = plainToClassFromExist(
+      reflectedConstructor,
+      plainEntityAttributes
+    );
 
     this.connection.logger.logTransform({
       requestId: metadataOptions?.requestId,

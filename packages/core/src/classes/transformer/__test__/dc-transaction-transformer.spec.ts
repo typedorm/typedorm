@@ -78,19 +78,19 @@ test('transforms simple transaction write items', () => {
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'name',
-            '#attr1': 'GSI1SK',
+            '#UE_name': 'name',
+            '#UE_GSI1SK': 'GSI1SK',
           },
           ExpressionAttributeValues: {
-            ':val0': 'new name',
-            ':val1': 'USER#new name',
+            ':UE_name': 'new name',
+            ':UE_GSI1SK': 'USER#new name',
           },
           Key: {
             PK: 'USER#1',
             SK: 'USER#1',
           },
           TableName: 'test-table',
-          UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+          UpdateExpression: 'SET #UE_name = :UE_name, #UE_GSI1SK = :UE_GSI1SK',
         },
       },
     ],

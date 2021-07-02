@@ -35,6 +35,11 @@ export const BATCH_READ_ITEMS_LIMIT = 100;
 export const BATCH_WRITE_CONCURRENCY_LIMIT = 5;
 
 /**
+ * Concurrency limit to apply, when running parallel scan requests
+ */
+export const PARALLEL_SCAN_CONCURRENCY_LIMIT = 10;
+
+/**
  * Max number of allowed attempts for batch write items
  */
 export const BATCH_WRITE_MAX_ALLOWED_ATTEMPTS = 10;

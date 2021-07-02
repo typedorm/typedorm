@@ -13,7 +13,7 @@ export interface UserAutoGenerateAttributesPrimaryKey {
 
 @Entity({
   table,
-  name: 'user',
+  name: 'user-auto-generate-attr',
   primaryKey: {
     partitionKey: 'USER#{{id}}',
     sortKey: 'USER#{{id}}',

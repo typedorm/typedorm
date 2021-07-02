@@ -14,6 +14,16 @@ import {EntityTransformer} from '../entity-transformer';
 import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
 import {table} from '@typedorm/core/__mocks__/table';
 import {UserAttrAlias} from '@typedorm/core/__mocks__/user-with-attribute-alias';
+import {CATEGORY, Photo} from '@typedorm/core/__mocks__/photo';
+// Moment is only being used here to display the usage of @transform utility
+// eslint-disable-next-line node/no-extraneous-import
+import moment from 'moment';
+import {UserCustomConstructor} from '@typedorm/core/__mocks__/user-custom-constructor';
+
+jest.mock('uuid', () => ({
+  v4: () => 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+}));
+jest.useFakeTimers('modern').setSystemTime(1622530750000);
 import {UserWithDefaultValues} from '@typedorm/core/__mocks__/user-default-value';
 
 let transformer: EntityTransformer;
@@ -25,6 +35,8 @@ beforeEach(() => {
       UserAutoGenerateAttributes,
       UserSparseIndexes,
       UserAttrAlias,
+      Photo,
+      UserCustomConstructor,
       UserWithDefaultValues,
     ],
   });
@@ -53,6 +65,26 @@ test('transforms dynamo entity to entity model', () => {
     id: '1',
     name: 'Me',
     status: 'active',
+  });
+});
+
+/**
+ * Issue: #134
+ */
+test('transforms dynamo entity to entity model with custom constructor', () => {
+  const dynamoEntity = {
+    PK: 'USER#1',
+    SK: 'USER#1',
+    id: '1',
+    name: 'Me',
+  };
+  const transformed = transformer.fromDynamoEntity(
+    UserCustomConstructor,
+    dynamoEntity
+  );
+  expect(transformed).toEqual({
+    id: '1',
+    name: 'Me',
   });
 });
 
@@ -163,6 +195,28 @@ test('excludes hidden props from returned response', () => {
   });
 });
 
+test('transforms photo dynamo item to entity model instance ', () => {
+  const dynamoEntity = {
+    PK: 'PHOTO#PETS',
+    SK: 'PHOTO#1',
+    id: 1,
+    category: 'PETS',
+    name: 'my cute pet billy',
+    GSI1PK: 'PHOTO#c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    GSI1SK: 'PHOTO#kids-new',
+    createdAt: '2020-03-21T03:26:34.781Z',
+  };
+  const transformed = transformer.fromDynamoEntity(Photo, dynamoEntity);
+  expect(transformed).toMatchObject({
+    category: 'PETS',
+    createdAt: expect.any(moment),
+    id: 1,
+    name: 'my cute pet billy',
+  });
+  expect(transformed).toBeInstanceOf(Photo);
+  expect(transformed.createdDate()).toEqual('03-21-2020');
+});
+
 /**
  * @group toDynamoEntity
  */
@@ -181,6 +235,24 @@ test('transforms simple model to dynamo entity', () => {
     id: '111',
     name: 'Test User',
     status: 'inactive',
+  });
+});
+
+test('transforms photo entity to valid dynamo item ', () => {
+  const photo = new Photo(CATEGORY.KIDS, 'my baby');
+
+  const response = transformer.toDynamoEntity(photo);
+
+  expect(response).toEqual({
+    PK: 'PHOTO#kids-new',
+    SK: 'PHOTO#c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    GSI1PK: 'PHOTO#c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    GSI1SK: 'PHOTO#kids-new',
+    category: 'kids-new',
+    id: 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
+    updatedAt: '1622530750',
+    createdAt: '2021-06-01',
+    name: 'my baby',
   });
 });
 
@@ -366,13 +438,30 @@ test('transforms put item requests with attributes containing default values', (
 /**
  * @group getAffectedIndexesForAttributes
  */
-test('returns all affected indexes for simple attributes', () => {
-  const affectedIndexes = transformer.getAffectedIndexesForAttributes(User, {
-    name: 'new updated name',
-  });
+test('returns all affected indexes for static attributes', () => {
+  const affectedIndexes = transformer.getAffectedIndexesForAttributes(
+    User,
+    {
+      name: 'new updated name',
+    },
+    {name: 'static'}
+  );
   expect(affectedIndexes).toEqual({
     GSI1SK: 'USER#new updated name',
   });
+});
+
+test('returns all affected indexes for dynamic update body', () => {
+  const affectedIndexes = transformer.getAffectedIndexesForAttributes<User>(
+    User,
+    {
+      age: {
+        DECREMENT_BY: 2,
+      },
+    },
+    {age: 'dynamic'}
+  );
+  expect(affectedIndexes).toEqual({});
 });
 
 test('returns all affected indexes for alias attributes', () => {
@@ -381,7 +470,8 @@ test('returns all affected indexes for alias attributes', () => {
     {
       age: 10,
       status: 'inactive',
-    }
+    },
+    {age: 'static', status: 'static'}
   );
   expect(affectedIndexes).toEqual({
     LSI1SK: 10, // <-- aliased indexes are correctly persisting attribute types
@@ -396,6 +486,11 @@ test('returns all affected indexes for complex attributes', () => {
       name: 'Updated name',
       teamCount: 12,
       active: false,
+    },
+    {
+      name: 'static',
+      teamCount: 'static',
+      active: 'static',
     }
   );
   expect(affectedIndexes).toEqual({
