@@ -7,7 +7,6 @@ import {
   TransformFromDynamo,
   TransformToDynamo,
 } from '@typedorm/common';
-import {Type} from 'class-transformer';
 import {table} from './table';
 
 // Moment is only being used here to display the usage of @transform utility
@@ -61,10 +60,12 @@ export class Photo implements PhotoPrimaryKey {
   name: string;
 
   @Attribute({
-    default: () => new Date().toString(),
+    default: () => new Date().toISOString(),
   })
-  @Type(() => Date)
-  @TransformFromDynamo(({value}) => moment(value))
+  @TransformToDynamo(({value}: {value: Date}) =>
+    moment(value, moment.ISO_8601).utc().format('yyyy-MM-DD')
+  )
+  @TransformFromDynamo(({value}) => moment(value, 'yyyy-MM-DD'))
   createdAt: Moment;
 
   constructor(category: CATEGORY, name: string) {

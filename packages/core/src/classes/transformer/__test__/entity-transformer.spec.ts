@@ -24,6 +24,7 @@ jest.mock('uuid', () => ({
   v4: () => 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
 }));
 jest.useFakeTimers('modern').setSystemTime(1622530750000);
+import {UserWithDefaultValues} from '@typedorm/core/__mocks__/user-default-value';
 
 let transformer: EntityTransformer;
 beforeEach(() => {
@@ -36,6 +37,7 @@ beforeEach(() => {
       UserAttrAlias,
       Photo,
       UserCustomConstructor,
+      UserWithDefaultValues,
     ],
   });
   transformer = new EntityTransformer(connection);
@@ -249,6 +251,7 @@ test('transforms photo entity to valid dynamo item ', () => {
     category: 'kids-new',
     id: 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
     updatedAt: '1622530750',
+    createdAt: '2021-06-01',
     name: 'my baby',
   });
 });
@@ -411,6 +414,24 @@ test('transforms complex model model to dynamo entity', () => {
     SK: 'USER#111',
     name: 'Test User',
     age: 12,
+  });
+});
+
+/**
+ * Issue #135
+ */
+test('transforms put item requests with attributes containing default values', () => {
+  const user = new UserWithDefaultValues();
+  user.id = '1';
+
+  const putItem = transformer.toDynamoEntity(user);
+  expect(putItem).toEqual({
+    GSI1PK: 'USER#STATUS#active',
+    GSI1SK: 'USER#active',
+    PK: 'USER#1',
+    SK: 'USER#1',
+    id: '1',
+    status: 'active',
   });
 });
 
