@@ -1,4 +1,5 @@
 import {ATTRIBUTE_TYPE, ScalarType, SimpleOperator} from '@typedorm/common';
+import {nestedKeyAccessRegex} from '../../helpers/constants';
 
 const lastCharSpaceMatcher = /\s$/;
 export enum MERGE_STRATEGY {
@@ -70,7 +71,9 @@ export abstract class BaseExpressionInput {
     const topLevelPropKey = this.innerAddExpressionName(topKey);
     return nestedKeys.reduce(
       (acc, keySeg) => {
-        const {prefix} = acc;
+        let {prefix} = acc;
+        // make sure that prefix does not contain any nested value reference
+        prefix = prefix.replace(nestedKeyAccessRegex, '');
 
         const currentSegPropKey = this.innerAddExpressionName(
           `${prefix}_${keySeg}`,
@@ -86,6 +89,16 @@ export abstract class BaseExpressionInput {
   }
 
   private innerAddExpressionName(nameKey: string, nameValue?: string) {
+    // match any nested list item reference, and update it to be valid expression
+    // i.e key such as addresses[0] will be name #addresses with expression #addresses[0]
+
+    let match = '';
+    nameKey = nameKey.replace(nestedKeyAccessRegex, substr => {
+      match = substr;
+      return '';
+    });
+    nameValue = nameValue?.replace(match, '');
+
     const expressionPrefixedName = this.getExpNameKey(nameKey);
     if (this.names[expressionPrefixedName]) {
       throw new Error(
@@ -96,7 +109,7 @@ export abstract class BaseExpressionInput {
       ...this.names,
       [expressionPrefixedName]: nameValue ?? nameKey,
     };
-    return expressionPrefixedName;
+    return expressionPrefixedName + match;
   }
 
   protected addExpressionValue(name: string, value: any) {
@@ -105,6 +118,10 @@ export abstract class BaseExpressionInput {
   }
 
   private innerAddExpressionValue(name: string, value: any) {
+    // remove any nested list item reference, it will be handled by names matcher
+    // i.e key such as addresses[0]
+    name = name.replace(nestedKeyAccessRegex, '');
+
     const expressionPrefixedValue = this.getExpValueKey(name);
     if (this.values[expressionPrefixedValue]) {
       throw new Error(

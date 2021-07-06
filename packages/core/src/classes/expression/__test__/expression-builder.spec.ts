@@ -76,22 +76,22 @@ test('builds update expression for complex nested object', () => {
   const expression = expressionBuilder.buildUpdateExpression(item);
   expect(expression).toEqual({
     UpdateExpression:
-      'SET #UE_application = :UE_application, #UE_profile.#UE_profile_name.#UE_profile_name_last = :UE_profile_name_last, #UE_data = :UE_data, #UE_address[0] = :UE_address[0], #UE_complex.#UE_complex_nested.#UE_complex_nested_object[1] = :UE_complex_nested_object[1]',
+      'SET #UE_application = :UE_application, #UE_profile.#UE_profile_name.#UE_profile_name_last = :UE_profile_name_last, #UE_data = :UE_data, #UE_address[0] = :UE_address, #UE_complex.#UE_complex_nested.#UE_complex_nested_object[1] = :UE_complex_nested_object',
     ExpressionAttributeNames: {
-      '#UE_address[0]': 'address[0]',
+      '#UE_address': 'address',
       '#UE_application': 'application',
       '#UE_complex': 'complex',
       '#UE_complex_nested': 'nested',
-      '#UE_complex_nested_object[1]': 'object[1]',
+      '#UE_complex_nested_object': 'object',
       '#UE_data': 'data',
       '#UE_profile': 'profile',
       '#UE_profile_name': 'name',
       '#UE_profile_name_last': 'last',
     },
     ExpressionAttributeValues: {
-      ':UE_address[0]': 'new address portion',
+      ':UE_address': 'new address portion',
       ':UE_application': 'test',
-      ':UE_complex_nested_object[1]': 'new value',
+      ':UE_complex_nested_object': 'new value',
       ':UE_data': [1, 2, 3],
       ':UE_profile_name_last': 'new Last name',
     },
