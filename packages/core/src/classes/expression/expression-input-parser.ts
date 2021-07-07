@@ -24,6 +24,7 @@ import {Update} from './update/update';
 import {DeleteUpdate} from './update/delete-update';
 import {RemoveUpdate} from './update/remove-update';
 import {isObject} from '../../helpers/is-object';
+import {nestedKeyAccessRegex} from '../../helpers/constants';
 
 /**
  * Parses expression input to expression instances
@@ -64,7 +65,6 @@ export class ExpressionInputParser {
     attr: string,
     value: any
   ): {value: any; type: 'static' | 'dynamic'} {
-    const nestedKeyAccessRegex = /[\d+]/g;
     if (isObject(value) && !isEmptyObject(value)) {
       const [operator, operatorValue] = Object.entries(value as any)[0];
 

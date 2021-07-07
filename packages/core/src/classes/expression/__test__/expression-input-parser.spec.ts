@@ -40,6 +40,38 @@ test('parses simple filter input', () => {
   expect(parsedFilter?.expression).toEqual('#FE_age = :FE_age');
 });
 
+/**
+ * Issue #139
+ */
+test('parses nested key filter input to valid expression', () => {
+  const parsedFilter = expInputParser.parseToFilter<any, {}>({
+    AND: {
+      'contact.addresses[0]': {
+        EQ: 12,
+      },
+      'bio[0].age': {
+        LE: 2,
+      },
+    },
+  });
+
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter).toEqual({
+    _names: {
+      '#FE_contact': 'contact',
+      '#FE_contact_addresses': 'addresses',
+      '#FE_bio': 'bio',
+      '#FE_bio_age': 'age',
+    },
+    _values: {
+      ':FE_contact_addresses': 12,
+      ':FE_bio_age': 2,
+    },
+    expression:
+      '(#FE_contact.#FE_contact_addresses[0] = :FE_contact_addresses) AND (#FE_bio[0].#FE_bio_age <= :FE_bio_age)',
+  });
+});
+
 test('parses filter with range operator', () => {
   const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     name: {

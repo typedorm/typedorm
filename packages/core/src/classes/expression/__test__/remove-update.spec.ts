@@ -5,7 +5,7 @@ test('creates a update expression for removing attributes from item', () => {
   expect(update).toEqual({
     _names: {
       '#UE_age': 'age',
-      '#UE_items[2]': 'items[2]',
+      '#UE_items': 'items',
     },
     expression: '#UE_age, #UE_items[2]',
     prefix: 'REMOVE',
