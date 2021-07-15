@@ -4,6 +4,7 @@ import {
   ConditionType,
   ATTRIBUTE_TYPE,
   RequireAtLeastOne,
+  ResolveScalarType,
 } from '@typedorm/common';
 
 type AttributeConditionOptions<Entity> =
@@ -16,13 +17,13 @@ type AttributeConditionOptions<Entity> =
             | Extract<
                 ConditionType.FunctionOperator,
                 'CONTAINS' | 'BEGINS_WITH'
-              >]: Entity[enKey];
+              >]: ResolveScalarType<Entity[enKey]>;
         } &
           // if between operator, value must be an array of two items
           {
             [key in Extract<ConditionType.RangeOperator, 'BETWEEN'>]: [
-              Entity[enKey],
-              Entity[enKey]
+              ResolveScalarType<Entity[enKey]>,
+              ResolveScalarType<Entity[enKey]>
             ];
           } &
           // for 'IN' operator value must be a list of scalar type
@@ -30,7 +31,7 @@ type AttributeConditionOptions<Entity> =
             [key in Extract<
               ConditionType.RangeOperator,
               'IN'
-            >]: Entity[enKey][];
+            >]: ResolveScalarType<Entity[enKey]>[];
           } &
           // for 'ATTRIBUTE_TYPE' value must be one of the given enum values
           {
@@ -46,7 +47,7 @@ type AttributeConditionOptions<Entity> =
               'SIZE'
             >]: RequireOnlyOne<
               {
-                [key in ConditionType.SimpleOperator]: Entity[enKey];
+                [key in ConditionType.SimpleOperator]: number;
               }
             >;
           }

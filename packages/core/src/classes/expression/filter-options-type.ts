@@ -4,6 +4,7 @@ import {
   NonKeyAttributesWithReturnType,
   RequireAtLeastOne,
   RequireOnlyOne,
+  ResolveScalarType,
 } from '@typedorm/common';
 
 type AttributeFilterOptions<Entity, PrimaryKey> =
@@ -16,16 +17,18 @@ type AttributeFilterOptions<Entity, PrimaryKey> =
             | Extract<
                 FilterType.FunctionOperator,
                 'CONTAINS' | 'BEGINS_WITH'
-              >]: Entity[enKey];
+              >]: ResolveScalarType<Entity[enKey]>;
         } &
           {
             [key in Extract<FilterType.RangeOperator, 'BETWEEN'>]: [
-              Entity[enKey],
-              Entity[enKey]
+              ResolveScalarType<Entity[enKey]>,
+              ResolveScalarType<Entity[enKey]>
             ];
           } &
           {
-            [key in Extract<FilterType.RangeOperator, 'IN'>]: Entity[enKey][];
+            [key in Extract<FilterType.RangeOperator, 'IN'>]: ResolveScalarType<
+              Entity[enKey]
+            >[];
           } &
           {
             [key in Extract<
@@ -39,7 +42,7 @@ type AttributeFilterOptions<Entity, PrimaryKey> =
               'SIZE'
             >]: RequireOnlyOne<
               {
-                [key in FilterType.SimpleOperator]: Entity[enKey];
+                [key in FilterType.SimpleOperator]: number;
               }
             >;
           }
