@@ -109,7 +109,7 @@ test('parses filter with size operator', () => {
   const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     status: {
       SIZE: {
-        EQ: '1',
+        EQ: 1,
       },
     },
   });
