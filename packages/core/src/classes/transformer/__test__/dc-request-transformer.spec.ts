@@ -475,6 +475,39 @@ test('transforms update item request', () => {
   });
 });
 
+// Issue: #154
+test('transforms update item request with custom transformation', () => {
+  const updatedItem = transformer.toDynamoUpdateItem(
+    Photo,
+    {
+      id: '123',
+      category: CATEGORY.KIDS,
+    },
+    {
+      createdAt: moment().subtract(2, 'days'),
+    }
+  );
+  expect(updatedItem).toEqual({
+    ExpressionAttributeNames: {
+      '#UE_createdAt': 'createdAt',
+      '#UE_updatedAt': 'updatedAt',
+    },
+    ExpressionAttributeValues: {
+      ':UE_createdAt': '2021-05-30',
+      ':UE_updatedAt': '1622530750',
+    },
+    Key: {
+      PK: 'PHOTO#KIDS',
+      SK: 'PHOTO#123',
+    },
+    ReturnConsumedCapacity: undefined,
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression:
+      'SET #UE_createdAt = :UE_createdAt, #UE_updatedAt = :UE_updatedAt',
+  });
+});
+
 test('transforms update item request respects custom transforms applied via class transformer', () => {
   const updatedItem = transformer.toDynamoUpdateItem(
     Photo,

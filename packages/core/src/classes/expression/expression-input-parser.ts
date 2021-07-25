@@ -208,7 +208,10 @@ export class ExpressionInputParser {
             );
           } else {
             // fallback to default `SET` action based update
-            return new SetUpdate().setTo(attr, value);
+            return new SetUpdate().setTo(
+              attr,
+              attrValueOverrideMap[attr] || value
+            );
           }
         })
         // merge all expressions with matching action
