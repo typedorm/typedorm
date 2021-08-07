@@ -129,28 +129,23 @@ export class ExpressionInputParser {
           );
           const base = parsedExpList.shift();
           if (!base) {
-            throw new Error(
-              `Value for operator "${operatorOrAttr}" can not be empty`
-            );
+            return new ExpClass();
           }
           switch (operatorOrAttr) {
             case 'AND': {
               if (!parsedExpList?.length) {
-                throw new Error(
-                  `Value for operator "${operatorOrAttr}" must contain more that 1 attributes.`
-                );
+                return base;
               }
               return base.mergeMany(parsedExpList as T[], MERGE_STRATEGY.AND);
             }
             case 'OR': {
               if (!parsedExpList?.length) {
-                throw new Error(
-                  `Value for operator "${operatorOrAttr}" must contain more that 1 attributes.`
-                );
+                return base;
               }
               return base.mergeMany(parsedExpList as T[], MERGE_STRATEGY.OR);
             }
             case 'NOT': {
+              // not can not contain more than one items
               if (parsedExpList?.length) {
                 throw new Error(
                   `Value for operator "${operatorOrAttr}" can not contain more than 1 attributes.`
