@@ -32,30 +32,35 @@ export class EntityTransformer extends BaseTransformer {
       body: dynamoEntity,
     });
 
-    const entityPrimaryKeys = Object.keys(
+    const vanillaAttributesToInclude = entityMetadata.attributes
+      .filter(attr => !attr.hidden)
+      .map(attr => attr.name);
+
+    const primaryKeyAttributesToInclude = Object.keys(
       entityMetadata.schema.primaryKey.attributes
-    );
+    ).filter(attr => !vanillaAttributesToInclude.includes(attr));
+
     const entityInternalAttributeKeys = entityMetadata.internalAttributes.map(
       attr => attr.name
     );
-
     const entityHiddenAttributeKeys = entityMetadata.attributes
       .filter(attr => attr.hidden)
       .map(attr => attr.name);
 
     const entityMetadataSchemaIndexes = entityMetadata.schema.indexes ?? {};
-    const entityIndexes = Object.keys(entityMetadataSchemaIndexes)
+    const indexAttributesToInclude = Object.keys(entityMetadataSchemaIndexes)
       .map(key => {
         return Object.keys(entityMetadataSchemaIndexes[key].attributes ?? {});
       })
-      .flat();
+      .flat()
+      .filter(attr => !vanillaAttributesToInclude.includes(attr));
 
     const plainEntityAttributes = Object.keys(dynamoEntity).reduce(
       (acc, key) => {
         // if any of the below conditions are true, skip adding given attribute from returning response
         if (
-          entityPrimaryKeys.includes(key) ||
-          entityIndexes.includes(key) ||
+          primaryKeyAttributesToInclude.includes(key) ||
+          indexAttributesToInclude.includes(key) ||
           entityInternalAttributeKeys.includes(key) ||
           entityHiddenAttributeKeys.includes(key)
         ) {
