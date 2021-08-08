@@ -2,7 +2,6 @@ import {
   ATTRIBUTE_TYPE,
   FilterType,
   NonKeyAttributesWithReturnType,
-  RequireAtLeastOne,
   RequireOnlyOne,
   ResolveScalarType,
 } from '@typedorm/common';
@@ -60,23 +59,27 @@ type AttributeFilterOptions<Entity, PrimaryKey> =
 
 type RecursiveFilterOptions<Entity, PrimaryKey> = {
   // for `AND` and `OR` logical operators require at least one of defined options or other self
-  [key in Extract<FilterType.LogicalOperator, 'OR' | 'AND'>]: RequireAtLeastOne<
-    AttributeFilterOptions<Entity, PrimaryKey> &
-      // manually infer recursive type
-      RecursiveFilterOptions<Entity, PrimaryKey> extends infer R
-      ? R
-      : never
-  >;
+  [key in Extract<FilterType.LogicalOperator, 'OR' | 'AND'>]:
+    | Partial<
+        AttributeFilterOptions<Entity, PrimaryKey> &
+          // manually infer recursive type
+          RecursiveFilterOptions<Entity, PrimaryKey>
+      >
+    | {} extends infer R
+    ? R
+    : never;
 } &
   // for `NOT` logical operators require one from defined options or other self
   {
-    [key in Extract<FilterType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
-      AttributeFilterOptions<Entity, PrimaryKey> &
-        // manually infer recursive type
-        RecursiveFilterOptions<Entity, PrimaryKey> extends infer R
-        ? R
-        : never
-    >;
+    [key in Extract<FilterType.LogicalOperator, 'NOT'>]:
+      | Partial<
+          AttributeFilterOptions<Entity, PrimaryKey> &
+            // manually infer recursive type
+            RecursiveFilterOptions<Entity, PrimaryKey>
+        >
+      | {} extends infer R
+      ? R
+      : never;
   } &
   // require attribute filter
   AttributeFilterOptions<Entity, PrimaryKey>;

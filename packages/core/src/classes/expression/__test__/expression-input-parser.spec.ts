@@ -142,6 +142,42 @@ test('parses filter with single logical operator', () => {
   });
 });
 
+test('parses logical operator with no attributes', () => {
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
+    AND: {},
+  });
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual('');
+});
+
+test('parses logical operator with single attribute', () => {
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
+    AND: {
+      age: {
+        EQ: 2,
+      },
+      // eslint-disable-next-line no-constant-condition
+      ...(true
+        ? {}
+        : {
+            name: {
+              BEGINS_WITH: 'mys',
+            },
+          }),
+    },
+  });
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter).toEqual({
+    _names: {
+      '#FE_age': 'age',
+    },
+    _values: {
+      ':FE_age': 2,
+    },
+    expression: '#FE_age = :FE_age',
+  });
+});
+
 test('parses filter with `NOT` logical operator', () => {
   const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
     NOT: {
@@ -217,6 +253,9 @@ test('parses filter with complex nested logical operators', () => {
   });
 });
 
+/**
+ * @group parseToCondition
+ */
 test('parses deep nested condition', () => {
   const parsedCondition = expInputParser.parseToCondition<User>({
     NOT: {
@@ -245,6 +284,35 @@ test('parses deep nested condition', () => {
   });
   expect(parsedCondition?.values).toEqual({
     ':CE_status': '1',
+  });
+});
+
+test('parses logical condition expression with no attributes', () => {
+  const parsedCondition = expInputParser.parseToCondition<User>({
+    NOT: {},
+  });
+  expect(parsedCondition).toBeInstanceOf(Condition);
+  expect(parsedCondition?.expression).toEqual('');
+});
+
+test('parses logical condition expression with single attribute value', () => {
+  const parsedCondition = expInputParser.parseToCondition<User>({
+    OR: {
+      age: {
+        BETWEEN: [1, 3],
+      },
+    },
+  });
+  expect(parsedCondition).toBeInstanceOf(Condition);
+  expect(parsedCondition).toEqual({
+    _names: {
+      '#CE_age': 'age',
+    },
+    _values: {
+      ':CE_age_end': 3,
+      ':CE_age_start': 1,
+    },
+    expression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
   });
 });
 

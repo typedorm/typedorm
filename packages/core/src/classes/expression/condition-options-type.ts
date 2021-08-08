@@ -3,7 +3,6 @@ import {
   RequireOnlyOne,
   ConditionType,
   ATTRIBUTE_TYPE,
-  RequireAtLeastOne,
   ResolveScalarType,
 } from '@typedorm/common';
 
@@ -64,26 +63,27 @@ type AttributeConditionOptions<Entity> =
 
 type RecursiveConditionOptions<Entity> = {
   // for `AND` and `OR` logical operators require at least one of defined options or other self
-  [key in Extract<
-    ConditionType.LogicalOperator,
-    'OR' | 'AND'
-  >]: RequireAtLeastOne<
-    AttributeConditionOptions<Entity> &
-      // manually infer recursive type
-      RecursiveConditionOptions<Entity> extends infer R
-      ? R
-      : never
-  >;
+  [key in Extract<ConditionType.LogicalOperator, 'OR' | 'AND'>]:
+    | Partial<
+        AttributeConditionOptions<Entity> &
+          // manually infer recursive type
+          RecursiveConditionOptions<Entity>
+      >
+    | {} extends infer R
+    ? R
+    : never;
 } &
   // for `NOT` logical operators require one from defined options or other self
   {
-    [key in Extract<ConditionType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
-      AttributeConditionOptions<Entity> &
-        // manually infer recursive type
-        RecursiveConditionOptions<Entity> extends infer R
-        ? R
-        : never
-    >;
+    [key in Extract<ConditionType.LogicalOperator, 'NOT'>]:
+      | Partial<
+          AttributeConditionOptions<Entity> &
+            // manually infer recursive type
+            RecursiveConditionOptions<Entity>
+        >
+      | {} extends infer R
+      ? R
+      : never;
   } &
   // require attribute filter
   AttributeConditionOptions<Entity>;
