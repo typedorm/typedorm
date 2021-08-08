@@ -63,21 +63,25 @@ type AttributeConditionOptions<Entity> =
 
 type RecursiveConditionOptions<Entity> = {
   // for `AND` and `OR` logical operators require at least one of defined options or other self
-  [key in Extract<ConditionType.LogicalOperator, 'OR' | 'AND'>]: Partial<
-    AttributeConditionOptions<Entity> &
-      // manually infer recursive type
-      RecursiveConditionOptions<Entity>
-  > extends infer R
+  [key in Extract<ConditionType.LogicalOperator, 'OR' | 'AND'>]:
+    | Partial<
+        AttributeConditionOptions<Entity> &
+          // manually infer recursive type
+          RecursiveConditionOptions<Entity>
+      >
+    | {} extends infer R
     ? R
     : never;
 } &
   // for `NOT` logical operators require one from defined options or other self
   {
-    [key in Extract<ConditionType.LogicalOperator, 'NOT'>]: Partial<
-      AttributeConditionOptions<Entity> &
-        // manually infer recursive type
-        RecursiveConditionOptions<Entity>
-    > extends infer R
+    [key in Extract<ConditionType.LogicalOperator, 'NOT'>]:
+      | Partial<
+          AttributeConditionOptions<Entity> &
+            // manually infer recursive type
+            RecursiveConditionOptions<Entity>
+        >
+      | {} extends infer R
       ? R
       : never;
   } &
