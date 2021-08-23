@@ -91,7 +91,7 @@ This guide shows how to setup single-table-design
 `my-table.ts`
 
 ```typescript
-import {Table} from '@typedorm/common';
+import {Table, INDEX_TYPE} from '@typedorm/common';
 
 // create table
 
