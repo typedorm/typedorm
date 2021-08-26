@@ -275,7 +275,7 @@ user.status = 'active';
 user.email = 'loki@asgard.com'
 
 // create user record
-const response = await getEntityManager().create(org);
+const response = await getEntityManager().create(user);
 
 // response:
 {
