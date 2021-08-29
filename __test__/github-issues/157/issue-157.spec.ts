@@ -5,6 +5,7 @@ import {testTable} from './test-table';
 import {EntityManager} from '@typedorm/core';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import EntityData from './test-entity';
+import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 let entityManager: EntityManager;
 
 const dcMock = {
@@ -23,13 +24,17 @@ afterEach(() => {
   resetTestConnection();
 });
 
-test('correctly queries matching items', async () => {
+test('correctly queries matching items when values for set type is not a native js type ', async () => {
   dcMock.query.mockReturnValue({
     promise: () => ({
       Items: [
         {
           SK: 'root',
-          stringSet: ['test'],
+          // Here string set contains a non-js-native type `Set()`
+          // This type is emitted by document client in cases where dynamodb item was created outside the js ecosystem
+          // i.e DynamoDB it self supports `StringSet` type but since js doesn't have a `StringSet` as a native type,
+          // DocumentClient wraps it as a custom `Set` type
+          stringSet: new DocumentClient().createSet(['test']),
           email: 'test-entity@gmail.com',
           PK: 'entity#12345678',
           name: 'ABCD',
