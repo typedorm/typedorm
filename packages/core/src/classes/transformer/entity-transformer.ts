@@ -74,9 +74,22 @@ export class EntityTransformer extends BaseTransformer {
 
     // get reflected constructor to avoid initialization issues with custom constructor
     const reflectedConstructor = Reflect.construct(Object, [], entityClass);
+
+    // Perform a deep-copy of item returned by Document client to drop all the custom function types
+
+    // Custom types are emitted by the document client in cases where dynamodb item was created outside the js ecosystem.
+    // To correctly deserialize the returned values to the relevant Entity, it needs to be in a plain JSON structure.
+    // i.e DynamoDB itself supports `StringSet` type but since js doesn't have a `StringSet` as a native type,
+    // Therefore, DocumentClient wraps it as a custom `Set` type which must be turned into its JSON form before it can
+    // be correctly deserialized by `class-transformer`.
+
+    const deserializedEntityAttributes = JSON.parse(
+      JSON.stringify(plainEntityAttributes)
+    );
+
     const transformedEntity = plainToClassFromExist(
       reflectedConstructor,
-      plainEntityAttributes
+      deserializedEntityAttributes
     );
 
     this.connection.logger.logTransform({
