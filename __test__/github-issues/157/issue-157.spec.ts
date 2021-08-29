@@ -69,6 +69,7 @@ test('correctly queries matching items when values for set type is not a native 
   const entityData = new EntityData();
   entityData.name = 'ABCD';
   (entityData as any).stringSet = ['test'];
+  entityData.email = 'test-entity@gmail.com';
 
   expect(response).toEqual({
     items: [entityData],
