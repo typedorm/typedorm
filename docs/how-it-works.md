@@ -261,7 +261,7 @@ Deleting an item can only be done on by specifying item's primary key, it will s
 #### Given
 
 ```Typescript
-entityManager..delete(User, {id: 'user-1'})
+entityManager.delete(User, {id: 'user-1'})
 ```
 
 #### Updated

@@ -12,12 +12,12 @@ createConnection({
   name: 'app1'
   table: app1Table,
   entities: [...entities],
-  documentClient: {
+  documentClient: new DocumentClient({
     credentials: {
       accessKeyId: process.env.APP_1_ACCESS_KEY_ID,
       secretAccessKey: process.env.APP_1_SECRET_ACCESS_KEY
     }
-  }
+  })
 });
 
 // connection for app2
@@ -25,12 +25,12 @@ createConnection({
   name: 'app2'
   table: app1Table,
   entities: [...entities],
-  documentClient: {
+  documentClient: new DocumentClient({
     credentials: {
       accessKeyId: process.env.APP_2_ACCESS_KEY_ID,
       secretAccessKey: process.env.APP_2_SECRET_ACCESS_KEY
     }
-  }
+  })
 });
 ```
 
