@@ -489,10 +489,10 @@ export class ScanManager {
       LastEvaluatedKey,
       Items = [],
       ConsumedCapacity,
-    } = await this.connection.documentClient
-      .scan({...scanInput, ExclusiveStartKey: cursor})
-      .promise();
-
+    } = await this.connection.documentClient.scan({
+      ...scanInput,
+      ExclusiveStartKey: cursor,
+    });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({
@@ -549,10 +549,10 @@ export class ScanManager {
       Count,
       LastEvaluatedKey,
       ConsumedCapacity,
-    } = await this.connection.documentClient
-      .scan({...scanInput, ExclusiveStartKey: cursor})
-      .promise();
-
+    } = await this.connection.documentClient.scan({
+      ...scanInput,
+      ExclusiveStartKey: cursor,
+    });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({

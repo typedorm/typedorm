@@ -1,26 +1,23 @@
 {
-  "name": "@typedorm/core",
+  "name": "@typedorm/document-client",
   "version": "0.0.0-PLACEHOLDER",
-  "description": "TypeDORM - Core classes",
+  "description": "TypeDORM - Document Client for DynamoDB",
   "keywords": [
     "core",
     "typedorm",
     "dynamoDb orm",
+    "document-client",
+    "document-client-v3",
+    "aws-sdk-v3",
     "orm"
   ],
   "peerDependencies": {
     "@typedorm/common": "0.0.0-PLACEHOLDER",
+    "@typedorm/core": "0.0.0-PLACEHOLDER",
     "reflect-metadata": "^0.1.13",
     "aws-sdk": "^2.799.0",
-    "@aws-sdk/client-dynamodb": "^3.31.0"
-  },
-  "dependencies": {
-    "uuid": "^8.3.1",
-    "ksuid": "^2.0.0",
-    "fast-glob": "^3.2.4",
-    "p-limit": "^3.1.0",
-    "class-transformer": "^0.4.0",
-    "@typedorm/document-client": "0.0.0-PLACEHOLDER"
+    "@aws-sdk/lib-dynamodb": "^3.53.0",
+    "@aws-sdk/client-dynamodb": "^3.53.0"
   },
   "publishConfig": {
     "tag": "TAG-PLACEHOLDER",
@@ -29,7 +26,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/typedorm/typedorm.git",
-    "directory": "packages/core"
+    "directory": "packages/testing"
   },
   "author": "typedorm",
   "license": "MIT"

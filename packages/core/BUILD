@@ -6,6 +6,7 @@ setup_ts_build(
     module_name = "@typedorm/core",
     deps = [
         "//packages/common:library",
+        "//packages/document-client:library",
         "@npm//aws-sdk",
         "@npm//uuid",
         "@npm//ksuid",
@@ -14,7 +15,7 @@ setup_ts_build(
         "@npm//p-limit",
         "@npm//class-transformer"
     ],
-    visibility = ["//packages:__subpackages__"]
+    visibility = ["//packages:__subpackages__","//examples:__subpackages__"]
 
 )
 

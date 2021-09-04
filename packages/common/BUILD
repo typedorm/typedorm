@@ -13,7 +13,7 @@ setup_ts_build(
         "@npm//chalk",
         "@npm//class-transformer"
     ],
-    visibility = ["//packages:__subpackages__"]
+    visibility = ["//packages:__subpackages__","//examples:__subpackages__"]
 )
 
 typedorm_package(

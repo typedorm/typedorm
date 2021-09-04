@@ -128,7 +128,7 @@ export class TransactionManager {
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
 
-    const transactionResult = this.connection.documentClient.transactGet(
+    const transactionResult = this.connection.documentClient.transactGetRaw(
       transactionInput
     );
 
@@ -185,7 +185,7 @@ export class TransactionManager {
       log: `Running a transaction write request for ${transactItems.length} items.`,
     });
 
-    const transactionRequest = this.connection.documentClient.transactWrite(
+    const transactionRequest = this.connection.documentClient.transactWriteRaw(
       transactionInput
     );
 
