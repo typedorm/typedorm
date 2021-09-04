@@ -1,4 +1,3 @@
-import {DynamoDB} from 'aws-sdk';
 import {
   EntityAttributes,
   EntityTarget,
@@ -22,6 +21,7 @@ import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 import {ProjectionKeys} from '../expression/projection-keys-options-type';
 import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
+import {DocumentClientTypes} from '@typedorm/document-client';
 
 export interface EntityManagerCreateOptions<Entity> {
   /**
@@ -81,7 +81,7 @@ export interface EntityManagerFindOptions<Entity, PartitionKey> {
   /**
    * Cursor to traverse from
    */
-  cursor?: DynamoDB.DocumentClient.Key;
+  cursor?: DocumentClientTypes.Key;
 
   /**
    * Specify filter to apply
@@ -156,9 +156,9 @@ export class EntityManager {
     const entityClass = getConstructorForInstance(entity);
 
     if (!isWriteTransactionItemList(dynamoPutItemInput)) {
-      const response = await this.connection.documentClient
-        .put(dynamoPutItemInput)
-        .promise();
+      const response = await this.connection.documentClient.put(
+        dynamoPutItemInput
+      );
 
       // log stats
       if (response?.ConsumedCapacity) {
@@ -226,10 +226,7 @@ export class EntityManager {
       }
     );
 
-    const response = await this.connection.documentClient
-      .get(dynamoGetItem)
-      .promise();
-
+    const response = await this.connection.documentClient.get(dynamoGetItem);
     // stats
     if (response?.ConsumedCapacity) {
       this.connection.logger.logStats({
@@ -344,14 +341,11 @@ export class EntityManager {
         {[attrName]: attrValue}
       );
 
-      const response = await this.connection.documentClient
-        .get({
-          Key: {...parsedPrimaryKey},
-          TableName: metadata.table.name,
-          ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-        })
-        .promise();
-
+      const response = await this.connection.documentClient.get({
+        Key: {...parsedPrimaryKey},
+        TableName: metadata.table.name,
+        ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+      });
       // stats
       if (response?.ConsumedCapacity) {
         this.connection.logger.logStats({
@@ -397,10 +391,9 @@ export class EntityManager {
     });
 
     if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
-      const response = await this.connection.documentClient
-        .update(dynamoUpdateItem)
-        .promise();
-
+      const response = await this.connection.documentClient.update(
+        dynamoUpdateItem
+      );
       // stats
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
@@ -467,10 +460,9 @@ export class EntityManager {
     });
 
     if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
-      const response = await this.connection.documentClient
-        .delete(dynamoDeleteItem)
-        .promise();
-
+      const response = await this.connection.documentClient.delete(
+        dynamoDeleteItem
+      );
       // stats
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
@@ -522,7 +514,7 @@ export class EntityManager {
     metadataOptions?: MetadataOptions
   ): Promise<{
     items: Entity[];
-    cursor?: DynamoDB.DocumentClient.Key | undefined;
+    cursor?: DocumentClientTypes.Key | undefined;
   }> {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
@@ -608,23 +600,23 @@ export class EntityManager {
     itemsFetched = [],
     metadataOptions,
   }: {
-    queryInput: DynamoDB.DocumentClient.QueryInput;
+    queryInput: any;
     limit: number;
-    cursor?: DynamoDB.DocumentClient.Key;
-    itemsFetched?: DynamoDB.DocumentClient.ItemList;
+    cursor?: DocumentClientTypes.Key;
+    itemsFetched?: DocumentClientTypes.ItemList;
     metadataOptions?: MetadataOptions;
   }): Promise<{
-    items: DynamoDB.DocumentClient.ItemList;
-    cursor?: DynamoDB.DocumentClient.Key;
+    items: DocumentClientTypes.ItemList;
+    cursor?: DocumentClientTypes.Key;
   }> {
     const {
       LastEvaluatedKey,
       Items = [],
       ConsumedCapacity,
-    } = await this.connection.documentClient
-      .query({...queryInput, ExclusiveStartKey: cursor})
-      .promise();
-
+    } = await this.connection.documentClient.query({
+      ...queryInput,
+      ExclusiveStartKey: cursor,
+    });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({
@@ -659,8 +651,8 @@ export class EntityManager {
     currentCount = 0,
     metadataOptions,
   }: {
-    queryInput: DynamoDB.DocumentClient.QueryInput;
-    cursor?: DynamoDB.DocumentClient.Key;
+    queryInput: any;
+    cursor?: DocumentClientTypes.Key;
     currentCount?: number;
     metadataOptions?: MetadataOptions;
   }): Promise<number> {
@@ -668,10 +660,10 @@ export class EntityManager {
       LastEvaluatedKey,
       Count,
       ConsumedCapacity,
-    } = await this.connection.documentClient
-      .query({...queryInput, ExclusiveStartKey: cursor})
-      .promise();
-
+    } = await this.connection.documentClient.query({
+      ...queryInput,
+      ExclusiveStartKey: cursor,
+    });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({

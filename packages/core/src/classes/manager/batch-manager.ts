@@ -160,12 +160,10 @@ export class BatchManager {
     const batchRequests = batchWriteRequestMapItems.map(batchRequestMap => {
       return this.toLimited(
         async () =>
-          this.connection.documentClient
-            .batchWrite({
-              RequestItems: {...batchRequestMap},
-              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-            })
-            .promise(),
+          this.connection.documentClient.batchWrite({
+            RequestItems: {...batchRequestMap},
+            ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+          }),
         // for batch requests this returning item will be transformed to
         // original input items later
         batchRequestMap,
@@ -278,12 +276,10 @@ export class BatchManager {
     const batchRequests = batchRequestItemsList.map(batchRequestItems => {
       return this.toLimited(
         async () =>
-          this.connection.documentClient
-            .batchGet({
-              RequestItems: {...batchRequestItems},
-              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-            })
-            .promise(),
+          this.connection.documentClient.batchGet({
+            RequestItems: {...batchRequestItems},
+            ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+          }),
         batchRequestItems,
         REQUEST_TYPE.BATCH_READ
       );
@@ -437,13 +433,11 @@ export class BatchManager {
     const batchRequests = batchRequestsItems.map(batchRequestMap => {
       return this.toLimited(
         async () =>
-          this.connection.documentClient
-            .batchWrite({
-              RequestItems: {...batchRequestMap},
-              ReturnItemCollectionMetrics:
-                metadataOptions?.returnConsumedCapacity,
-            })
-            .promise(),
+          this.connection.documentClient.batchWrite({
+            RequestItems: {...batchRequestMap},
+            ReturnItemCollectionMetrics:
+              metadataOptions?.returnConsumedCapacity,
+          }),
         batchRequestMap,
         REQUEST_TYPE.BATCH_WRITE
       );
@@ -566,12 +560,10 @@ export class BatchManager {
     const batchRequests = batchRequestsItemsList.map(batchRequestMap => {
       return this.toLimited(
         async () =>
-          this.connection.documentClient
-            .batchGet({
-              RequestItems: {...batchRequestMap},
-              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-            })
-            .promise(),
+          this.connection.documentClient.batchGet({
+            RequestItems: {...batchRequestMap},
+            ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+          }),
         batchRequestMap,
         REQUEST_TYPE.BATCH_READ
       );
@@ -632,7 +624,7 @@ export class BatchManager {
       } catch (err) {
         this._errorQueue.push({
           requestInput: requestItem,
-          error: err,
+          error: err as any,
           requestType,
         });
         // when any error is thrown while promises are running, return it

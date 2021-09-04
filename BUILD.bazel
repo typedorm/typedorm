@@ -7,5 +7,5 @@
 #   See https://www.npmjs.com/package/@bazel/typescript#installation
 exports_files(
     ["tsconfig.json", "LICENSE", ".npmignore"],
-    visibility = ["//packages:__subpackages__"],
+    visibility = ["//packages:__subpackages__", "//examples:__subpackages__"]
 )
