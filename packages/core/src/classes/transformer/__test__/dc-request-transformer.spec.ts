@@ -1,7 +1,7 @@
+import {LazyTransactionWriteItemListLoader} from './../is-lazy-transaction-write-item-list-loader';
 import {
   Attribute,
   Entity,
-  InvalidPrimaryKeyAttributesUpdateError,
   InvalidUniqueAttributeUpdateError,
   QUERY_ORDER,
 } from '@typedorm/common';
@@ -935,21 +935,63 @@ test('throws when trying to update primary key attribute and unique attribute in
   expect(updateItem).toThrow(InvalidUniqueAttributeUpdateError);
 });
 
-test('throws when trying to update primary key attribute and non key attribute in the same request', () => {
-  const updateItem = () =>
-    transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
-      Photo,
-      {
-        category: CATEGORY.PETS,
-        id: 1,
-      },
-      {
-        id: 2,
-        createdAt: moment(),
-      }
-    );
+test('allows updating primary key attribute and non key attribute in the same request', () => {
+  const updateItem = transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
+    Photo,
+    {
+      category: CATEGORY.PETS,
+      id: 1,
+    },
+    {
+      id: 2,
+      createdAt: moment(),
+      name: 'new name',
+    }
+  );
 
-  expect(updateItem).toThrow(InvalidPrimaryKeyAttributesUpdateError);
+  expect(updateItem).toEqual({
+    entityClass: Photo,
+    lazyLoadTransactionWriteItems: expect.any(Function),
+    primaryKeyAttributes: {
+      category: 'PETS',
+      id: 1,
+    },
+  });
+
+  expect(
+    (updateItem as LazyTransactionWriteItemListLoader).lazyLoadTransactionWriteItems(
+      {
+        id: 1,
+        category: CATEGORY.KIDS,
+        name: 'old name',
+      }
+    )
+  ).toEqual([
+    {
+      Put: {
+        Item: {
+          GSI1PK: 'PHOTO#2',
+          SK: 'PHOTO#2',
+          category: 'KIDS',
+          createdAt: '2021-06-01',
+          id: 2,
+          name: 'new name',
+          updatedAt: '1622530750',
+        },
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'PHOTO#KIDS',
+          SK: 'PHOTO#1',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
 });
 
 test('transforms update item request with complex condition input', () => {
