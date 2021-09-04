@@ -12,7 +12,6 @@ import {
   InvalidFilterInputError,
   InvalidSelectInputError,
   InvalidUniqueAttributeUpdateError,
-  InvalidPrimaryKeyAttributesUpdateError,
   InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
 import {DynamoDB} from 'aws-sdk';
@@ -499,26 +498,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // validate primary key attributes
     if (!isEmptyObject(affectedPrimaryKeyAttributes)) {
-      const primaryKeyReferencedAttributes = this.connection.getPrimaryKeyAttributeInterpolationsForEntity(
-        entityClass
-      );
-      const nonKeyAttributesToUpdate = Object.keys(body).filter(
-        attr => !primaryKeyReferencedAttributes.includes(attr)
-      );
-
       // updates are not allowed for attributes that unique and also references primary key.
       if (uniqueAttributesToUpdate.length) {
         throw new InvalidUniqueAttributeUpdateError(
           affectedPrimaryKeyAttributes!,
           uniqueAttributesToUpdate.map(attr => attr.name)
-        );
-      }
-
-      // primary key and non key attributes can not be updated together
-      if (nonKeyAttributesToUpdate.length) {
-        throw new InvalidPrimaryKeyAttributesUpdateError(
-          affectedPrimaryKeyAttributes!,
-          nonKeyAttributesToUpdate
         );
       }
     }
