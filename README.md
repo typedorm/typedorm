@@ -142,8 +142,8 @@ import {AUTO_GENERATE_ATTRIBUTE_STRATEGY} from '@typedorm/common';
       type: INDEX_TYPE.GSI,
     },
     // specify LSI1 key
-    LSI: {
-      sortKey: 'TICKETS#UPDATED_AT#{{updatedAt}}'
+    LSI1: {
+      sortKey: 'TICKETS#UPDATED_AT#{{updatedAt}}',
       type: INDEX_TYPE.LSI
     }
   },
