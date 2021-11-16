@@ -20,7 +20,7 @@
     "posttest": "npm run lint"
   },
   "dependencies": {
-    "aws-sdk": "^2.799.0",
+    "aws-sdk": "^2.814.0",
     "chalk": "^4.1.0",
     "class-transformer": "^0.4.0",
     "debug": "^4.3.1",
