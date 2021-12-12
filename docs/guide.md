@@ -393,7 +393,8 @@ import {User} from './entities/user.entity'
 
 
 const cancelledOrders = await getEntityManager().find(Order,
-  {userId: 'user-1', queryIndex: 'GSI1'}, {
+  {userId: 'user-1'}, {
+  queryIndex: 'GSI1',
   keyCondition: {
     BEGINS_WITH: 'ORDER#cancelled',
   },
@@ -427,7 +428,8 @@ import {User} from './entities/user.entity'
 
 
 const recentPendingOrders = await getEntityManager().find(Order,
-  {userId: 'user-1', queryIndex: 'GSI1'}, {
+  {userId: 'user-1'}, {
+  queryIndex: 'GSI1',
   keyCondition: {
     BEGINS_WITH: 'ORDER#pending',
   },
