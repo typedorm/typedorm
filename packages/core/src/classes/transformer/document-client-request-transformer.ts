@@ -383,6 +383,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     });
     const tableName = metadata.table.name;
 
+    // FIXME: correctly apply decorated transformations on the primary key attributes
+    // apply class transformation on attributes before further processing
+    // primaryKeyAttributes = this.applyClassTransformerFormations(
+    //   primaryKeyAttributes
+    // ) as PrimaryKey;
+
     const parsedPrimaryKey = this.getParsedPrimaryKey(
       metadata.table,
       metadata.schema.primaryKey,
@@ -532,6 +538,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       staticOrDynamicUpdateAttributesWithMetadata.typeMetadata,
       {
         nestedKeySeparator,
+        additionalAttributesDict: {
+          ...primaryKeyAttributes,
+        },
       }
     );
 
