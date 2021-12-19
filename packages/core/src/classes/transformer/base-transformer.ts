@@ -210,7 +210,10 @@ export abstract class BaseTransformer {
     entityClass: EntityTarget<Entity>,
     attributes: Record<string, any>,
     attributesTypeMetadata: Record<string, 'static' | 'dynamic'>,
-    options?: {nestedKeySeparator: string}
+    options?: {
+      nestedKeySeparator?: string;
+      additionalAttributesDict?: Record<string, any>;
+    }
   ) {
     const nestedKeySeparator = options?.nestedKeySeparator ?? '.';
     const {
@@ -259,7 +262,7 @@ export abstract class BaseTransformer {
               try {
                 const parsedIndex = parseKey(
                   currIndex.attributes[interpolationKey],
-                  attributes
+                  {...options?.additionalAttributesDict, ...attributes}
                 );
                 acc[interpolationKey] = parsedIndex;
               } catch (err) {
