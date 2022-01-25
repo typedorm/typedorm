@@ -496,7 +496,7 @@ user.id = '1';
 // ...other user props
 
 // first we create a write batch instance with all the items that we would like to write in a batch
-const batchToWrite = new WriteBach()
+const batchToWrite = new WriteBatch()
   .addCreateItem(user)
   .addDeleteItem<Organisation, OrgPrimaryKey>(Organisation, {id: 'org-1'})
   ....other items
@@ -541,7 +541,7 @@ Let' look at how batch manger's read op works:
 import {ReadBatch, BatchManager} from '@typedorm/core'
 
 // first we create a read batch instance with all the keys that we would like to get items for
-const batchItemsToRead = new WriteBach()
+const batchItemsToRead = new ReadBatch()
   .addGetItem<User, UserPrimaryKey>({
     item: User,
     primaryKey: {
