@@ -3,7 +3,7 @@ import {
   RequireOnlyOne,
   ConditionType,
   ATTRIBUTE_TYPE,
-  RequireAtLeastOne,
+  ResolveScalarType,
 } from '@typedorm/common';
 
 type AttributeConditionOptions<Entity> =
@@ -16,13 +16,13 @@ type AttributeConditionOptions<Entity> =
             | Extract<
                 ConditionType.FunctionOperator,
                 'CONTAINS' | 'BEGINS_WITH'
-              >]: Entity[enKey];
+              >]: ResolveScalarType<Entity[enKey]>;
         } &
           // if between operator, value must be an array of two items
           {
             [key in Extract<ConditionType.RangeOperator, 'BETWEEN'>]: [
-              Entity[enKey],
-              Entity[enKey]
+              ResolveScalarType<Entity[enKey]>,
+              ResolveScalarType<Entity[enKey]>
             ];
           } &
           // for 'IN' operator value must be a list of scalar type
@@ -30,7 +30,7 @@ type AttributeConditionOptions<Entity> =
             [key in Extract<
               ConditionType.RangeOperator,
               'IN'
-            >]: Entity[enKey][];
+            >]: ResolveScalarType<Entity[enKey]>[];
           } &
           // for 'ATTRIBUTE_TYPE' value must be one of the given enum values
           {
@@ -46,7 +46,7 @@ type AttributeConditionOptions<Entity> =
               'SIZE'
             >]: RequireOnlyOne<
               {
-                [key in ConditionType.SimpleOperator]: Entity[enKey];
+                [key in ConditionType.SimpleOperator]: number;
               }
             >;
           }
@@ -63,26 +63,27 @@ type AttributeConditionOptions<Entity> =
 
 type RecursiveConditionOptions<Entity> = {
   // for `AND` and `OR` logical operators require at least one of defined options or other self
-  [key in Extract<
-    ConditionType.LogicalOperator,
-    'OR' | 'AND'
-  >]: RequireAtLeastOne<
-    AttributeConditionOptions<Entity> &
-      // manually infer recursive type
-      RecursiveConditionOptions<Entity> extends infer R
-      ? R
-      : never
-  >;
+  [key in Extract<ConditionType.LogicalOperator, 'OR' | 'AND'>]:
+    | Partial<
+        AttributeConditionOptions<Entity> &
+          // manually infer recursive type
+          RecursiveConditionOptions<Entity>
+      >
+    | {} extends infer R
+    ? R
+    : never;
 } &
   // for `NOT` logical operators require one from defined options or other self
   {
-    [key in Extract<ConditionType.LogicalOperator, 'NOT'>]: RequireOnlyOne<
-      AttributeConditionOptions<Entity> &
-        // manually infer recursive type
-        RecursiveConditionOptions<Entity> extends infer R
-        ? R
-        : never
-    >;
+    [key in Extract<ConditionType.LogicalOperator, 'NOT'>]:
+      | Partial<
+          AttributeConditionOptions<Entity> &
+            // manually infer recursive type
+            RecursiveConditionOptions<Entity>
+        >
+      | {} extends infer R
+      ? R
+      : never;
   } &
   // require attribute filter
   AttributeConditionOptions<Entity>;

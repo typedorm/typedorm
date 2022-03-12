@@ -12,7 +12,14 @@ import {
   UserAutoGenerateAttributes,
 } from '../../../../__mocks__/user-auto-generate-attributes';
 import {Connection} from '../../connection/connection';
-import {CONSUMED_CAPACITY_TYPE} from '@typedorm/common';
+import {
+  CONSUMED_CAPACITY_TYPE,
+  InvalidDynamicUpdateAttributeValueError,
+} from '@typedorm/common';
+import {
+  UserAttrAlias,
+  UserAttrAliasPrimaryKey,
+} from '@typedorm/core/__mocks__/user-with-attribute-alias';
 
 let manager: EntityManager;
 let connection: Connection;
@@ -26,7 +33,12 @@ const dcMock = {
 };
 beforeEach(() => {
   connection = createTestConnection({
-    entities: [User, UserUniqueEmail, UserAutoGenerateAttributes],
+    entities: [
+      User,
+      UserUniqueEmail,
+      UserAutoGenerateAttributes,
+      UserAttrAlias,
+    ],
     documentClient: dcMock,
   });
 
@@ -183,7 +195,7 @@ test('creates entity and returns all attributes, including auto generated ones',
       PK: 'USER#1',
       SK: 'USER#1',
       id: '1',
-      __en: 'user',
+      __en: 'user-auto-generate-attr',
       updatedAt: 1606896235,
     },
     TableName: 'test-table',
@@ -234,6 +246,7 @@ test('finds one entity by given primary key', async () => {
     name: 'Me',
     status: 'active',
   });
+  expect(userEntity).toBeInstanceOf(User);
 });
 
 // issue: 110
@@ -403,16 +416,16 @@ test('updates item and return all new attributes', async () => {
 
   expect(dcMock.update).toHaveBeenCalledWith({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'status',
-      '#attr2': 'GSI1SK',
-      '#attr3': 'GSI1PK',
+      '#UE_GSI1PK': 'GSI1PK',
+      '#UE_GSI1SK': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
     },
     ExpressionAttributeValues: {
-      ':val0': 'user',
-      ':val1': 'active',
-      ':val2': 'USER#user',
-      ':val3': 'USER#STATUS#active',
+      ':UE_GSI1PK': 'USER#STATUS#active',
+      ':UE_GSI1SK': 'USER#user',
+      ':UE_name': 'user',
+      ':UE_status': 'active',
     },
     Key: {
       PK: 'USER#1',
@@ -421,9 +434,112 @@ test('updates item and return all new attributes', async () => {
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
     UpdateExpression:
-      'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2, #attr3 = :val3',
+      'SET #UE_name = :UE_name, #UE_status = :UE_status, #UE_GSI1SK = :UE_GSI1SK, #UE_GSI1PK = :UE_GSI1PK',
   });
   expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
+});
+
+test('updates item with multiple body actions', async () => {
+  dcMock.update.mockReturnValue({
+    promise: () => ({
+      Attributes: {
+        PK: 'USER#1',
+        SK: 'USER#1',
+        GSI1PK: 'USER#STATUS#active',
+        GSI1SK: 'USER#Me',
+        id: '1',
+        name: 'user',
+        status: 'active',
+      },
+    }),
+  });
+  const updatedItem = await manager.update<User, UserPrimaryKey>(
+    User,
+    {id: '1'},
+    {
+      name: 'user',
+      status: {
+        IF_NOT_EXISTS: {
+          $PATH: 'id',
+          $VALUE: 'active',
+        },
+      },
+    }
+  );
+
+  expect(dcMock.update).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#UE_GSI1SK': 'GSI1SK',
+      '#UE_GSI1PK': 'GSI1PK',
+      '#UE_id': 'id',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
+    },
+    ExpressionAttributeValues: {
+      ':UE_GSI1SK': 'USER#user',
+      ':UE_GSI1PK': 'USER#STATUS#active',
+      ':UE_name': 'user',
+      ':UE_status': 'active',
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression:
+      'SET #UE_name = :UE_name, #UE_status = if_not_exists(#UE_id, :UE_status), #UE_GSI1SK = :UE_GSI1SK, #UE_GSI1PK = :UE_GSI1PK',
+  });
+  expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active'});
+});
+
+test('updates item when trying to update attribute with dynamic value that is not referenced in any index', async () => {
+  dcMock.update.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  await manager.update<User, UserPrimaryKey>(
+    User,
+    {id: '1'},
+    {
+      age: {
+        INCREMENT_BY: 3,
+      },
+    }
+  );
+
+  expect(dcMock.update).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#UE_age': 'age',
+    },
+    ExpressionAttributeValues: {
+      ':UE_age': 3,
+    },
+    Key: {
+      PK: 'USER#1',
+      SK: 'USER#1',
+    },
+    ReturnValues: 'ALL_NEW',
+    TableName: 'test-table',
+    UpdateExpression: 'SET #UE_age = #UE_age + :UE_age',
+  });
+});
+test('fails to transform when trying to use dynamic update expression for attribute that is also referenced in a index', async () => {
+  // this should fail as update to age is not static and is also referenced by GSI1
+  const updatedItem = async () =>
+    manager.update<UserAttrAlias, UserAttrAliasPrimaryKey>(
+      UserAttrAlias,
+      {id: '1'},
+      {
+        age: {
+          INCREMENT_BY: 3,
+        },
+      }
+    );
+  await expect(updatedItem).rejects.toThrow(
+    InvalidDynamicUpdateAttributeValueError
+  );
+  expect(dcMock.update).not.toHaveBeenCalled();
 });
 
 test('updates item and attributes marked to be autoUpdated', async () => {
@@ -457,12 +573,12 @@ test('updates item and attributes marked to be autoUpdated', async () => {
 
   expect(dcMock.update).toHaveBeenCalledWith({
     ExpressionAttributeNames: {
-      '#attr0': 'updatedAt',
-      '#attr1': 'GSI1PK',
+      '#UE_updatedAt': 'updatedAt',
+      '#UE_GSI1PK': 'GSI1PK',
     },
     ExpressionAttributeValues: {
-      ':val0': 1577836800,
-      ':val1': 'USER#UPDATED_AT#1577836800',
+      ':UE_updatedAt': 1577836800,
+      ':UE_GSI1PK': 'USER#UPDATED_AT#1577836800',
     },
     Key: {
       PK: 'USER#1',
@@ -470,7 +586,8 @@ test('updates item and attributes marked to be autoUpdated', async () => {
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'SET #attr0 = :val0, #attr1 = :val1',
+    UpdateExpression:
+      'SET #UE_updatedAt = :UE_updatedAt, #UE_GSI1PK = :UE_GSI1PK',
   });
   expect(updatedItem).toEqual({id: '1', name: 'Me', status: 'active'});
 });
@@ -529,17 +646,17 @@ test('updates item with unique attributes and returns all updated attributes', a
       {
         Update: {
           ExpressionAttributeNames: {
-            '#attr0': 'email',
+            '#UE_email': 'email',
           },
           ExpressionAttributeValues: {
-            ':val0': 'new@examil.com',
+            ':UE_email': 'new@examil.com',
           },
           Key: {
             PK: 'USER#1',
             SK: 'USER#1',
           },
           TableName: 'test-table',
-          UpdateExpression: 'SET #attr0 = :val0',
+          UpdateExpression: 'SET #UE_email = :UE_email',
         },
       },
       {
@@ -608,17 +725,17 @@ test('updates item and return all new attributes with given condition', async ()
 
   expect(dcMock.update).toHaveBeenCalledWith({
     ExpressionAttributeNames: {
-      '#attr0': 'name',
-      '#attr1': 'status',
-      '#attr2': 'GSI1SK',
-      '#attr3': 'GSI1PK',
+      '#UE_GSI1PK': 'GSI1PK',
+      '#UE_GSI1SK': 'GSI1SK',
+      '#UE_name': 'name',
+      '#UE_status': 'status',
       '#CE_age': 'age',
     },
     ExpressionAttributeValues: {
-      ':val0': 'user',
-      ':val1': 'active',
-      ':val2': 'USER#user',
-      ':val3': 'USER#STATUS#active',
+      ':UE_GSI1PK': 'USER#STATUS#active',
+      ':UE_GSI1SK': 'USER#user',
+      ':UE_name': 'user',
+      ':UE_status': 'active',
       ':CE_age_end': 11,
       ':CE_age_start': 1,
     },
@@ -629,7 +746,7 @@ test('updates item and return all new attributes with given condition', async ()
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
     UpdateExpression:
-      'SET #attr0 = :val0, #attr1 = :val1, #attr2 = :val2, #attr3 = :val3',
+      'SET #UE_name = :UE_name, #UE_status = :UE_status, #UE_GSI1SK = :UE_GSI1SK, #UE_GSI1PK = :UE_GSI1PK',
     ConditionExpression: '#CE_age BETWEEN :CE_age_start AND :CE_age_end',
   });
   expect(updatedItem).toEqual({
@@ -640,23 +757,83 @@ test('updates item and return all new attributes with given condition', async ()
   });
 });
 
-test('does not update an item when failed to get item by key', async () => {
-  manager.findOne = jest.fn();
+test('updates item and create new unique item when no previous record was found', async () => {
+  manager.findOne = jest
+    .fn()
+    .mockImplementationOnce(() => null)
+    .mockImplementationOnce(() => ({
+      id: '1',
+      name: 'user',
+      status: 'active',
+      age: 4,
+    }));
 
-  const updatedItem = async () =>
-    await manager.update<UserUniqueEmail, UserUniqueEmailPrimaryKey>(
-      UserUniqueEmail,
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const updatedItem = await manager.update<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: '1',
+    },
+    {
+      email: 'new@examil.com',
+    }
+  );
+
+  expect(manager.findOne).toHaveBeenCalledTimes(2);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    TransactItems: [
       {
-        id: '1',
+        Update: {
+          ExpressionAttributeNames: {
+            '#UE_email': 'email',
+          },
+          ExpressionAttributeValues: {
+            ':UE_email': 'new@examil.com',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+          UpdateExpression: 'SET #UE_email = :UE_email',
+        },
       },
       {
-        email: 'new@examil.com',
-      }
-    );
+        Put: {
+          ConditionExpression:
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+          ExpressionAttributeNames: {
+            '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
+          },
+          Item: {
+            PK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@examil.com',
+            SK: 'DRM_GEN_USERUNIQUEEMAIL.EMAIL#new@examil.com',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
 
-  await expect(updatedItem).rejects.toThrow(
-    'Failed to update entity, could not find entity with primary key "{"id":"1"}"'
-  );
+  expect(updatedItem).toEqual({
+    age: 4,
+    id: '1',
+    name: 'user',
+    status: 'active',
+  });
 });
 
 /**
@@ -787,6 +964,47 @@ test('deletes an item with unique attributes', async () => {
   });
 });
 
+test('deletes an item with unique attributes when no existing item is found', async () => {
+  // make find one return undefined
+  manager.findOne = jest.fn();
+
+  const deleteItemOperation = dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const deletedResponse = await manager.delete<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(UserUniqueEmail, {
+    id: '1',
+  });
+
+  expect(manager.findOne).toHaveBeenCalledTimes(1);
+  expect(deleteItemOperation).toHaveBeenCalledTimes(1);
+  expect(deleteItemOperation).toHaveBeenCalledWith({
+    TransactItems: [
+      {
+        Delete: {
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+        },
+      },
+    ],
+  });
+  expect(deletedResponse).toEqual({
+    success: true,
+  });
+});
+
 /**
  * @group find
  */
@@ -858,6 +1076,10 @@ test('finds items matching given query params', async () => {
         status: 'active',
       },
     ],
+  });
+
+  users.items.forEach(user => {
+    expect(user).toBeInstanceOf(User);
   });
 });
 
@@ -937,6 +1159,7 @@ test('finds items matching given query params and options', async () => {
       },
     ],
   });
+  expect(users.items[0]).toBeInstanceOf(User);
 });
 
 test('finds items with alternate syntax', async () => {
@@ -1134,4 +1357,172 @@ test('queries items until limit is met', async () => {
     ],
   ]);
   expect(users.items.length).toEqual(2000);
+});
+
+/**
+ * @group count
+ */
+test('counts items matching given query params', async () => {
+  dcMock.query.mockReturnValue({
+    promise: jest.fn().mockReturnValue({
+      Count: 132,
+    }),
+  });
+
+  const usersCount = await manager.count<User, UserPrimaryKey>(
+    User,
+    {
+      id: 'aaaa',
+    },
+    {
+      keyCondition: {
+        BEGINS_WITH: 'USER#',
+      },
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(1);
+  expect(dcMock.query).toHaveBeenCalledWith({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+      '#KY_CE_SK': 'SK',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#aaaa',
+      ':KY_CE_SK': 'USER#',
+    },
+    KeyConditionExpression:
+      '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+    Select: 'COUNT',
+    ScanIndexForward: true,
+    TableName: 'test-table',
+  });
+  expect(usersCount).toEqual(132);
+});
+
+test('counts items with multiple requests', async () => {
+  dcMock.query
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 121,
+        LastEvaluatedKey: 'AAAA',
+      }),
+    }))
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 56,
+        LastEvaluatedKey: 'BB',
+      }),
+    }))
+    .mockImplementationOnce(() => ({
+      promise: jest.fn().mockReturnValue({
+        Count: 13,
+      }),
+    }));
+
+  const users = await manager.count<User, UserPrimaryKey>(
+    User,
+    {
+      id: 'aaaa',
+    },
+    {
+      keyCondition: {
+        BEGINS_WITH: 'USER#',
+      },
+      where: {
+        AND: {
+          age: {
+            BETWEEN: [1, 5],
+          },
+          name: {
+            EQ: 'Me',
+          },
+          status: 'ATTRIBUTE_EXISTS',
+        },
+      },
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(3);
+  expect(dcMock.query.mock.calls).toEqual([
+    [
+      {
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+    [
+      {
+        ExclusiveStartKey: 'AAAA',
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+    [
+      {
+        ExclusiveStartKey: 'BB',
+        ExpressionAttributeNames: {
+          '#KY_CE_PK': 'PK',
+          '#KY_CE_SK': 'SK',
+          '#FE_age': 'age',
+          '#FE_name': 'name',
+          '#FE_status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':KY_CE_PK': 'USER#aaaa',
+          ':KY_CE_SK': 'USER#',
+          ':FE_age_end': 5,
+          ':FE_age_start': 1,
+          ':FE_name': 'Me',
+        },
+        KeyConditionExpression:
+          '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
+        FilterExpression:
+          '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
+        Select: 'COUNT',
+        ScanIndexForward: true,
+        TableName: 'test-table',
+      },
+    ],
+  ]);
+
+  expect(users).toEqual(190);
 });

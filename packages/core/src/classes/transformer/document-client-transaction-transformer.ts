@@ -124,7 +124,7 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
    * - lazyTransactionWriteItemListLoaderItems: items that are must be processed in transaction but also requires other requests to be made first (i.e delete of unique items)
    */
   private innerTransformTransactionWriteItems(
-    transactionItems: WriteTransactionItem<any, any>[],
+    transactionItems: WriteTransactionItem<any, any, any>[],
     metadataOptions?: MetadataOptions
   ) {
     return transactionItems.reduce(

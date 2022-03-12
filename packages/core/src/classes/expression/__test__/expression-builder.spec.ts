@@ -2,6 +2,11 @@ import {Condition} from '../condition';
 import {ExpressionBuilder} from '../expression-builder';
 import {Filter} from '../filter';
 import {Projection} from '../projection';
+import {AddUpdate} from '../update/add-update';
+import {DeleteUpdate} from '../update/delete-update';
+import {RemoveUpdate} from '../update/remove-update';
+import {SetUpdate} from '../update/set-update';
+import {Update} from '../update/update';
 
 const expressionBuilder = new ExpressionBuilder();
 
@@ -25,107 +30,142 @@ test('builds condition expression', () => {
  * @group buildUpdateExpression
  */
 test('builds update expression', () => {
-  const item = {
-    name: 'new name',
-  };
+  const item = new Update().merge(new SetUpdate().setTo('name', 'new name'));
   const expression = expressionBuilder.buildUpdateExpression(item);
   expect(expression).toEqual({
-    UpdateExpression: 'SET #attr0 = :val0',
+    UpdateExpression: 'SET #UE_name = :UE_name',
     ExpressionAttributeNames: {
-      '#attr0': 'name',
+      '#UE_name': 'name',
     },
     ExpressionAttributeValues: {
-      ':val0': 'new name',
+      ':UE_name': 'new name',
     },
   });
 });
 
 test('builds update expression for nested object', () => {
-  const item = {
-    'user.name': 'new name',
-  };
+  const item = new Update().merge(
+    new SetUpdate().setTo('user.name', 'new name')
+  );
   const expression = expressionBuilder.buildUpdateExpression(item);
   expect(expression).toEqual({
-    UpdateExpression: 'SET #attr0_inner0.#attr0_inner1 = :val0',
+    UpdateExpression: 'SET #UE_user.#UE_user_name = :UE_user_name',
     ExpressionAttributeNames: {
-      '#attr0_inner0': 'user',
-      '#attr0_inner1': 'name',
+      '#UE_user': 'user',
+      '#UE_user_name': 'name',
     },
     ExpressionAttributeValues: {
-      ':val0': 'new name',
+      ':UE_user_name': 'new name',
     },
   });
 });
 
 test('builds update expression for complex nested object', () => {
-  const item = {
-    application: 'test',
-    'profile.name.last': 'new Last name',
-    data: [1, 2, 3],
-    'address[0]': 'new address portion',
-    'complex.nested.object[1]': 'new value',
-  };
+  const item = new Update().merge(
+    new SetUpdate()
+      .setTo('application', 'test')
+      .and()
+      .setTo('profile.name.last', 'new Last name')
+      .and()
+      .setTo('data', [1, 2, 3])
+      .and()
+      .setTo('address[0]', 'new address portion')
+      .and()
+      .setTo('complex.nested.object[1]', 'new value')
+  );
   const expression = expressionBuilder.buildUpdateExpression(item);
   expect(expression).toEqual({
     UpdateExpression:
-      'SET #attr0 = :val0, #attr1_inner0.#attr1_inner1.#attr1_inner2 = :val1, #attr2 = :val2, #attr3 = :val3, #attr4_inner0.#attr4_inner1.#attr4_inner2 = :val4',
+      'SET #UE_application = :UE_application, #UE_profile.#UE_profile_name.#UE_profile_name_last = :UE_profile_name_last, #UE_data = :UE_data, #UE_address[0] = :UE_address, #UE_complex.#UE_complex_nested.#UE_complex_nested_object[1] = :UE_complex_nested_object',
     ExpressionAttributeNames: {
-      '#attr0': 'application',
-      '#attr1_inner0': 'profile',
-      '#attr1_inner1': 'name',
-      '#attr1_inner2': 'last',
-      '#attr2': 'data',
-      '#attr3': 'address[0]',
-      '#attr4_inner0': 'complex',
-      '#attr4_inner1': 'nested',
-      '#attr4_inner2': 'object[1]',
+      '#UE_address': 'address',
+      '#UE_application': 'application',
+      '#UE_complex': 'complex',
+      '#UE_complex_nested': 'nested',
+      '#UE_complex_nested_object': 'object',
+      '#UE_data': 'data',
+      '#UE_profile': 'profile',
+      '#UE_profile_name': 'name',
+      '#UE_profile_name_last': 'last',
     },
     ExpressionAttributeValues: {
-      ':val0': 'test',
-      ':val1': 'new Last name',
-      ':val2': [1, 2, 3],
-      ':val3': 'new address portion',
-      ':val4': 'new value',
+      ':UE_address': 'new address portion',
+      ':UE_application': 'test',
+      ':UE_complex_nested_object': 'new value',
+      ':UE_data': [1, 2, 3],
+      ':UE_profile_name_last': 'new Last name',
     },
   });
 });
 
-/**
- * Issue 41
- */
-test('allows updating attribute with undefined value', () => {
-  const item = {
-    'user.name': undefined,
-  };
+test('builds update expression for body with different actions', () => {
+  const item = new Update().mergeMany([
+    new SetUpdate()
+      .setTo('application', 'test')
+      .and()
+      .setTo('profile.name.last', 'new Last name'),
+    new AddUpdate().addTo('data', [1, 2, 3]),
+    new RemoveUpdate().remove('address', {
+      atIndexes: [0],
+    }),
+    new DeleteUpdate().delete('complex.nested.attr', ['new value']),
+  ]);
   const expression = expressionBuilder.buildUpdateExpression(item);
   expect(expression).toEqual({
-    UpdateExpression: 'SET #attr0_inner0.#attr0_inner1 = :val0',
     ExpressionAttributeNames: {
-      '#attr0_inner0': 'user',
-      '#attr0_inner1': 'name',
+      '#UE_address': 'address',
+      '#UE_application': 'application',
+      '#UE_complex': 'complex',
+      '#UE_complex_nested': 'nested',
+      '#UE_complex_nested_attr': 'attr',
+      '#UE_data': 'data',
+      '#UE_profile': 'profile',
+      '#UE_profile_name': 'name',
+      '#UE_profile_name_last': 'last',
     },
     ExpressionAttributeValues: {
-      ':val0': null,
+      ':UE_application': 'test',
+      ':UE_complex_nested_attr': ['new value'],
+      ':UE_data': [1, 2, 3],
+      ':UE_profile_name_last': 'new Last name',
+    },
+    UpdateExpression:
+      'SET #UE_application = :UE_application, #UE_profile.#UE_profile_name.#UE_profile_name_last = :UE_profile_name_last ADD #UE_data :UE_data REMOVE #UE_address[0] DELETE #UE_complex.#UE_complex_nested.#UE_complex_nested_attr :UE_complex_nested_attr',
+  });
+});
+
+/**
+ * Issue 41 null values
+ */
+test('allows updating attribute with null value', () => {
+  const item = new Update().merge(new SetUpdate().setTo('user.name', null));
+  const expression = expressionBuilder.buildUpdateExpression(item);
+  expect(expression).toEqual({
+    UpdateExpression: 'SET #UE_user.#UE_user_name = :UE_user_name',
+    ExpressionAttributeNames: {
+      '#UE_user': 'user',
+      '#UE_user_name': 'name',
+    },
+    ExpressionAttributeValues: {
+      ':UE_user_name': null,
     },
   });
 });
 
 /**
- * Issue 41
+ * Issue 41 falsy values
  */
 test('allows updating attribute with empty string', () => {
-  const item = {
-    'user.name': '',
-  };
+  const item = new Update().merge(new SetUpdate().setTo('user.name', ''));
   const expression = expressionBuilder.buildUpdateExpression(item);
   expect(expression).toEqual({
-    UpdateExpression: 'SET #attr0_inner0.#attr0_inner1 = :val0',
+    UpdateExpression: 'SET #UE_user.#UE_user_name = :UE_user_name',
     ExpressionAttributeNames: {
-      '#attr0_inner0': 'user',
-      '#attr0_inner1': 'name',
+      '#UE_user': 'user',
+      '#UE_user_name': 'name',
     },
     ExpressionAttributeValues: {
-      ':val0': '',
+      ':UE_user_name': '',
     },
   });
 });

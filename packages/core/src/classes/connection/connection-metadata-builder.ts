@@ -1,9 +1,14 @@
 import fg from 'fast-glob';
 import path from 'path';
-import {EntityTarget} from '@typedorm/common';
+import {
+  DuplicateEntityPhysicalNameError,
+  EntityTarget,
+  MissingRequiredEntityPhysicalNameError,
+} from '@typedorm/common';
 import {Connection} from './connection';
 import {EntityMetadataBuilder} from './entity-metadata-builder';
 import {MetadataManager} from '@typedorm/common';
+import {EntityMetadata} from '../metadata/entity-metadata';
 
 export class ConnectionMetadataBuilder {
   constructor(private connection: Connection) {}
@@ -21,7 +26,12 @@ export class ConnectionMetadataBuilder {
       MetadataManager.metadataStorage.hasKnownEntity(entity)
     );
 
-    return new EntityMetadataBuilder(this.connection).build(entitiesToBuild);
+    const entityMetadatas = new EntityMetadataBuilder(this.connection).build(
+      entitiesToBuild
+    );
+    this.sanitizeDuplicates(entityMetadatas);
+
+    return entityMetadatas;
   }
 
   private loadEntitiesFromDirs(pathMatchPattern: string) {
@@ -47,5 +57,20 @@ export class ConnectionMetadataBuilder {
       );
     }
     return allLoaded;
+  }
+
+  private sanitizeDuplicates(metadata: EntityMetadata[]) {
+    const cache: string[] = [];
+    metadata.forEach(metadata => {
+      if (!metadata.name) {
+        throw new MissingRequiredEntityPhysicalNameError(metadata.target.name);
+      }
+
+      if (cache.includes(metadata.name)) {
+        throw new DuplicateEntityPhysicalNameError(metadata.name);
+      } else {
+        cache.push(metadata.name);
+      }
+    });
   }
 }

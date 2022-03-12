@@ -1,13 +1,12 @@
 import {
   ATTRIBUTE_TYPE,
   RangeOperator,
-  RequireOnlyOne,
   ScalarType,
   SimpleOperator,
+  UpdateType,
 } from '@typedorm/common';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {KeyCondition} from './key-condition';
-import {KeyConditionType} from '@typedorm/common';
 import {Filter} from './filter';
 import {BaseExpressionInput, MERGE_STRATEGY} from './base-expression-input';
 import {isScalarType} from '../../helpers/is-scalar-type';
@@ -15,20 +14,17 @@ import {FilterOptions} from './filter-options-type';
 import {ConditionOptions} from './condition-options-type';
 import {Condition} from './condition';
 import {Projection} from './projection';
+import {KeyConditionOptions} from './key-condition-options-type';
+import {ProjectionKeys} from './projection-keys-options-type';
+import {isSetOperatorComplexValueType, UpdateBody} from './update-body-type';
+import {SetUpdate} from './update/set-update';
+import {AddUpdate} from './update/add-update';
+import {Update} from './update/update';
 
-export type KeyConditionOptions = RequireOnlyOne<
-  {
-    [key in KeyConditionType.SimpleOperator]: ScalarType;
-  } &
-    {
-      [key in KeyConditionType.FunctionOperator]: ScalarType;
-    } &
-    {
-      [key in KeyConditionType.RangeOperator]: [ScalarType, ScalarType];
-    }
->;
-
-export type ProjectionKeys<Entity> = (keyof Entity)[] | string[];
+import {DeleteUpdate} from './update/delete-update';
+import {RemoveUpdate} from './update/remove-update';
+import {isObject} from '../../helpers/is-object';
+import {nestedKeyAccessRegex} from '../../helpers/constants';
 
 /**
  * Parses expression input to expression instances
@@ -55,10 +51,67 @@ export class ExpressionInputParser {
     return projection;
   }
 
+  parseToUpdate<Entity, AdditionalProperties = {}>(
+    body: UpdateBody<Entity, AdditionalProperties>,
+    attrValueOverrideMap: Record<string, any> = {}
+  ) {
+    return this.parseToUpdateExpression(body, attrValueOverrideMap);
+  }
+
+  /**
+   * Parses complex update object to a value and type
+   */
+  parseAttributeToUpdateValue(
+    attr: string,
+    value: any
+  ): {value: any; type: 'static' | 'dynamic'} {
+    if (isObject(value) && !isEmptyObject(value)) {
+      const [operator, operatorValue] = Object.entries(value as any)[0];
+
+      const parsedUpdate = this.parseValueToUpdateExp(
+        attr,
+        value,
+        operator as any,
+        operatorValue
+      );
+
+      const parsedValue = Object.values(parsedUpdate.values ?? {})[0];
+
+      // if expression contains any dynamic operation such as value manipulation or nested attribute manipulation in a list
+      if (
+        !(parsedUpdate instanceof SetUpdate) ||
+        parsedUpdate.expression.includes(' + ') ||
+        parsedUpdate.expression.includes(' - ') ||
+        nestedKeyAccessRegex.test(parsedUpdate.expression)
+      ) {
+        return {
+          value: parsedValue,
+          type: 'dynamic',
+        };
+      }
+
+      // return static value
+      return {
+        type: 'static',
+        value: parsedValue,
+      };
+    } else {
+      // if tried to update nested value for key, it is considered dynamic, as we do not know full value of updating attribute
+      if (nestedKeyAccessRegex.test(attr)) {
+        return {
+          type: 'dynamic',
+          value,
+        };
+      }
+      // return value as a default value
+      return {type: 'static', value};
+    }
+  }
+
   /**
    * Generic Recursive input parser
    * Recursively parses nested object to build expression of type ExpClass
-   * @param input Complex options object to parse
+   * @param options Complex options object to parse
    * @param ExpClass Type of expression to build, can be of type Filter, Condition etc.
    *
    */
@@ -76,28 +129,23 @@ export class ExpressionInputParser {
           );
           const base = parsedExpList.shift();
           if (!base) {
-            throw new Error(
-              `Value for operator "${operatorOrAttr}" can not be empty`
-            );
+            return new ExpClass();
           }
           switch (operatorOrAttr) {
             case 'AND': {
               if (!parsedExpList?.length) {
-                throw new Error(
-                  `Value for operator "${operatorOrAttr}" must contain more that 1 attributes.`
-                );
+                return base;
               }
               return base.mergeMany(parsedExpList as T[], MERGE_STRATEGY.AND);
             }
             case 'OR': {
               if (!parsedExpList?.length) {
-                throw new Error(
-                  `Value for operator "${operatorOrAttr}" must contain more that 1 attributes.`
-                );
+                return base;
               }
               return base.mergeMany(parsedExpList as T[], MERGE_STRATEGY.OR);
             }
             case 'NOT': {
+              // not can not contain more than one items
               if (parsedExpList?.length) {
                 throw new Error(
                   `Value for operator "${operatorOrAttr}" can not contain more than 1 attributes.`
@@ -121,6 +169,177 @@ export class ExpressionInputParser {
         }
       }
     );
+  }
+
+  /**
+   * Parses input to update expression
+   * @param body body to parse
+   */
+  private parseToUpdateExpression(
+    body: any,
+    attrValueOverrideMap: Record<string, any>
+  ) {
+    return (
+      Object.entries(body)
+        .map(([attr, value]) => {
+          if (isObject(value) && !isEmptyObject(value)) {
+            const [operator, operatorValue] = Object.entries(
+              value as any
+            )[0] as [
+              (
+                | UpdateType.ArithmeticOperator
+                | UpdateType.SetUpdateOperator
+                | UpdateType.Action
+              ),
+              any
+            ];
+
+            return this.parseValueToUpdateExp(
+              attr,
+              value,
+              operator,
+              operatorValue,
+              attrValueOverrideMap[attr] // get any override value if exists
+            );
+          } else {
+            // fallback to default `SET` action based update
+            return new SetUpdate().setTo(
+              attr,
+              attrValueOverrideMap[attr] || value
+            );
+          }
+        })
+        // merge all expressions with matching action
+        .reduce(
+          (acc, currExp) => {
+            acc
+              .find(instance => instance.constructor === currExp.constructor)!
+              .merge(currExp);
+            return acc;
+          },
+          [
+            new SetUpdate(),
+            new AddUpdate(),
+            new RemoveUpdate(),
+            new DeleteUpdate(),
+          ]
+        )
+        // merge all expressions of different actions
+        .reduce((acc, curr) => {
+          acc.merge(curr);
+          return acc;
+        }, new Update())
+    );
+  }
+
+  /**
+   * Parses single attribute into update expression instance
+   * @param attribute name/path of the attribute
+   * @param attributeValue value to update
+   */
+  private parseValueToUpdateExp(
+    attribute: string,
+    attributeValue: any, // attribute value to set
+    operator:
+      | UpdateType.ArithmeticOperator
+      | UpdateType.SetUpdateOperator
+      | UpdateType.Action,
+    operatorValue: any,
+    staticValueToOverride?: any // value to override for attribute, this is set in cases where there was a custom property transform was requested
+  ): Update {
+    switch (operator) {
+      case 'INCREMENT_BY':
+      case 'DECREMENT_BY': {
+        return new SetUpdate().setTo(attribute, operatorValue, operator);
+      }
+      case 'IF_NOT_EXISTS': {
+        if (isSetOperatorComplexValueType(operatorValue)) {
+          return new SetUpdate().setToIfNotExists(
+            attribute,
+            staticValueToOverride || operatorValue.$VALUE,
+            operatorValue.$PATH
+          );
+        } else {
+          return new SetUpdate().setToIfNotExists(attribute, operatorValue);
+        }
+      }
+      case 'LIST_APPEND': {
+        if (isSetOperatorComplexValueType(operatorValue)) {
+          return new SetUpdate().setOrAppendToList(
+            attribute,
+            operatorValue.$VALUE,
+            operatorValue.$PATH
+          );
+        } else {
+          return new SetUpdate().setOrAppendToList(attribute, operatorValue);
+        }
+      }
+      case 'SET': {
+        /**
+         * aliased set support, this allows access patterns like
+         * {id: { SET: '1'}}
+         * behaves similar to {id: '1'}
+         */
+        // handle explicit set exp
+        if (isObject(operatorValue) && !isEmptyObject(operatorValue)) {
+          const [nestedOperator, nestedOperatorValue] = Object.entries(
+            operatorValue
+          )[0] as [
+            UpdateType.ArithmeticOperator | UpdateType.SetUpdateOperator,
+            any
+          ];
+
+          return this.parseValueToUpdateExp(
+            attribute,
+            nestedOperatorValue,
+            nestedOperator,
+            nestedOperatorValue,
+            staticValueToOverride
+          );
+        } else {
+          // handle attribute with map type
+          return new SetUpdate().setTo(
+            attribute,
+            staticValueToOverride || operatorValue
+          );
+        }
+      }
+      case 'ADD': {
+        if (isEmptyObject(operatorValue)) {
+          throw new Error(
+            `Invalid value ${operatorValue} received for action "ADD", Only numbers and lists are supported.`
+          );
+        }
+        return new AddUpdate().addTo(attribute, operatorValue);
+      }
+      case 'DELETE': {
+        return new DeleteUpdate().delete(attribute, operatorValue);
+      }
+      case 'REMOVE': {
+        if (typeof operatorValue === 'boolean' && !!operatorValue) {
+          return new RemoveUpdate().remove(attribute);
+        } else if (
+          !isEmptyObject(operatorValue) &&
+          Array.isArray(operatorValue.$AT_INDEX)
+        ) {
+          return new RemoveUpdate().remove(attribute, {
+            atIndexes: operatorValue.$AT_INDEX,
+          });
+        } else {
+          throw new Error(
+            `Invalid value ${operatorValue} received for action "REMOVE". Value must be set to boolean
+            In addition, You may use special value type {$AT_INDEX: Array<number>} for attribute of type list..`
+          );
+        }
+      }
+      default: {
+        // handle attribute with map type
+        return new SetUpdate().setTo(
+          attribute,
+          staticValueToOverride || attributeValue
+        );
+      }
+    }
   }
 
   /**

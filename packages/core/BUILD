@@ -11,7 +11,8 @@ setup_ts_build(
         "@npm//ksuid",
         "@npm//fast-glob",
         "@npm//@types/uuid",
-        "@npm//p-limit"
+        "@npm//p-limit",
+        "@npm//class-transformer"
     ],
     visibility = ["//packages:__subpackages__"]
 

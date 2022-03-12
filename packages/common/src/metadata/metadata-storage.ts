@@ -79,8 +79,10 @@ export class MetadataStorage {
     const attributes = this._attributes.get(entityClass)?.values();
 
     if (!attributes) {
-      throw new Error(`No entity with name "${entityClass.name}" could be resolved, 
-      make sure they have been declared at the connection creation time.`);
+      // it is possible that entity might not have any attributes referenced such cases are
+      // when inherited entity contains all the attribute declarations and derived ones only defines schema for it
+      // Thus, instead of throwing an error, simply return [] list to continue processing other attributes
+      return [];
     }
     return Array.from(attributes);
   }

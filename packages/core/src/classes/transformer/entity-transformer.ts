@@ -1,5 +1,6 @@
 import {DynamoEntity, EntityTarget, TRANSFORM_TYPE} from '@typedorm/common';
 import {DocumentClient} from 'aws-sdk/clients/dynamodb';
+import {plainToClassFromExist} from 'class-transformer';
 import {unParseKey} from '../../helpers/unparse-key';
 import {Connection} from '../connection/connection';
 import {BaseTransformer, MetadataOptions} from './base-transformer';
@@ -31,37 +32,65 @@ export class EntityTransformer extends BaseTransformer {
       body: dynamoEntity,
     });
 
-    const entityPrimaryKeys = Object.keys(
+    const vanillaAttributesToInclude = entityMetadata.attributes
+      .filter(attr => !attr.hidden)
+      .map(attr => attr.name);
+
+    const primaryKeyAttributesToInclude = Object.keys(
       entityMetadata.schema.primaryKey.attributes
-    );
+    ).filter(attr => !vanillaAttributesToInclude.includes(attr));
+
     const entityInternalAttributeKeys = entityMetadata.internalAttributes.map(
       attr => attr.name
     );
-
     const entityHiddenAttributeKeys = entityMetadata.attributes
       .filter(attr => attr.hidden)
       .map(attr => attr.name);
 
     const entityMetadataSchemaIndexes = entityMetadata.schema.indexes ?? {};
-    const entityIndexes = Object.keys(entityMetadataSchemaIndexes)
+    const indexAttributesToInclude = Object.keys(entityMetadataSchemaIndexes)
       .map(key => {
         return Object.keys(entityMetadataSchemaIndexes[key].attributes ?? {});
       })
-      .flat();
+      .flat()
+      .filter(attr => !vanillaAttributesToInclude.includes(attr));
 
-    const transformedEntity = Object.keys(dynamoEntity).reduce((acc, key) => {
-      // if any of the below conditions are true, skip adding given attribute from returning response
-      if (
-        entityPrimaryKeys.includes(key) ||
-        entityIndexes.includes(key) ||
-        entityInternalAttributeKeys.includes(key) ||
-        entityHiddenAttributeKeys.includes(key)
-      ) {
+    const plainEntityAttributes = Object.keys(dynamoEntity).reduce(
+      (acc, key) => {
+        // if any of the below conditions are true, skip adding given attribute from returning response
+        if (
+          primaryKeyAttributesToInclude.includes(key) ||
+          indexAttributesToInclude.includes(key) ||
+          entityInternalAttributeKeys.includes(key) ||
+          entityHiddenAttributeKeys.includes(key)
+        ) {
+          return acc;
+        }
+        (acc as any)[key] = (dynamoEntity as any)[key];
         return acc;
-      }
-      (acc as any)[key] = (dynamoEntity as any)[key];
-      return acc;
-    }, {} as Entity);
+      },
+      {} as Object
+    );
+
+    // get reflected constructor to avoid initialization issues with custom constructor
+    const reflectedConstructor = Reflect.construct(Object, [], entityClass);
+
+    // Perform a deep-copy of item returned by Document client to drop all the custom function types
+
+    // Custom types are emitted by the document client in cases where dynamodb item was created outside the js ecosystem.
+    // To correctly deserialize the returned values to the relevant Entity, it needs to be in a plain JSON structure.
+    // i.e DynamoDB itself supports `StringSet` type but since js doesn't have a `StringSet` as a native type,
+    // Therefore, DocumentClient wraps it as a custom `Set` type which must be turned into its JSON form before it can
+    // be correctly deserialized by `class-transformer`.
+
+    const deserializedEntityAttributes = JSON.parse(
+      JSON.stringify(plainEntityAttributes)
+    );
+
+    const transformedEntity = plainToClassFromExist(
+      reflectedConstructor,
+      deserializedEntityAttributes
+    );
 
     this.connection.logger.logTransform({
       requestId: metadataOptions?.requestId,
