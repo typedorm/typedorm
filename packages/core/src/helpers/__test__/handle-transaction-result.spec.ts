@@ -2,6 +2,7 @@ import {TransactionCancelledException} from '@typedorm/common';
 import {Response} from 'aws-sdk';
 import {handleTransactionResult} from '../handle-transaction-result';
 
+// FIXME: correctly handle document client raw operations
 test('handles dynamodb success response', async () => {
   const request = {
     on: jest.fn(),

@@ -417,10 +417,10 @@ test('transforms requests into multiple batch requests when there are more than 
 
   const transformed = dcBatchTransformer.toDynamoReadBatchItems(readBatch);
   expect(transformed.batchRequestItemsList.length).toEqual(2);
-  expect(transformed.batchRequestItemsList[0][table.name].Keys.length).toEqual(
+  expect(transformed.batchRequestItemsList[0][table.name].Keys?.length).toEqual(
     100
   );
-  expect(transformed.batchRequestItemsList[1][table.name].Keys.length).toEqual(
+  expect(transformed.batchRequestItemsList[1][table.name].Keys?.length).toEqual(
     20
   );
 });
@@ -475,14 +475,14 @@ test('transforms batch requests of items with multiple tables', () => {
   const transformed = dcBatchTransformer.toDynamoReadBatchItems(readBatch);
   expect(transformed.batchRequestItemsList).toMatchSnapshot();
   expect(transformed.batchRequestItemsList.length).toEqual(2);
-  expect(transformed.batchRequestItemsList[0][table.name].Keys.length).toEqual(
+  expect(transformed.batchRequestItemsList[0][table.name].Keys?.length).toEqual(
     66
   );
   expect(
-    transformed.batchRequestItemsList[0][oldUserTable.name].Keys.length
+    transformed.batchRequestItemsList[0][oldUserTable.name].Keys?.length
   ).toEqual(34);
   expect(
-    transformed.batchRequestItemsList[1][oldUserTable.name].Keys.length
+    transformed.batchRequestItemsList[1][oldUserTable.name].Keys?.length
   ).toEqual(32);
 });
 

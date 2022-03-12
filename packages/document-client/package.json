@@ -1,13 +1,14 @@
 {
   "name": "@typedorm/document-client",
   "version": "0.0.0-PLACEHOLDER",
-  "description": "TypeDORM - Document Client for DynamoDB",
+  "description": "Light Weight Document Client wrappers for DynamoDB",
   "keywords": [
     "core",
     "typedorm",
     "dynamoDb orm",
     "document-client",
     "document-client-v3",
+    "aws-sdk",
     "aws-sdk-v3",
     "orm"
   ],
@@ -26,7 +27,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/typedorm/typedorm.git",
-    "directory": "packages/testing"
+    "directory": "packages/document-client"
   },
   "author": "typedorm",
   "license": "MIT"

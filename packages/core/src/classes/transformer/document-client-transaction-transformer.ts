@@ -2,7 +2,6 @@ import {
   LazyTransactionWriteItemListLoader,
   isLazyTransactionWriteItemListLoader,
 } from './is-lazy-transaction-write-item-list-loader';
-import DynamoDB, {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {
   isTransactionAddDeleteItem,
   isTransactionAddGetItem,
@@ -27,6 +26,7 @@ import {
   ReadTransactionItem,
 } from '../transaction/read-transaction';
 import {MetadataOptions} from './base-transformer';
+import {DocumentClientTypes} from '@typedorm/document-client';
 
 export class DocumentClientTransactionTransformer extends LowOrderTransformers {
   constructor(connection: Connection) {
@@ -113,7 +113,7 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
         return acc;
       },
       {
-        transactionItemList: [] as DocumentClient.TransactGetItemList,
+        transactionItemList: [] as DocumentClientTypes.TransactGetItemList,
       }
     );
   }
@@ -164,7 +164,7 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
               Update: dropProp(
                 dynamoUpdateItemInput,
                 'ReturnValues'
-              ) as DynamoDB.Update,
+              ) as DocumentClientTypes.Update,
             });
           } else {
             acc.lazyTransactionWriteItemListLoader.push(dynamoUpdateItemInput);
@@ -193,7 +193,7 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
         return acc;
       },
       {
-        transactionItemList: [] as DocumentClient.TransactWriteItemList,
+        transactionItemList: [] as DocumentClientTypes.TransactWriteItemList,
         lazyTransactionWriteItemListLoader: [] as LazyTransactionWriteItemListLoader[],
       }
     );

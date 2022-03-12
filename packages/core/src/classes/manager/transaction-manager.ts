@@ -1,3 +1,4 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {WriteTransaction} from './../transaction/write-transaction';
 import {Connection} from '../connection/connection';
 import {DocumentClientTransactionTransformer} from '../transformer/document-client-transaction-transformer';
@@ -9,7 +10,6 @@ import {
   TRANSACTION_WRITE_ITEMS_LIMIT,
   WriteTransactionItemLimitExceededError,
 } from '@typedorm/common';
-import {DynamoDB} from 'aws-sdk';
 import {handleTransactionResult} from '../../helpers/handle-transaction-result';
 import {ReadTransaction} from '../transaction/read-transaction';
 import {MetadataOptions} from '../transformer/base-transformer';
@@ -123,7 +123,7 @@ export class TransactionManager {
       log: `Running a transaction read ${transactionItemList.length} items..`,
     });
 
-    const transactionInput: DynamoDB.DocumentClient.TransactGetItemsInput = {
+    const transactionInput: DocumentClientTypes.TransactGetItemInput = {
       TransactItems: transactionItemList,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
@@ -147,21 +147,23 @@ export class TransactionManager {
     // Items are always returned in the same as they were requested.
     // An ordered array of up to 25 ItemResponse objects, each of which corresponds to the
     // TransactGetItem object in the same position in the TransactItems array
-    return response.Responses?.map((response, index) => {
-      if (!response.Item) {
-        // If a requested item could not be retrieved, the corresponding ItemResponse object is Null,
-        return null;
-      }
-
-      const originalRequest = transaction.items[index];
-      return this._dcTransactionTransformer.fromDynamoEntity(
-        originalRequest.get.item,
-        response.Item,
-        {
-          requestId,
+    return (response.Responses as DocumentClientTypes.ItemResponseList)?.map(
+      (response, index) => {
+        if (!response.Item) {
+          // If a requested item could not be retrieved, the corresponding ItemResponse object is Null,
+          return null;
         }
-      );
-    });
+
+        const originalRequest = transaction.items[index];
+        return this._dcTransactionTransformer.fromDynamoEntity(
+          originalRequest.get.item,
+          response.Item,
+          {
+            requestId,
+          }
+        );
+      }
+    );
   }
 
   /**
@@ -171,10 +173,10 @@ export class TransactionManager {
    * You would almost never need to use this.
    */
   async writeRaw(
-    transactItems: DynamoDB.DocumentClient.TransactWriteItem[],
+    transactItems: DocumentClientTypes.TransactWriteItem[],
     metadataOptions: MetadataOptions
   ) {
-    const transactionInput: DynamoDB.DocumentClient.TransactWriteItemsInput = {
+    const transactionInput: DocumentClientTypes.TransactWriteItemInput = {
       TransactItems: transactItems,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };

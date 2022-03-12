@@ -8,7 +8,11 @@ import {
   NoSuchEntityExistsError,
 } from '@typedorm/common';
 import {loadPackage} from '@typedorm/common/src/helpers/load-package';
-import {DocumentClientV2, DocumentClientV3} from '@typedorm/document-client';
+import {
+  DocumentClient,
+  DocumentClientV2,
+  DocumentClientV3,
+} from '@typedorm/document-client';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {BatchManager} from '../manager/batch-manager';
 import {EntityManager} from '../manager/entity-manager';
@@ -31,8 +35,7 @@ export class Connection {
   readonly batchManager: BatchManager;
   readonly scanManager: ScanManager;
   readonly defaultConfig: {queryItemsImplicitLimit: number};
-  // TODO: Add support for DocumentClientV3 type
-  readonly documentClient: DocumentClientV2;
+  readonly documentClient: DocumentClient;
   readonly logger: DebugLogger;
 
   private _entityMetadatas: Map<string, EntityMetadata>;
@@ -59,7 +62,7 @@ export class Connection {
 
     this.documentClient = this.loadOrInitiateDocumentClient(
       options.documentClient
-    ) as DocumentClientV2;
+    );
 
     /**
      * This makes sure that we only ever build entity metadatas once per connection

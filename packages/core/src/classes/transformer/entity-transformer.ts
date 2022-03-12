@@ -1,5 +1,5 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {DynamoEntity, EntityTarget, TRANSFORM_TYPE} from '@typedorm/common';
-import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {plainToClassFromExist} from 'class-transformer';
 import {unParseKey} from '../../helpers/unparse-key';
 import {Connection} from '../connection/connection';
@@ -106,7 +106,7 @@ export class EntityTransformer extends BaseTransformer {
 
   fromDynamoKeyToAttributes<Entity>(
     entityClass: EntityTarget<Entity>,
-    dynamoKey: DocumentClient.Key
+    dynamoKey: DocumentClientTypes.Key
   ) {
     const entityMetadata = this.connection.getEntityByTarget(entityClass);
     const primaryKeyAttributes = entityMetadata.schema.primaryKey.attributes;
