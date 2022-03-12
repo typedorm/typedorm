@@ -153,6 +153,7 @@ export class EntityManager {
         returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
       }
     );
+
     const entityClass = getConstructorForInstance(entity);
 
     if (!isWriteTransactionItemList(dynamoPutItemInput)) {
@@ -173,7 +174,7 @@ export class EntityManager {
       // by default dynamodb does not return attributes on create operation, so return one
       const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
-        dynamoPutItemInput.Item,
+        dynamoPutItemInput.Item as DocumentClientTypes.AttributeMap,
         {
           requestId,
         }

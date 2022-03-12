@@ -53,28 +53,28 @@ export class DocumentClientV2<
     return this.documentClient.batchGet(input).promise();
   }
 
-  async transactGet(
-    input: DynamoDB.DocumentClient.TransactGetItemsInput
-  ): Promise<DynamoDB.DocumentClient.TransactGetItemsOutput> {
-    return this.documentClient.transactGet(input).promise();
-  }
-
   transactGetRaw(
     input: DynamoDB.DocumentClient.TransactGetItemsInput
   ): Request<DynamoDB.DocumentClient.TransactGetItemsOutput, AWSError> {
     return this.documentClient.transactGet(input);
   }
 
-  async transactWrite(
-    input: DynamoDB.DocumentClient.TransactWriteItemsInput
-  ): Promise<DynamoDB.DocumentClient.TransactWriteItemsOutput> {
-    return this.documentClient.transactWrite(input).promise();
+  async transactGet(
+    input: DynamoDB.DocumentClient.TransactGetItemsInput
+  ): Promise<DynamoDB.DocumentClient.TransactGetItemsOutput> {
+    return this.transactGetRaw(input).promise();
   }
 
   transactWriteRaw(
     input: DynamoDB.DocumentClient.TransactWriteItemsInput
   ): Request<DynamoDB.DocumentClient.TransactWriteItemsOutput, AWSError> {
     return this.documentClient.transactWrite(input);
+  }
+
+  async transactWrite(
+    input: DynamoDB.DocumentClient.TransactWriteItemsInput
+  ): Promise<DynamoDB.DocumentClient.TransactWriteItemsOutput> {
+    return this.transactWriteRaw(input).promise();
   }
 
   async scan(

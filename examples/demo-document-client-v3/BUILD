@@ -10,6 +10,7 @@ setup_ts_build(
         "//packages/core:library",
         "//packages/document-client:library",        
         "@npm//@aws-sdk/client-dynamodb",
+        "@npm//@aws-sdk/lib-dynamodb",
         "@npm//reflect-metadata",
         "@npm//rollup-plugin-commonjs",        
         "@npm//rollup-plugin-node-resolve",
