@@ -1,4 +1,5 @@
 import {AWSError, DynamoDB, Request} from 'aws-sdk';
+import {TransactionCancelledException} from '../exceptions';
 import {DocumentClient} from './base-document-client';
 export class DocumentClientV2<
   DocumentClientType extends DynamoDB.DocumentClient = DynamoDB.DocumentClient
@@ -53,33 +54,68 @@ export class DocumentClientV2<
     return this.documentClient.batchGet(input).promise();
   }
 
-  transactGetRaw(
-    input: DynamoDB.DocumentClient.TransactGetItemsInput
-  ): Request<DynamoDB.DocumentClient.TransactGetItemsOutput, AWSError> {
-    return this.documentClient.transactGet(input);
-  }
-
   async transactGet(
     input: DynamoDB.DocumentClient.TransactGetItemsInput
   ): Promise<DynamoDB.DocumentClient.TransactGetItemsOutput> {
-    return this.transactGetRaw(input).promise();
-  }
-
-  transactWriteRaw(
-    input: DynamoDB.DocumentClient.TransactWriteItemsInput
-  ): Request<DynamoDB.DocumentClient.TransactWriteItemsOutput, AWSError> {
-    return this.documentClient.transactWrite(input);
+    const transactionResult = this.transactGetRaw(input);
+    return this.handleTransactionResult(transactionResult);
   }
 
   async transactWrite(
     input: DynamoDB.DocumentClient.TransactWriteItemsInput
   ): Promise<DynamoDB.DocumentClient.TransactWriteItemsOutput> {
-    return this.transactWriteRaw(input).promise();
+    const transactionResult = this.transactWriteRaw(input);
+    return this.handleTransactionResult(transactionResult);
   }
 
   async scan(
     input: DynamoDB.DocumentClient.ScanInput
   ): Promise<DynamoDB.DocumentClient.ScanOutput> {
     return this.documentClient.scan(input).promise();
+  }
+
+  ///
+  /// Private Methods
+  ///
+  private transactGetRaw(
+    input: DynamoDB.DocumentClient.TransactGetItemsInput
+  ): Request<DynamoDB.DocumentClient.TransactGetItemsOutput, AWSError> {
+    return this.documentClient.transactGet(input);
+  }
+
+  private transactWriteRaw(
+    input: DynamoDB.DocumentClient.TransactWriteItemsInput
+  ): Request<DynamoDB.DocumentClient.TransactWriteItemsOutput, AWSError> {
+    return this.documentClient.transactWrite(input);
+  }
+
+  private handleTransactionResult<T>(transactionRequest: Request<T, AWSError>) {
+    let cancellationReasons: {Code: string; Message: string}[];
+    transactionRequest.on('extractError', response => {
+      try {
+        cancellationReasons = JSON.parse(response.httpResponse.body.toString())
+          .CancellationReasons;
+      } catch (err) {
+        // suppress this just in case some types of errors aren't JSON parsable
+        console.error('Error extracting cancellation error', err);
+      }
+    });
+
+    return new Promise((resolve, reject) => {
+      transactionRequest.send((err, response) => {
+        if (err) {
+          // pull all reasons from response and map them to errors
+          const reasons = cancellationReasons.map(reason => {
+            return {
+              code: reason.Code,
+              message: reason.Message,
+            };
+          });
+          return reject(new TransactionCancelledException(err.code, reasons));
+        }
+
+        return resolve(response);
+      });
+    }) as Promise<T>;
   }
 }
