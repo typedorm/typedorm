@@ -34,7 +34,6 @@ import {
   TransactWriteCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
-import {DocumentClientTypes} from '../types/document-client-types';
 import {DocumentClient} from './base-document-client';
 
 export class DocumentClientV3<
@@ -90,23 +89,8 @@ export class DocumentClientV3<
     return this.documentClient.send(new BatchWriteCommand(input));
   }
 
-  // TODO: Fix types declared for the responses and keys
   async batchGet(input: BatchGetItemInput): Promise<BatchGetItemOutput> {
     return this.documentClient.send(new BatchGetCommand(input));
-  }
-
-  // FIXME: implement transact raw methods for SDKv3
-  transactGetRaw(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    input: DocumentClientTypes.TransactGetItemInput
-  ): DocumentClientTypes.Request<DocumentClientTypes.TransactGetItemOutput> {
-    throw new Error('Method not implemented.');
-  }
-  transactWriteRaw(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    input: DocumentClientTypes.TransactWriteItemInput
-  ): DocumentClientTypes.Request<DocumentClientTypes.TransactWriteItemOutput> {
-    throw new Error('Method not implemented.');
   }
 
   async transactGet(

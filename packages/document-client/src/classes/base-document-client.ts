@@ -30,17 +30,9 @@ export abstract class DocumentClient {
     input: DocumentClientTypes.BatchGetItemInput
   ): Promise<DocumentClientTypes.BatchGetItemOutput>;
 
-  abstract transactGetRaw(
-    input: DocumentClientTypes.TransactGetItemInput
-  ): DocumentClientTypes.Request<DocumentClientTypes.TransactGetItemOutput>;
-
   abstract transactGet(
     input: DocumentClientTypes.TransactGetItemInput
   ): Promise<DocumentClientTypes.TransactGetItemOutput>;
-
-  abstract transactWriteRaw(
-    input: DocumentClientTypes.TransactWriteItemInput
-  ): DocumentClientTypes.Request<DocumentClientTypes.TransactWriteItemOutput>;
 
   abstract transactWrite(
     input: DocumentClientTypes.TransactWriteItemInput

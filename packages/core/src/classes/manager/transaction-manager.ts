@@ -10,7 +10,6 @@ import {
   TRANSACTION_WRITE_ITEMS_LIMIT,
   WriteTransactionItemLimitExceededError,
 } from '@typedorm/common';
-import {handleTransactionResult} from '../../helpers/handle-transaction-result';
 import {ReadTransaction} from '../transaction/read-transaction';
 import {MetadataOptions} from '../transformer/base-transformer';
 import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
@@ -128,11 +127,9 @@ export class TransactionManager {
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     };
 
-    const transactionResult = this.connection.documentClient.transactGetRaw(
+    const response = await this.connection.documentClient.transactGet(
       transactionInput
     );
-
-    const response = await handleTransactionResult(transactionResult);
 
     // log stats
     if (response?.ConsumedCapacity) {
@@ -187,11 +184,9 @@ export class TransactionManager {
       log: `Running a transaction write request for ${transactItems.length} items.`,
     });
 
-    const transactionRequest = this.connection.documentClient.transactWriteRaw(
+    const response = await this.connection.documentClient.transactWrite(
       transactionInput
     );
-
-    const response = await handleTransactionResult(transactionRequest);
 
     // log stats
     if (response?.ConsumedCapacity) {
