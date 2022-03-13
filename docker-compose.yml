@@ -1,0 +1,20 @@
+version: '3.9'
+
+services:
+  ddb:
+    build:
+      context: .docker
+      dockerfile: dynamodb-local.Dockerfile
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath .
+    ports:
+      - '8000:8000'
+  ddb_init:
+    depends_on:
+      - ddb
+    build:
+      context: .docker
+      dockerfile: init-db.Dockerfile
+    environment:
+      AWS_ACCESS_KEY_ID: LOCAL
+      AWS_SECRET_ACCESS_KEY: LOCAL
+      AWS_DEFAULT_REGION: ap-south-1
