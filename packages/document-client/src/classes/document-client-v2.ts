@@ -90,7 +90,11 @@ export class DocumentClientV2<
   }
 
   private handleTransactionResult<T>(transactionRequest: Request<T, AWSError>) {
-    let cancellationReasons: {Code: string; Message: string}[];
+    let cancellationReasons: {
+      Code: string;
+      Message: string;
+      Item: DynamoDB.DocumentClient.AttributeMap;
+    }[];
     transactionRequest.on('extractError', response => {
       try {
         cancellationReasons = JSON.parse(response.httpResponse.body.toString())
@@ -109,6 +113,7 @@ export class DocumentClientV2<
             return {
               code: reason.Code,
               message: reason.Message,
+              item: reason.Item,
             };
           });
           return reject(new TransactionCancelledException(err.code, reasons));
