@@ -11,14 +11,15 @@ setup_ts_build(
         "@npm//aws-sdk"
     ],
     visibility = ["//examples:__subpackages__"]
-
 )
 
 rollup_bundle(
     name = "bundle",
-    srcs = [],
+    srcs = ["package.json"],
     config_file = "//examples/shared-base:rollup.config.js",
     entry_point = ":index.ts",
     format = "cjs",
-    deps = [":library"],
+    deps = [
+        ":library",
+    ],
 )

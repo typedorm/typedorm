@@ -1,7 +1,7 @@
 import {Table} from '@typedorm/common';
 
 export const myGlobalTable = new Table({
-  name: 'test-table',
+  name: 'example-table',
   partitionKey: 'PK',
   sortKey: 'SK',
 });
