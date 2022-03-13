@@ -48,3 +48,8 @@ export const BATCH_WRITE_MAX_ALLOWED_ATTEMPTS = 10;
  * Max number of allowed attempts for batch write items
  */
 export const BATCH_READ_MAX_ALLOWED_ATTEMPTS = 10;
+
+/**
+ * Default DynamoDB client version to use
+ */
+export const DEFAULT_AWS_DYNAMO_DB_CLIENT_VERSION = 2;

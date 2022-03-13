@@ -14,7 +14,6 @@ import {
   InvalidUniqueAttributeUpdateError,
   InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
-import {DynamoDB} from 'aws-sdk';
 import {dropProp} from '../../helpers/drop-prop';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isEmptyObject} from '../../helpers/is-empty-object';
@@ -29,6 +28,7 @@ import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-it
 import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
 import {isObject} from '../../helpers/is-object';
+import {DocumentClientTypes} from '@typedorm/document-client';
 
 export interface ManagerToDynamoPutItemOptions {
   /**
@@ -108,8 +108,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     options?: ManagerToDynamoPutItemOptions,
     metadataOptions?: MetadataOptions
   ):
-    | DynamoDB.DocumentClient.PutItemInput
-    | DynamoDB.DocumentClient.TransactWriteItemList {
+    | DocumentClientTypes.PutItemInput
+    | DocumentClientTypes.TransactWriteItemList {
     const entityClass = getConstructorForInstance(entity);
     const {table, internalAttributes, name} = this.connection.getEntityByTarget(
       entityClass
@@ -135,7 +135,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const entityInternalAttributes = internalAttributes.reduce((acc, attr) => {
       acc[attr.name] = attr.value;
       return acc;
-    }, {} as DynamoDB.DocumentClient.PutItemInputAttributeMap);
+    }, {} as DocumentClientTypes.AttributeMap);
 
     let dynamoPutItem = {
       Item: {
@@ -144,7 +144,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       },
       TableName: table.name,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-    } as DynamoDB.DocumentClient.PutItemInput;
+    } as DocumentClientTypes.PutItemInput;
 
     // apply attribute not exist condition when creating unique
     const uniqueRecordConditionExpression = this.expressionBuilder.buildUniqueRecordConditionExpression(
@@ -216,7 +216,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // if there are unique attributes, return transaction list item
-    let uniqueAttributePutItems: DynamoDB.DocumentClient.TransactWriteItemList = [];
+    let uniqueAttributePutItems: DocumentClientTypes.TransactWriteItemList = [];
     if (uniqueAttributes.length) {
       uniqueAttributePutItems = uniqueAttributes.map(attr => {
         const attributeValue = (entity as any)[attr.name];
@@ -271,7 +271,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     primaryKey: PrimaryKey,
     options?: ManagerToDynamoGetItemOptions,
     metadataOptions?: MetadataOptions
-  ): DynamoDB.DocumentClient.GetItemInput {
+  ): DocumentClientTypes.GetItemInput {
     const metadata = this.connection.getEntityByTarget(entityClass);
 
     this.connection.logger.logTransform({
@@ -300,7 +300,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         ...parsedPrimaryKey,
       },
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-    } as DynamoDB.DocumentClient.GetItemInput;
+    } as DocumentClientTypes.GetItemInput;
 
     // early return if no options were provided
     if (!options || isEmptyObject(options)) {
@@ -360,9 +360,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     body: UpdateBody<Entity, AdditionalProperties>,
     options: ManagerToDynamoUpdateItemsOptions = {},
     metadataOptions?: MetadataOptions
-  ):
-    | DynamoDB.DocumentClient.UpdateItemInput
-    | LazyTransactionWriteItemListLoader {
+  ): DocumentClientTypes.UpdateItemInput | LazyTransactionWriteItemListLoader {
     // default values
     const {nestedKeySeparator = '.'} = options;
 
@@ -532,8 +530,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
      * 4.0 - Build update Item body with given condition and options
      */
     const itemToUpdate:
-      | DynamoDB.DocumentClient.UpdateItemInput
-      | DynamoDB.DocumentClient.PutItemInput = {
+      | DocumentClientTypes.UpdateItemInput
+      | DocumentClientTypes.PutItemInput = {
       TableName: tableName,
       Key: {
         ...parsedPrimaryKey,
@@ -680,9 +678,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     primaryKey: PrimaryKey,
     options?: ManagerToDynamoDeleteItemsOptions,
     metadataOptions?: MetadataOptions
-  ):
-    | DynamoDB.DocumentClient.DeleteItemInput
-    | LazyTransactionWriteItemListLoader {
+  ): DocumentClientTypes.DeleteItemInput | LazyTransactionWriteItemListLoader {
     const metadata = this.connection.getEntityByTarget(entityClass);
     this.connection.logger.logTransform({
       requestId: metadataOptions?.requestId,
@@ -707,7 +703,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       entityClass
     );
 
-    const mainItemToRemove: DynamoDB.DocumentClient.DeleteItemInput = {
+    const mainItemToRemove: DocumentClientTypes.DeleteItemInput = {
       TableName: tableName,
       Key: {
         ...parsedPrimaryKey,
@@ -779,7 +775,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     partitionKeyAttributes: PartitionKeyAttributes | string,
     queryOptions?: ManagerToDynamoQueryItemsOptions,
     metadataOptions?: MetadataOptions
-  ): DynamoDB.DocumentClient.QueryInput {
+  ): DocumentClientTypes.QueryInput {
     const {table, schema, name} = this.connection.getEntityByTarget(
       entityClass
     );
@@ -901,7 +897,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       Limit: limit,
       ScanIndexForward: !order || order === QUERY_ORDER.ASC,
       ...partitionKeyConditionExpression,
-    } as DynamoDB.DocumentClient.QueryInput;
+    } as DocumentClientTypes.QueryInput;
 
     // if key condition was provided
     if (keyCondition && !isEmptyObject(keyCondition)) {
@@ -1012,11 +1008,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     table: Table,
     entityName: string,
     primaryKeySchema: DynamoEntitySchemaPrimaryKey,
-    newItemBody: DynamoDB.DocumentClient.PutItemInput,
+    newItemBody: DocumentClientTypes.PutItemInput,
     metadataOptions?: MetadataOptions
   ) {
     return (previousItemBody: any) => {
-      const updateTransactionItems: DynamoDB.DocumentClient.TransactWriteItemList = [
+      const updateTransactionItems: DocumentClientTypes.TransactWriteItemList = [
         {
           Put: {
             ...newItemBody,
@@ -1024,7 +1020,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
             Item: {...previousItemBody, ...newItemBody.Item},
           },
         },
-      ] as DynamoDB.DocumentClient.TransactWriteItem[];
+      ] as DocumentClientTypes.TransactWriteItemList;
 
       // if there was a previous existing item, basically remove it as part of this transaction
       if (previousItemBody && !isEmptyObject(previousItemBody)) {
@@ -1071,7 +1067,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         unique: DynamoEntitySchemaPrimaryKey;
       }
     >[],
-    mainItem: DynamoDB.DocumentClient.UpdateItemInput,
+    mainItem: DocumentClientTypes.UpdateItemInput,
     newBody: any,
     metadataOptions?: MetadataOptions
   ) {
@@ -1083,9 +1079,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       );
 
       // map all unique attributes to [put, delete] item tuple
-      const uniqueAttributeInputs: DynamoDB.DocumentClient.TransactWriteItemList = uniqueAttributesToUpdate.flatMap(
+      const uniqueAttributeInputs: DocumentClientTypes.TransactWriteItemList = uniqueAttributesToUpdate.flatMap(
         attr => {
-          const uniqueAttributeWriteItems: DynamoDB.DocumentClient.TransactWriteItemList = [
+          const uniqueAttributeWriteItems: DocumentClientTypes.TransactWriteItemList = [
             {
               Put: {
                 TableName: table.name,
@@ -1125,7 +1121,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       const updateTransactionItems = [
         {Update: mainItem},
         ...uniqueAttributeInputs,
-      ] as DynamoDB.DocumentClient.TransactWriteItem[];
+      ] as DocumentClientTypes.TransactWriteItemList;
       this.connection.logger.logTransform({
         requestId: metadataOptions?.requestId,
         operation: TRANSFORM_TYPE.UPDATE,
@@ -1154,11 +1150,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         unique: DynamoEntitySchemaPrimaryKey;
       }
     >[],
-    mainItem: DynamoDB.DocumentClient.DeleteItemInput,
+    mainItem: DocumentClientTypes.DeleteItemInput,
     metadataOptions?: MetadataOptions
   ) {
     return (existingItemBody: any) => {
-      let uniqueAttributeInputs: DynamoDB.DocumentClient.TransactWriteItemList = [];
+      let uniqueAttributeInputs: DocumentClientTypes.TransactWriteItemList = [];
       if (existingItemBody) {
         uniqueAttributeInputs = uniqueAttributesToRemove.map(attr => {
           return {
@@ -1181,7 +1177,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           Delete: mainItem,
         },
         ...uniqueAttributeInputs,
-      ] as DynamoDB.DocumentClient.TransactWriteItem[];
+      ] as DocumentClientTypes.TransactWriteItemList;
 
       this.connection.logger.logTransform({
         requestId: metadataOptions?.requestId,

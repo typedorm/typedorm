@@ -1,3 +1,4 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {
   EntityTarget,
   INTERNAL_ENTITY_ATTRIBUTE,
@@ -8,7 +9,6 @@ import {
   QUERY_SELECT_TYPE,
   TRANSFORM_SCAN_TYPE,
 } from '@typedorm/common';
-import {DynamoDB} from 'aws-sdk';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
 import {MERGE_STRATEGY} from '../expression/base-expression-input';
@@ -20,7 +20,7 @@ interface ScanTransformerToDynamoScanOptions {
   entity?: EntityTarget<any>;
   scanIndex?: string;
   limit?: number;
-  cursor?: DynamoDB.DocumentClient.Key;
+  cursor?: DocumentClientTypes.Key;
   where?: any;
   select?: any[];
   onlyCount?: boolean;
@@ -39,7 +39,7 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
   toDynamoScanItem(
     scanOptions?: ScanTransformerToDynamoScanOptions,
     metadataOptions?: MetadataOptions
-  ): DynamoDB.DocumentClient.ScanInput {
+  ): DocumentClientTypes.ScanInput {
     this.connection.logger.logTransformScan({
       requestId: metadataOptions?.requestId,
       operation: TRANSFORM_SCAN_TYPE.SCAN,
@@ -65,7 +65,7 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
       }
     }
 
-    let transformedScanInput: DynamoDB.DocumentClient.ScanInput = {
+    let transformedScanInput: DocumentClientTypes.ScanInput = {
       TableName: tableToScan.name,
       IndexName: verifiedIndexToScan,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
@@ -209,15 +209,15 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
    * Transforms DynamoDB scan output into entities
    */
   fromDynamoScanResponseItemList<T>(
-    itemList: DynamoDB.DocumentClient.ItemList,
+    itemList: DocumentClientTypes.ItemList,
     metadataOptions?: MetadataOptions
   ): {
     items: T[];
-    unknownItems: DynamoDB.DocumentClient.AttributeMap[];
+    unknownItems: DocumentClientTypes.AttributeMap[];
   } {
     const initialResponse: {
       items: T[];
-      unknownItems: DynamoDB.DocumentClient.AttributeMap[];
+      unknownItems: DocumentClientTypes.AttributeMap[];
     } = {
       items: [],
       unknownItems: [],

@@ -7,7 +7,12 @@ import {
   getEntityDefinition,
   NoSuchEntityExistsError,
 } from '@typedorm/common';
-import {DynamoDB} from 'aws-sdk';
+import {loadPackage} from '@typedorm/common/src/helpers/load-package';
+import {
+  DocumentClient,
+  DocumentClientV2,
+  DocumentClientV3,
+} from '@typedorm/document-client';
 import {isUsedForPrimaryKey} from '../../helpers/is-used-for-primary-key';
 import {BatchManager} from '../manager/batch-manager';
 import {EntityManager} from '../manager/entity-manager';
@@ -30,7 +35,7 @@ export class Connection {
   readonly batchManager: BatchManager;
   readonly scanManager: ScanManager;
   readonly defaultConfig: {queryItemsImplicitLimit: number};
-  readonly documentClient: DynamoDB.DocumentClient;
+  readonly documentClient: DocumentClient;
   readonly logger: DebugLogger;
 
   private _entityMetadatas: Map<string, EntityMetadata>;
@@ -55,11 +60,10 @@ export class Connection {
         DYNAMO_QUERY_ITEMS_IMPLICIT_LIMIT,
     };
 
-    if (options.documentClient) {
-      this.documentClient = options.documentClient;
-    } else {
-      this.documentClient = new DynamoDB.DocumentClient();
-    }
+    this.documentClient = this.loadOrInitiateDocumentClient(
+      options.documentClient
+    );
+
     /**
      * This makes sure that we only ever build entity metadatas once per connection
      */
@@ -192,5 +196,20 @@ export class Connection {
     return new ConnectionMetadataBuilder(this).buildEntityMetadatas(
       this.options.entities
     );
+  }
+
+  loadOrInitiateDocumentClient(documentClient?: unknown) {
+    if (!documentClient) {
+      const AWSModule = loadPackage('aws-sdk');
+      return new DocumentClientV2(new AWSModule.DynamoDB.DocumentClient());
+    }
+
+    if (documentClient instanceof DocumentClientV2) {
+      return documentClient;
+    } else if (documentClient instanceof DocumentClientV3) {
+      return documentClient;
+    } else {
+      return new DocumentClientV2(documentClient as any);
+    }
   }
 }
