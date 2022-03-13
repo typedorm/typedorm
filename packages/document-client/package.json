@@ -1,7 +1,7 @@
 {
   "name": "@typedorm/document-client",
   "version": "0.0.0-PLACEHOLDER",
-  "description": "Light Weight Document Client wrappers for DynamoDB",
+  "description": "Lightweight Document Client helper for DynamoDB",
   "keywords": [
     "core",
     "typedorm",
@@ -13,9 +13,6 @@
     "orm"
   ],
   "peerDependencies": {
-    "@typedorm/common": "0.0.0-PLACEHOLDER",
-    "@typedorm/core": "0.0.0-PLACEHOLDER",
-    "reflect-metadata": "^0.1.13",
     "aws-sdk": "^2.799.0",
     "@aws-sdk/lib-dynamodb": "^3.53.0",
     "@aws-sdk/client-dynamodb": "^3.53.0"
