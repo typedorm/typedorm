@@ -26,7 +26,7 @@
       "type": "node",
       "request": "launch",
       "name": "Jest Debug Current file",
-      "runtimeExecutable": "${env:HOME}/.nvm/versions/node/v12.14.1/bin/node",
+      "runtimeExecutable": "${env:HOME}/.nvm/versions/node/v16.14.0/bin/node",
       "runtimeArgs": [
         "--inspect-brk",
         "--nolazy",
