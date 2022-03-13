@@ -18,6 +18,7 @@ import {
   ScanOutput,
   TransactGetItemsInput,
   TransactGetItemsOutput,
+  TransactionCanceledException,
   TransactWriteItemsInput,
   TransactWriteItemsOutput,
   UpdateItemInput,
@@ -34,6 +35,7 @@ import {
   TransactWriteCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
+import {TransactionCancelledException} from '../exceptions';
 import {DocumentClient} from './base-document-client';
 
 export class DocumentClientV3<
@@ -102,7 +104,25 @@ export class DocumentClientV3<
   async transactWrite(
     input: TransactWriteItemsInput
   ): Promise<TransactWriteItemsOutput> {
-    return this.documentClient.send(new TransactWriteCommand(input));
+    try {
+      const response = await this.documentClient.send(
+        new TransactWriteCommand(input)
+      );
+      return response;
+    } catch (err) {
+      if (err instanceof TransactionCanceledException) {
+        // Remap TransactionCanceledException to unified TransactionCancelledException
+        throw new TransactionCancelledException(
+          err.Message || err.message,
+          err.CancellationReasons?.map(reason => ({
+            code: reason.Code,
+            message: reason.Message,
+            item: reason.Item,
+          })) || []
+        );
+      }
+      throw err;
+    }
   }
 
   async scan(input: ScanInput): Promise<ScanOutput> {

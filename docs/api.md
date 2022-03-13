@@ -52,6 +52,8 @@ createConnection({
   dynamoQueryItemsImplicitLimit
 
   // Document client to register for current connection
+  // When using AWS SDK V2 - This needs to be a valid DocumentClient instance from AWS SDK V2
+  // When using AWS SDK V3 - This needs to be a valid DocumentClient instance from AWS SDK V3
   // @default new document client will be auto instantiated
   documentClient
 })
