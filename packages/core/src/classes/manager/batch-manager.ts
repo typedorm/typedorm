@@ -1,3 +1,4 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {WriteBatch} from '../batch/write-batch';
 import {Connection} from '../connection/connection';
 import {DocumentClientBatchTransformer} from '../transformer/document-client-batch-transformer';
@@ -10,11 +11,6 @@ import {
   MANAGER_NAME,
   STATS_TYPE,
 } from '@typedorm/common';
-import {
-  BatchGetResponseMap,
-  BatchWriteItemRequestMap,
-  DocumentClient,
-} from 'aws-sdk/clients/dynamodb';
 import {isEmptyObject} from '../../helpers/is-empty-object';
 import {ReadBatch} from '../batch/read-batch';
 import {MetadataOptions} from '../transformer/base-transformer';
@@ -160,12 +156,10 @@ export class BatchManager {
     const batchRequests = batchWriteRequestMapItems.map(batchRequestMap => {
       return this.toLimited(
         async () =>
-          this.connection.documentClient
-            .batchWrite({
-              RequestItems: {...batchRequestMap},
-              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-            })
-            .promise(),
+          this.connection.documentClient.batchWrite({
+            RequestItems: {...batchRequestMap},
+            ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+          }),
         // for batch requests this returning item will be transformed to
         // original input items later
         batchRequestMap,
@@ -178,8 +172,8 @@ export class BatchManager {
       ...lazyTransactionRequests,
       ...batchRequests,
     ] as
-      | Promise<DocumentClient.TransactWriteItemsOutput>[]
-      | Promise<DocumentClient.BatchWriteItemOutput>[];
+      | Promise<DocumentClientTypes.TransactWriteItemOutput>[]
+      | Promise<DocumentClientTypes.BatchWriteItemOutput>[];
 
     // 2. wait for all promises to finish
     const responses = await Promise.all(allRequests);
@@ -213,7 +207,7 @@ export class BatchManager {
     // 4.1. reverse parse all failed inputs to original user inputs
     // filter or drop any empty values
     const transformedUnprocessedItems = unprocessedItems.flatMap(
-      (unprocessedItemInput: DocumentClient.BatchWriteItemRequestMap) =>
+      (unprocessedItemInput: DocumentClientTypes.BatchWriteItemRequestMap) =>
         this._dcBatchTransformer.toWriteBatchInputList(
           unprocessedItemInput,
           metadata
@@ -278,12 +272,10 @@ export class BatchManager {
     const batchRequests = batchRequestItemsList.map(batchRequestItems => {
       return this.toLimited(
         async () =>
-          this.connection.documentClient
-            .batchGet({
-              RequestItems: {...batchRequestItems},
-              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-            })
-            .promise(),
+          this.connection.documentClient.batchGet({
+            RequestItems: {...batchRequestItems},
+            ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+          }),
         batchRequestItems,
         REQUEST_TYPE.BATCH_READ
       );
@@ -344,7 +336,7 @@ export class BatchManager {
 
     // 4.2 transform unprocessed items
     const unprocessedTransformedItems = unprocessedItemsList?.flatMap(
-      (item: DocumentClient.BatchGetRequestMap) =>
+      (item: DocumentClientTypes.BatchGetRequestMap) =>
         this._dcBatchTransformer.toReadBatchInputList(item, metadata)
     );
 
@@ -374,14 +366,14 @@ export class BatchManager {
    * @param batchWriteItemOutputItems
    */
   private async recursiveHandleBatchWriteItemsResponse(
-    batchWriteItemOutputItems: DocumentClient.BatchWriteItemOutput[],
+    batchWriteItemOutputItems: DocumentClientTypes.BatchWriteItemOutputList,
     totalAttemptsSoFar: number,
     options?: BatchManagerWriteOptions,
     metadataOptions?: MetadataOptions
-  ): Promise<DocumentClient.BatchWriteItemRequestMap[]> {
+  ): Promise<DocumentClientTypes.BatchWriteItemRequestMapList> {
     const unProcessedListItems = batchWriteItemOutputItems
       .filter(
-        (response: DocumentClient.BatchWriteItemOutput) =>
+        (response: DocumentClientTypes.BatchWriteItemOutput) =>
           response.UnprocessedItems && !isEmptyObject(response.UnprocessedItems)
       )
       .map(item => item.UnprocessedItems!);
@@ -426,7 +418,7 @@ export class BatchManager {
         );
         return acc;
       },
-      {} as BatchWriteItemRequestMap
+      {} as DocumentClientTypes.BatchWriteItemRequestMap
     );
 
     const batchRequestsItems = this._dcBatchTransformer.mapTableWriteItemsToBatchWriteItems(
@@ -437,13 +429,11 @@ export class BatchManager {
     const batchRequests = batchRequestsItems.map(batchRequestMap => {
       return this.toLimited(
         async () =>
-          this.connection.documentClient
-            .batchWrite({
-              RequestItems: {...batchRequestMap},
-              ReturnItemCollectionMetrics:
-                metadataOptions?.returnConsumedCapacity,
-            })
-            .promise(),
+          this.connection.documentClient.batchWrite({
+            RequestItems: {...batchRequestMap},
+            ReturnItemCollectionMetrics:
+              metadataOptions?.returnConsumedCapacity,
+          }),
         batchRequestMap,
         REQUEST_TYPE.BATCH_WRITE
       );
@@ -451,7 +441,7 @@ export class BatchManager {
 
     const batchRequestsResponses = (await Promise.all(
       batchRequests
-    )) as DocumentClient.BatchWriteItemOutput[];
+    )) as DocumentClientTypes.BatchWriteItemOutputList;
 
     // log stats
     batchRequestsResponses.forEach((response, index) => {
@@ -475,23 +465,24 @@ export class BatchManager {
   }
 
   private async recursiveHandleBatchReadItemsResponse(
-    batchReadItemOutputList: DocumentClient.BatchGetItemOutput[],
+    batchReadItemOutputList: DocumentClientTypes.BatchGetItemOutputList,
     totalAttemptsSoFar: number,
     options?: BatchManagerReadOptions,
-    responsesStore: DocumentClient.ItemList = [],
+    responsesStore: DocumentClientTypes.ItemList = [],
     metadataOptions?: MetadataOptions
   ): Promise<{
-    items: DocumentClient.ItemList;
-    unprocessedItemsList?: DocumentClient.BatchGetRequestMap[];
+    items: DocumentClientTypes.ItemList;
+    unprocessedItemsList?: DocumentClientTypes.BatchGetRequestMapList;
   }> {
     // save all responses from api to responses store
     const batchReadResponses = batchReadItemOutputList
       .filter(
-        (response: DocumentClient.BatchGetItemOutput) =>
+        (response: DocumentClientTypes.BatchGetItemOutput) =>
           response.Responses && !isEmptyObject(response.Responses)
       )
       .map(
-        (response: DocumentClient.BatchGetItemOutput) => response.Responses!
+        (response: DocumentClientTypes.BatchGetItemOutput) =>
+          response.Responses!
       );
     if (batchReadResponses.length) {
       const mappedResponsesItemList = batchReadResponses.flatMap(
@@ -502,7 +493,7 @@ export class BatchManager {
 
     // recursively process all unprocessed items
     const unprocessedItemsList = batchReadItemOutputList.filter(
-      (response: DocumentClient.BatchGetItemOutput) =>
+      (response: DocumentClientTypes.BatchGetItemOutput) =>
         response.UnprocessedKeys && !isEmptyObject(response.UnprocessedKeys)
     );
 
@@ -542,7 +533,7 @@ export class BatchManager {
 
     // aggregate all requests by table name
     const sortedUnprocessedItems = unprocessedItemsList.reduce(
-      (acc, {UnprocessedKeys}: DocumentClient.BatchGetItemOutput) => {
+      (acc, {UnprocessedKeys}: DocumentClientTypes.BatchGetItemOutput) => {
         Object.entries(UnprocessedKeys!).forEach(
           ([tableName, unprocessedRequests]) => {
             if (!acc[tableName]) {
@@ -550,12 +541,13 @@ export class BatchManager {
                 Keys: [],
               };
             }
-            acc[tableName].Keys.push(...unprocessedRequests.Keys);
+
+            acc[tableName].Keys?.push(...unprocessedRequests.Keys);
           }
         );
         return acc;
       },
-      {} as DocumentClient.BatchGetRequestMap
+      {} as DocumentClientTypes.BatchGetRequestMap
     );
 
     const batchRequestsItemsList = this._dcBatchTransformer.mapTableReadItemsToBatchReadItems(
@@ -566,12 +558,10 @@ export class BatchManager {
     const batchRequests = batchRequestsItemsList.map(batchRequestMap => {
       return this.toLimited(
         async () =>
-          this.connection.documentClient
-            .batchGet({
-              RequestItems: {...batchRequestMap},
-              ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-            })
-            .promise(),
+          this.connection.documentClient.batchGet({
+            RequestItems: {...batchRequestMap},
+            ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+          }),
         batchRequestMap,
         REQUEST_TYPE.BATCH_READ
       );
@@ -579,7 +569,7 @@ export class BatchManager {
 
     const batchRequestsResponses = (await Promise.all(
       batchRequests
-    )) as DocumentClient.BatchGetItemOutput[];
+    )) as DocumentClientTypes.BatchGetItemOutputList;
 
     // log stats
     batchRequestsResponses.forEach((response, index) => {
@@ -608,7 +598,9 @@ export class BatchManager {
     this._errorQueue = [];
   }
 
-  private mapBatchGetResponseToItemList(batchGetResponse: BatchGetResponseMap) {
+  private mapBatchGetResponseToItemList(
+    batchGetResponse: DocumentClientTypes.BatchGetResponseMap
+  ) {
     return Object.entries(batchGetResponse).flatMap(
       ([, batchResponse]) => batchResponse
     );
@@ -632,7 +624,7 @@ export class BatchManager {
       } catch (err) {
         this._errorQueue.push({
           requestInput: requestItem,
-          error: err,
+          error: err as any,
           requestType,
         });
         // when any error is thrown while promises are running, return it

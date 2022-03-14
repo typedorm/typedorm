@@ -1,3 +1,4 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {
   EntityTarget,
   INTERNAL_ENTITY_ATTRIBUTE,
@@ -6,7 +7,6 @@ import {
   PARALLEL_SCAN_CONCURRENCY_LIMIT,
   STATS_TYPE,
 } from '@typedorm/common';
-import {DynamoDB} from 'aws-sdk';
 import pLimit from 'p-limit';
 import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 import {Connection} from '../connection/connection';
@@ -32,7 +32,7 @@ interface ScanManageBaseOptions<Entity, PartitionKey> {
    * Cursor to traverse from
    * @default none
    */
-  cursor?: DynamoDB.DocumentClient.Key;
+  cursor?: DocumentClientTypes.Key;
 
   /**
    * Specify filter to apply
@@ -203,10 +203,10 @@ export class ScanManager {
 
     let response: {
       items?: Entity[];
-      unknownItems?: DynamoDB.DocumentClient.AttributeMap[];
+      unknownItems?: DocumentClientTypes.AttributeMap[];
       cursor?:
-        | DynamoDB.DocumentClient.Key
-        | Record<number, DynamoDB.DocumentClient.Key>;
+        | DocumentClientTypes.Key
+        | Record<number, DocumentClientTypes.Key>;
     };
 
     if (findOptions?.totalSegments) {
@@ -286,8 +286,8 @@ export class ScanManager {
     metadataOptions?: MetadataOptions
   ): Promise<{
     items: Entity[] | undefined;
-    unknownItems: DynamoDB.DocumentClient.AttributeMap[] | undefined;
-    cursor: Record<number, DynamoDB.DocumentClient.Key | undefined>;
+    unknownItems: DocumentClientTypes.AttributeMap[] | undefined;
+    cursor: Record<number, DocumentClientTypes.Key | undefined>;
   }> {
     // start with 0
     this.itemsFetchedSoFarTotalParallelCount = 0;
@@ -352,8 +352,8 @@ export class ScanManager {
       (
         acc: {
           items: Entity[];
-          unknownItems: DynamoDB.DocumentClient.AttributeMap[];
-          cursor: Record<number, DynamoDB.DocumentClient.Key>;
+          unknownItems: DocumentClientTypes.AttributeMap[];
+          cursor: Record<number, DocumentClientTypes.Key>;
         },
         current,
         index
@@ -385,8 +385,8 @@ export class ScanManager {
       },
       {} as {
         items: Entity[];
-        unknownItems: DynamoDB.DocumentClient.AttributeMap[];
-        cursor: Record<number, DynamoDB.DocumentClient.Key>;
+        unknownItems: DocumentClientTypes.AttributeMap[];
+        cursor: Record<number, DocumentClientTypes.Key>;
       }
     );
 
@@ -405,8 +405,8 @@ export class ScanManager {
     metadataOptions?: MetadataOptions
   ): Promise<{
     items: Entity[] | undefined;
-    unknownItems: DynamoDB.DocumentClient.AttributeMap[] | undefined;
-    cursor: DynamoDB.DocumentClient.Key | undefined;
+    unknownItems: DocumentClientTypes.AttributeMap[] | undefined;
+    cursor: DocumentClientTypes.Key | undefined;
   }> {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
@@ -468,14 +468,14 @@ export class ScanManager {
     itemsFetched = [],
     metadataOptions,
   }: {
-    scanInput: DynamoDB.DocumentClient.ScanInput;
+    scanInput: DocumentClientTypes.ScanInput;
     limit?: number;
-    cursor?: DynamoDB.DocumentClient.Key;
-    itemsFetched?: DynamoDB.DocumentClient.ItemList;
+    cursor?: DocumentClientTypes.Key;
+    itemsFetched?: DocumentClientTypes.ItemList;
     metadataOptions?: MetadataOptions;
   }): Promise<{
-    items: DynamoDB.DocumentClient.ItemList;
-    cursor?: DynamoDB.DocumentClient.Key;
+    items: DocumentClientTypes.ItemList;
+    cursor?: DocumentClientTypes.Key;
   }> {
     // return if the count is already met
     if (limit && this.itemsFetchedSoFarTotalParallelCount >= limit) {
@@ -489,10 +489,10 @@ export class ScanManager {
       LastEvaluatedKey,
       Items = [],
       ConsumedCapacity,
-    } = await this.connection.documentClient
-      .scan({...scanInput, ExclusiveStartKey: cursor})
-      .promise();
-
+    } = await this.connection.documentClient.scan({
+      ...scanInput,
+      ExclusiveStartKey: cursor,
+    });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({
@@ -540,8 +540,8 @@ export class ScanManager {
     currentCount = 0,
     metadataOptions,
   }: {
-    scanInput: DynamoDB.DocumentClient.ScanInput;
-    cursor?: DynamoDB.DocumentClient.Key;
+    scanInput: DocumentClientTypes.ScanInput;
+    cursor?: DocumentClientTypes.Key;
     currentCount?: number;
     metadataOptions?: MetadataOptions;
   }): Promise<number> {
@@ -549,10 +549,10 @@ export class ScanManager {
       Count,
       LastEvaluatedKey,
       ConsumedCapacity,
-    } = await this.connection.documentClient
-      .scan({...scanInput, ExclusiveStartKey: cursor})
-      .promise();
-
+    } = await this.connection.documentClient.scan({
+      ...scanInput,
+      ExclusiveStartKey: cursor,
+    });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({

@@ -1,16 +1,17 @@
 {
   "cSpell.words": [
     "Backoff",
-    "KSUID",
-    "Metadatas",
     "bazel",
     "commitlint",
     "dynamodb",
+    "KSUID",
+    "Metadatas",
     "posttest",
     "prettierrc",
     "subpackages",
     "typedorm",
-    "typeorm"
+    "typeorm",
+    "unmarshall"
   ],
   "editor.formatOnSave": true,
   "typescript.tsdk": "node_modules/typescript/lib"

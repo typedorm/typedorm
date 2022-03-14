@@ -32,7 +32,8 @@
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
-      "@typedorm/*": ["packages/*"]
+      "@typedorm/*": ["packages/*"],
+      "@typedorm-example/*": ["examples/*"]
     }
   },
   "exclude": ["dist", "node_modules"]

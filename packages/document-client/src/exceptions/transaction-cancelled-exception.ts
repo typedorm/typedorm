@@ -1,7 +1,12 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 export class TransactionCancelledException extends Error {
   name = 'TransactionCancelledException';
   code: string;
-  cancellationReasons: {code: string; message: string}[];
+  cancellationReasons: {
+    code?: string;
+    message?: string;
+    item?: DocumentClientTypes.AttributeMap;
+  }[];
 
   constructor(
     code: string,

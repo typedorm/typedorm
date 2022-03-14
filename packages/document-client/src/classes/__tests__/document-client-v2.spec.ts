@@ -1,6 +1,20 @@
-import {TransactionCancelledException} from '@typedorm/common';
-import {Response} from 'aws-sdk';
-import {handleTransactionResult} from '../handle-transaction-result';
+import {TransactionCancelledException} from './../../exceptions/transaction-cancelled-exception';
+import {DynamoDB, Response} from 'aws-sdk';
+import {DocumentClientV2} from '../document-client-v2';
+
+let dc: DocumentClientV2;
+
+const awsDcMock = {
+  put: jest.fn(),
+};
+
+beforeEach(() => {
+  dc = new DocumentClientV2((awsDcMock as unknown) as DynamoDB.DocumentClient);
+});
+
+test('registers a valid documentClient instance', async () => {
+  expect(dc.version).toEqual(2);
+});
 
 test('handles dynamodb success response', async () => {
   const request = {
@@ -12,7 +26,7 @@ test('handles dynamodb success response', async () => {
       });
     }),
   } as any;
-  const parsedResponse = await handleTransactionResult(request);
+  const parsedResponse = await (dc as any).handleTransactionResult(request);
   expect(parsedResponse).toEqual({
     ConsumedCapacity: [{}],
     ItemCollectionMetrics: [{}],
@@ -45,7 +59,7 @@ test('correctly aggregates cancellation reasons', async () => {
   } as any;
 
   try {
-    await handleTransactionResult(request);
+    await (dc as any).handleTransactionResult(request);
   } catch (err) {
     expect(err).toBeInstanceOf(TransactionCancelledException);
     expect((err as TransactionCancelledException).cancellationReasons).toEqual([

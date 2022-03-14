@@ -1,9 +1,9 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {
   WriteTransactionCreate,
   WriteTransactionDelete,
   WriteTransactionUpdate,
 } from './write-transaction';
-import {DynamoDB} from 'aws-sdk';
 import {ReadTransactionGet} from './read-transaction';
 
 export function isTransactionAddCreateItem<Entity>(
@@ -37,12 +37,11 @@ export function isTransactionAddDeleteItem<Entity, PrimaryKey>(
 
 export const isWriteTransactionItemList = (
   item: any
-): item is DynamoDB.DocumentClient.TransactWriteItemList =>
-  !!(item as DynamoDB.DocumentClient.TransactWriteItemList).length &&
+): item is DocumentClientTypes.TransactWriteItemList =>
+  !!(item as DocumentClientTypes.TransactWriteItemList).length &&
   !!(
-    (item as DynamoDB.DocumentClient.TransactWriteItemList)[0]
-      ?.ConditionCheck ||
-    (item as DynamoDB.DocumentClient.TransactWriteItemList)[0]?.Delete ||
-    (item as DynamoDB.DocumentClient.TransactWriteItemList)[0]?.Put ||
-    (item as DynamoDB.DocumentClient.TransactWriteItemList)[0]?.Update
+    (item as DocumentClientTypes.TransactWriteItemList)[0]?.ConditionCheck ||
+    (item as DocumentClientTypes.TransactWriteItemList)[0]?.Delete ||
+    (item as DocumentClientTypes.TransactWriteItemList)[0]?.Put ||
+    (item as DocumentClientTypes.TransactWriteItemList)[0]?.Update
   );
