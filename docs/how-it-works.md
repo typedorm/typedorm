@@ -223,7 +223,8 @@ Querying in dynamo db can be cumbersome, but it doesn't have to be that way. Typ
 
 ```Typescript
 entityManager.find(Order,
-  {userId: 'user-1', queryIndex: 'GSI1'}, {
+  {userId: 'user-1'}, {
+  queryIndex: 'GSI1',
   keyCondition: {
     BEGINS_WITH: 'ORDER#cancelled',
   },
