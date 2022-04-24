@@ -21,6 +21,9 @@ export * from './src/classes/manager/transaction-manager';
 // classes
 export {Connection} from './src/classes/connection/connection';
 
+// helpers
+export * from './src/helpers/auto-generate-attribute-value';
+
 // public method exports
 
 export function createConnection(options: ConnectionOptions) {

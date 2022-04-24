@@ -29,6 +29,7 @@ import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
 import {isObject} from '../../helpers/is-object';
 import {DocumentClientTypes} from '@typedorm/document-client';
+import {autoGenerateValue} from '../../helpers/auto-generate-attribute-value';
 
 export interface ManagerToDynamoPutItemOptions {
   /**
@@ -404,7 +405,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     // check if auto update attributes are not referenced by primary key
     const formattedAutoUpdateAttributes = autoUpdateAttributes.reduce(
       (acc, attr) => {
-        acc[attr.name] = attr.autoGenerateValue(attr.strategy);
+        acc[attr.name] = autoGenerateValue(attr.strategy);
         return acc;
       },
       {} as {[key: string]: any}

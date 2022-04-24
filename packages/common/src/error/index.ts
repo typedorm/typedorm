@@ -19,3 +19,4 @@ export * from './duplicate-entity-physical-name-error';
 export * from './invalid-unique-attribute-update-error';
 export * from './invalid-parallel-scan-limit-option-error';
 export * from './invalid-dynamic-update-attribute-value';
+export * from './unknown-attribute-value-generation-strategy-error';
