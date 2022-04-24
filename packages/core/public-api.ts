@@ -22,7 +22,7 @@ export * from './src/classes/manager/transaction-manager';
 export {Connection} from './src/classes/connection/connection';
 
 // helpers
-export * from './src/helpers/auto-generate-attribute-value';
+export {AutoGenerateAttributeValue} from './src/helpers/auto-generate-attribute-value';
 
 // public method exports
 
