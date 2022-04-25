@@ -5,7 +5,8 @@ This page will walk you through some of the unique recipes to enhance your devel
 - [How to recipes](#how-to-recipes)
   - [Entity configuration](#entity-configuration)
     - [Define a simple entity](#define-a-simple-entity)
-    - [Define an entity with index](#define-an-entity-with-index)
+    - [Define an entity with attribute aliases in primary key](#define-an-entity-with-attribute-aliases-in-primary-key)
+    - [Define an entity with attribute aliases in index](#define-an-entity-with-attribute-aliases-in-index)
   - [Attribute Transformation](#attribute-transformation)
     - [Using TransformToDynamo](#using-transformtodynamo)
     - [Using TransformFromDynamo](#using-transformfromdynamo)
@@ -58,7 +59,30 @@ class User {
 }
 ```
 
-### Define an entity with index
+### Define an entity with attribute aliases in primary key
+
+```Typescript
+@Entity<User>(
+  name: 'user', // name of the entity that will be added to each item as an attribute
+  // primary key
+  primaryKey: {
+    partitionKey: 'USER#{{id}}',
+    sortKey: {
+      alias: 'age' // <- this tells TypeDORM to auto infer "type" and "value" for partition key from age attribute.
+    },
+  }
+)
+class User {
+  @Attribute()
+  id: string  // <- this attribute is required as it is referenced by primary key
+
+  @Attribute()
+  age: number
+
+}
+```
+
+### Define an entity with attribute aliases in index
 
 ```Typescript
 @Entity<User>(
