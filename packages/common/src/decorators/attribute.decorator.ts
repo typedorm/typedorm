@@ -7,7 +7,9 @@ import {
 } from '../metadata/metadata-storage';
 import {MissingReflectMetadataError} from '../error';
 
-export type AttributeOptionsUniqueType = boolean | PrimaryKey;
+export type AttributeOptionsUniqueType<Entity = any> =
+  | boolean
+  | PrimaryKey<Entity>;
 
 export interface AttributeOptions<Entity> {
   /**
@@ -16,7 +18,7 @@ export interface AttributeOptions<Entity> {
    * @default false
    *
    */
-  unique?: AttributeOptionsUniqueType;
+  unique?: AttributeOptionsUniqueType<Entity>;
   /**
    * Mark property as enum
    * @required when property of type enum is referenced in key
