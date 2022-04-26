@@ -2,20 +2,23 @@ import {AUTO_GENERATE_ATTRIBUTE_STRATEGY, EntityTarget} from '@typedorm/common';
 import {Table} from '../table';
 import {AttributeOptionsUniqueType} from '../decorators/attribute.decorator';
 import {ScalarType} from '../helpers/scalar-type';
-import {IndexOptionsWithAlias} from '../index-options';
+import {EntityAliasOrString, IndexOptionsWithAlias} from '../index-options';
 
 export const IsAutoGenerateAttributeRawMetadataOptions = (
   attr: any
 ): attr is AutoGenerateAttributeRawMetadataOptions => !!attr.strategy;
 
-export type PrimaryKey = SimplePrimaryKey | CompositePrimaryKey;
-export type SimplePrimaryKey = {
-  partitionKey: string;
+export type PrimaryKey<Entity = any> =
+  | SimplePrimaryKey<Entity>
+  | CompositePrimaryKey<Entity>;
+
+export type SimplePrimaryKey<Entity = any> = {
+  partitionKey: EntityAliasOrString<Entity>;
 };
 
-export type CompositePrimaryKey = {
-  partitionKey: string;
-  sortKey: string;
+export type CompositePrimaryKey<Entity = any> = {
+  partitionKey: EntityAliasOrString<Entity>;
+  sortKey: EntityAliasOrString<Entity>;
 };
 
 export type Indexes<Entity = any> = {
@@ -25,7 +28,7 @@ export type Indexes<Entity = any> = {
 export interface EntityRawMetadataOptions<Entity = any> {
   name: string;
   target: EntityTarget<Entity>;
-  primaryKey: PrimaryKey;
+  primaryKey: PrimaryKey<Entity>;
   indexes?: Indexes<Entity>;
   table?: Table;
 }

@@ -1,4 +1,9 @@
-import {Table, PrimaryKey, IsCompositePrimaryKey} from '@typedorm/common';
+import {
+  Table,
+  PrimaryKey,
+  IsCompositePrimaryKey,
+  EntityAliasOrString,
+} from '@typedorm/common';
 import {getInterpolatedKeys} from './get-interpolated-keys';
 import {validateKey} from './validate-key';
 
@@ -11,7 +16,7 @@ export function buildPrimaryKeySchema({
   primaryKey: PrimaryKey;
   attributes: {[key: string]: string};
 }): {
-  attributes: {[key: string]: string};
+  attributes: {[key: string]: EntityAliasOrString<any>};
   metadata: {
     _interpolations: {[key: string]: any};
   };
