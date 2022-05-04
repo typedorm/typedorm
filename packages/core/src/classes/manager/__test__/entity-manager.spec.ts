@@ -230,15 +230,22 @@ test('finds one entity by given primary key', async () => {
     }),
   });
 
-  const userEntity = await manager.findOne<User, UserPrimaryKey>(User, {
-    id: '1',
-  });
+  const userEntity = await manager.findOne<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      consistentRead: true,
+    }
+  );
   expect(dcMock.get).toHaveBeenCalledTimes(1);
   expect(dcMock.get).toHaveBeenCalledWith({
     Key: {
       PK: 'USER#1',
       SK: 'USER#1',
     },
+    ConsistentRead: true,
     TableName: 'test-table',
   });
   expect(userEntity).toEqual({
@@ -304,6 +311,7 @@ test('checks if given item exists', async () => {
       id: '1',
     },
     {
+      consistentRead: true,
       returnConsumedCapacity: CONSUMED_CAPACITY_TYPE.INDEXES,
     }
   );
@@ -314,6 +322,7 @@ test('checks if given item exists', async () => {
       SK: 'USER#1',
     },
     TableName: 'test-table',
+    ConsistentRead: true,
     ReturnConsumedCapacity: 'INDEXES',
   });
   expect(userEntity).toEqual(true);
@@ -1060,7 +1069,6 @@ test('finds items matching given query params', async () => {
     KeyConditionExpression:
       '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
-    ScanIndexForward: true,
     TableName: 'test-table',
   });
   expect(users).toEqual({
@@ -1110,6 +1118,7 @@ test('finds items matching given query params and options', async () => {
       keyCondition: {
         BEGINS_WITH: 'USER#',
       },
+      consistentRead: true,
       where: {
         AND: {
           age: {
@@ -1141,12 +1150,12 @@ test('finds items matching given query params and options', async () => {
       ':FE_age_start': 1,
       ':FE_name': 'Me',
     },
+    ConsistentRead: true,
     KeyConditionExpression:
       '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     FilterExpression:
       '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
     Limit: 10,
-    ScanIndexForward: true,
     TableName: 'test-table',
   });
   expect(users).toEqual({
@@ -1199,7 +1208,6 @@ test('finds items with alternate syntax', async () => {
     KeyConditionExpression:
       '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
-    ScanIndexForward: true,
     TableName: 'test-table',
   });
   expect(users).toEqual({
@@ -1272,7 +1280,6 @@ test('finds item from given cursor position', async () => {
     KeyConditionExpression:
       '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Limit: 10,
-    ScanIndexForward: true,
     TableName: 'test-table',
   });
 });
@@ -1333,7 +1340,6 @@ test('queries items until limit is met', async () => {
         KeyConditionExpression:
           '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
         Limit: 2000,
-        ScanIndexForward: true,
         TableName: 'test-table',
       },
     ],
@@ -1351,7 +1357,6 @@ test('queries items until limit is met', async () => {
         KeyConditionExpression:
           '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
         Limit: 2000,
-        ScanIndexForward: true,
         TableName: 'test-table',
       },
     ],
@@ -1378,6 +1383,7 @@ test('counts items matching given query params', async () => {
       keyCondition: {
         BEGINS_WITH: 'USER#',
       },
+      consistentRead: true,
     }
   );
 
@@ -1394,7 +1400,7 @@ test('counts items matching given query params', async () => {
     KeyConditionExpression:
       '(#KY_CE_PK = :KY_CE_PK) AND (begins_with(#KY_CE_SK, :KY_CE_SK))',
     Select: 'COUNT',
-    ScanIndexForward: true,
+    ConsistentRead: true,
     TableName: 'test-table',
   });
   expect(usersCount).toEqual(132);
@@ -1466,7 +1472,6 @@ test('counts items with multiple requests', async () => {
         FilterExpression:
           '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
         Select: 'COUNT',
-        ScanIndexForward: true,
         TableName: 'test-table',
       },
     ],
@@ -1492,7 +1497,6 @@ test('counts items with multiple requests', async () => {
         FilterExpression:
           '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
         Select: 'COUNT',
-        ScanIndexForward: true,
         TableName: 'test-table',
       },
     ],
@@ -1518,7 +1522,6 @@ test('counts items with multiple requests', async () => {
         FilterExpression:
           '(#FE_age BETWEEN :FE_age_start AND :FE_age_end) AND (#FE_name = :FE_name) AND (attribute_exists(#FE_status))',
         Select: 'COUNT',
-        ScanIndexForward: true,
         TableName: 'test-table',
       },
     ],
