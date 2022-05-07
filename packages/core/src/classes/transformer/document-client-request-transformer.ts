@@ -82,10 +82,13 @@ export interface ManagerToDynamoQueryItemsOptions {
   select?: any[];
 
   onlyCount?: boolean;
+
+  consistentRead?: boolean;
 }
 
 export interface ManagerToDynamoGetItemOptions {
   select?: any[];
+  consistentRead?: boolean;
 }
 
 export class DocumentClientRequestTransformer extends BaseTransformer {
@@ -300,23 +303,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       Key: {
         ...parsedPrimaryKey,
       },
+      ConsistentRead: options?.consistentRead,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     } as DocumentClientTypes.GetItemInput;
 
-    // early return if no options were provided
-    if (!options || isEmptyObject(options)) {
-      this.connection.logger.logTransform({
-        requestId: metadataOptions?.requestId,
-        operation: TRANSFORM_TYPE.GET,
-        prefix: 'After',
-        entityName: metadata.name,
-        primaryKey: null,
-        body: transformBody,
-      });
-      return transformBody;
-    }
-
-    if (options.select?.length) {
+    // if restricted item projection was requested
+    if (options?.select?.length) {
       const projection = this.expressionInputParser.parseToProjection(
         options.select
       );
@@ -846,27 +838,6 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       partitionKeyCondition
     );
 
-    // if no query options are present, resolve key condition expression
-    if (!queryOptions || isEmptyObject(queryOptions)) {
-      const transformedQueryItem = {
-        TableName: table.name,
-        IndexName: queryIndexName,
-        ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-        ...partitionKeyConditionExpression,
-      };
-
-      this.connection.logger.logTransform({
-        requestId: metadataOptions?.requestId,
-        operation: TRANSFORM_TYPE.QUERY,
-        prefix: 'After',
-        entityName: name,
-        primaryKey: partitionKeyAttributes,
-        body: transformedQueryItem,
-      });
-
-      return transformedQueryItem;
-    }
-
     const parsedSortKey = {} as {name: string};
     // if no we are not querying against index, validate if table is using composite key
     if (!indexToQuery) {
@@ -882,115 +853,126 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // at this point we have resolved partition key and table to query
-    const {
-      keyCondition,
-      limit,
-      orderBy: order,
-      where,
-      select,
-      onlyCount,
-    } = queryOptions;
-
     let queryInputParams = {
       TableName: table.name,
       IndexName: queryIndexName,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-      Limit: limit,
-      ScanIndexForward: !order || order === QUERY_ORDER.ASC,
       ...partitionKeyConditionExpression,
     } as DocumentClientTypes.QueryInput;
 
-    // if key condition was provided
-    if (keyCondition && !isEmptyObject(keyCondition)) {
-      // build sort key condition
-      const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
-        parsedSortKey.name,
-        keyCondition
-      );
-
-      // if condition resolution was successful, we can merge both partition and sort key conditions now
+    if (queryOptions && !isEmptyObject(queryOptions)) {
       const {
-        KeyConditionExpression,
-        ExpressionAttributeNames,
-        ExpressionAttributeValues,
-      } = this.expressionBuilder.buildKeyConditionExpression(
-        partitionKeyCondition.merge(sortKeyCondition)
-      );
+        orderBy: order,
+        limit,
+        keyCondition,
+        where,
+        select,
+        onlyCount,
+        consistentRead,
+      } = queryOptions;
 
       queryInputParams = {
         ...queryInputParams,
-        KeyConditionExpression,
-        ExpressionAttributeNames: {
-          ...queryInputParams.ExpressionAttributeNames,
-          ...ExpressionAttributeNames,
-        },
-        ExpressionAttributeValues: {
-          ...queryInputParams.ExpressionAttributeValues,
-          ...ExpressionAttributeValues,
-        },
+        Limit: limit,
+        ConsistentRead: consistentRead,
       };
-    }
 
-    // when filter conditions are given generate filter expression
-    if (where && !isEmptyObject(where)) {
-      const filter = this.expressionInputParser.parseToFilter(where);
-
-      if (!filter) {
-        throw new InvalidFilterInputError(where);
+      if (order) {
+        queryInputParams.ScanIndexForward = order === QUERY_ORDER.ASC;
       }
 
-      const {
-        FilterExpression,
-        ExpressionAttributeNames,
-        ExpressionAttributeValues,
-      } = this.expressionBuilder.buildFilterExpression(filter);
-
-      queryInputParams = {
-        ...queryInputParams,
-        FilterExpression,
-        ExpressionAttributeNames: {
-          ...queryInputParams.ExpressionAttributeNames,
-          ...ExpressionAttributeNames,
-        },
-        ExpressionAttributeValues: {
-          ...queryInputParams.ExpressionAttributeValues,
-          ...ExpressionAttributeValues,
-        },
-      };
-    }
-
-    // check if only the count was requested
-    if (onlyCount) {
-      if (select?.length) {
-        throw new Error(
-          'Attributes projection and count can not be used together'
+      // if key condition was provided
+      if (keyCondition && !isEmptyObject(keyCondition)) {
+        // build sort key condition
+        const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
+          parsedSortKey.name,
+          keyCondition
         );
+
+        // if condition resolution was successful, we can merge both partition and sort key conditions now
+        const {
+          KeyConditionExpression,
+          ExpressionAttributeNames,
+          ExpressionAttributeValues,
+        } = this.expressionBuilder.buildKeyConditionExpression(
+          partitionKeyCondition.merge(sortKeyCondition)
+        );
+
+        queryInputParams = {
+          ...queryInputParams,
+          KeyConditionExpression,
+          ExpressionAttributeNames: {
+            ...queryInputParams.ExpressionAttributeNames,
+            ...ExpressionAttributeNames,
+          },
+          ExpressionAttributeValues: {
+            ...queryInputParams.ExpressionAttributeValues,
+            ...ExpressionAttributeValues,
+          },
+        };
       }
-      // count and projection selection can not be used together
-      queryInputParams.Select = QUERY_SELECT_TYPE.COUNT;
-    }
 
-    // when projection keys are provided
-    if (select && select.length) {
-      const projection = this.expressionInputParser.parseToProjection(select);
+      // when filter conditions are given generate filter expression
+      if (where && !isEmptyObject(where)) {
+        const filter = this.expressionInputParser.parseToFilter(where);
 
-      if (!projection) {
-        throw new InvalidSelectInputError(select);
+        if (!filter) {
+          throw new InvalidFilterInputError(where);
+        }
+
+        const {
+          FilterExpression,
+          ExpressionAttributeNames,
+          ExpressionAttributeValues,
+        } = this.expressionBuilder.buildFilterExpression(filter);
+
+        queryInputParams = {
+          ...queryInputParams,
+          FilterExpression,
+          ExpressionAttributeNames: {
+            ...queryInputParams.ExpressionAttributeNames,
+            ...ExpressionAttributeNames,
+          },
+          ExpressionAttributeValues: {
+            ...queryInputParams.ExpressionAttributeValues,
+            ...ExpressionAttributeValues,
+          },
+        };
       }
 
-      const {
-        ProjectionExpression,
-        ExpressionAttributeNames,
-      } = this.expressionBuilder.buildProjectionExpression(projection);
+      // check if only the count was requested
+      if (onlyCount) {
+        if (select?.length) {
+          throw new Error(
+            'Attributes projection and count can not be used together'
+          );
+        }
+        // count and projection selection can not be used together
+        queryInputParams.Select = QUERY_SELECT_TYPE.COUNT;
+      }
 
-      queryInputParams = {
-        ...queryInputParams,
-        ProjectionExpression,
-        ExpressionAttributeNames: {
-          ...queryInputParams.ExpressionAttributeNames,
-          ...ExpressionAttributeNames,
-        },
-      };
+      // when projection keys are provided
+      if (select && select.length) {
+        const projection = this.expressionInputParser.parseToProjection(select);
+
+        if (!projection) {
+          throw new InvalidSelectInputError(select);
+        }
+
+        const {
+          ProjectionExpression,
+          ExpressionAttributeNames,
+        } = this.expressionBuilder.buildProjectionExpression(projection);
+
+        queryInputParams = {
+          ...queryInputParams,
+          ProjectionExpression,
+          ExpressionAttributeNames: {
+            ...queryInputParams.ExpressionAttributeNames,
+            ...ExpressionAttributeNames,
+          },
+        };
+      }
     }
 
     this.connection.logger.logTransform({

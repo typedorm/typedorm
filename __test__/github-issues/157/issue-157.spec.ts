@@ -62,7 +62,6 @@ test('correctly queries matching items when values for set type is not a native 
     IndexName: 'email-index-v2',
     KeyConditionExpression: '#KY_CE_email = :KY_CE_email',
     Limit: 1,
-    ScanIndexForward: true,
     TableName: 'user-v2',
   });
 
