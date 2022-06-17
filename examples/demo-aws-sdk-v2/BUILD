@@ -4,13 +4,13 @@ load("@npm//@bazel/rollup:index.bzl", "rollup_bundle")
 setup_ts_build(
     name = "library",
     module_name = "demo-aws-sdk-v2",
+    visibility = ["//examples:__subpackages__"],
     deps = [
+        "//examples/shared-base:library",
         "//packages/core:library",
         "//packages/document-client:library",
-        "//examples/shared-base:library",
-        "@npm//aws-sdk"
+        "@npm//aws-sdk",
     ],
-    visibility = ["//examples:__subpackages__"]
 )
 
 rollup_bundle(
