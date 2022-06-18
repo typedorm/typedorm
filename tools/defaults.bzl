@@ -21,6 +21,7 @@ def setup_ts_build(name, deps = [], **kwargs):
                 "**/__mocks__/*",
             ],
         ),
+        declaration = True,
         tsconfig = "//:tsconfig.json",
         deps = deps + [
             "@npm//@types/node",

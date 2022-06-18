@@ -1,7 +1,6 @@
-const commonjs = require('rollup-plugin-commonjs');
-const resolve = require('rollup-plugin-node-resolve');
+const commonjs = require('@rollup/plugin-commonjs');
+const { nodeResolve: resolve } = require('@rollup/plugin-node-resolve');
 const json = require('@rollup/plugin-json');
-const path = require('path');
 
 module.exports = {
   plugins: [

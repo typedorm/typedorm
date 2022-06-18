@@ -3,7 +3,6 @@ load("//:tools/pkg.bzl", "typedorm_package")
 
 setup_ts_build(
     name = "library",
-    module_name = "@typedorm/common",
     visibility = [
         "//examples:__subpackages__",
         "//packages:__subpackages__",
@@ -21,6 +20,7 @@ setup_ts_build(
 
 typedorm_package(
     name = "common",
+    package_name = "@typedorm/common",
     readme_md = "README.md",
     deps = [
         ":library",

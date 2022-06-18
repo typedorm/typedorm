@@ -3,7 +3,6 @@ load("//:tools/pkg.bzl", "typedorm_package")
 
 setup_ts_build(
     name = "library",
-    module_name = "@typedorm/document-client",
     visibility = [
         "//examples:__subpackages__",
         "//packages:__subpackages__",
@@ -18,6 +17,7 @@ setup_ts_build(
 
 typedorm_package(
     name = "document-client",
+    package_name = "@typedorm/document-client",
     readme_md = "README.md",
     deps = [
         ":library",
