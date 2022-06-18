@@ -1,4 +1,5 @@
 import {
+  CONSUMED_CAPACITY_TYPE,
   EntityAttributes,
   EntityTarget,
   MANAGER_NAME,
@@ -95,6 +96,16 @@ export interface EntityManagerFindOptions<Entity, PartitionKey> {
    * @default all attributes are fetched
    */
   select?: ProjectionKeys<Entity>;
+
+  /**
+   * Perform a consistent read on the table, consumes twice as much RCUs then normal
+   *
+   * @description Strongly consistent reads are not supported on global secondary indexes.
+   * If you query a global secondary index with ConsistentRead set to true,
+   * you will receive a ValidationException.
+   * @see https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-ConsistentRead
+   */
+  consistentRead?: boolean;
 }
 
 export interface EntityManagerCountOptions<Entity, PartitionKey> {
@@ -115,6 +126,16 @@ export interface EntityManagerCountOptions<Entity, PartitionKey> {
    * are read
    */
   where?: FilterOptions<Entity, PartitionKey>;
+
+  /**
+   * Perform a consistent read on the table, consumes twice as much RCUs then normal
+   *
+   * @description Strongly consistent reads are not supported on global secondary indexes.
+   * If you query a global secondary index with ConsistentRead set to true,
+   * you will receive a ValidationException.
+   * @see https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-ConsistentRead
+   */
+  consistentRead?: boolean;
 }
 
 export interface EntityManagerFindOneOptions<Entity> {
@@ -123,6 +144,35 @@ export interface EntityManagerFindOneOptions<Entity> {
    * @default all attributes are fetched
    */
   select?: ProjectionKeys<Entity>;
+
+  /**
+   * Perform a consistent read on the table, consumes twice as much RCUs then normal
+   */
+  consistentRead?: boolean;
+}
+
+export interface EntityManagerExistsOptions {
+  /**
+   * Perform a consistent read on the table, consumes twice as much RCUs then normal
+   *
+   * @description Strongly consistent reads are not supported on global secondary indexes.
+   * If you query a global secondary index with ConsistentRead set to true,
+   * you will receive a ValidationException.
+   * @see https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-ConsistentRead
+   */
+  consistentRead?: boolean;
+
+  /**
+   * @deprecated - Provide the "requestId" in the next parameter instead
+   * Only available here for backwards compatibility
+   */
+  requestId?: string;
+
+  /**
+   * @deprecated - Provide the "returnConsumedCapacity" in the next parameter instead
+   * Only available here for backwards compatibility
+   */
+  returnConsumedCapacity?: CONSUMED_CAPACITY_TYPE;
 }
 
 export class EntityManager {
@@ -262,6 +312,7 @@ export class EntityManager {
   async exists<Entity, KeyAttributes = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
     attributes: KeyAttributes,
+    options?: EntityManagerExistsOptions,
     metadataOptions?: MetadataOptions
   ) {
     if (isEmptyObject(attributes)) {
@@ -270,9 +321,8 @@ export class EntityManager {
 
     const metadata = this.connection.getEntityByTarget(entityClass);
 
-    const uniqueAttributesMetadata = this.connection.getUniqueAttributesForEntity(
-      entityClass
-    );
+    const uniqueAttributesMetadata =
+      this.connection.getUniqueAttributesForEntity(entityClass);
 
     const uniqueAttributeNames = uniqueAttributesMetadata.map(
       attr => attr.name
@@ -314,14 +364,21 @@ export class EntityManager {
       return !!(await this.findOne(
         entityClass,
         attributes,
-        undefined,
-        metadataOptions
+        {consistentRead: options?.consistentRead},
+        {
+          requestId: options?.requestId ?? metadataOptions?.requestId,
+          returnConsumedCapacity:
+            options?.returnConsumedCapacity ??
+            metadataOptions?.returnConsumedCapacity,
+        }
       ));
     }
 
     // try finding entity by unique attribute
     if (!isEmptyObject(uniqueAttributes)) {
-      const requestId = getUniqueRequestId(metadataOptions?.requestId);
+      const requestId = getUniqueRequestId(
+        options?.requestId ?? metadataOptions?.requestId
+      );
       if (Object.keys(uniqueAttributes).length > 1) {
         throw new Error('Can only query one unique attribute at a time.');
       }
@@ -345,7 +402,9 @@ export class EntityManager {
       const response = await this.connection.documentClient.get({
         Key: {...parsedPrimaryKey},
         TableName: metadata.table.name,
-        ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+        ConsistentRead: options?.consistentRead,
+        ReturnConsumedCapacity:
+          options?.requestId ?? metadataOptions?.returnConsumedCapacity,
       });
       // stats
       if (response?.ConsumedCapacity) {
@@ -423,9 +482,8 @@ export class EntityManager {
       metadataOptions
     );
 
-    const updateItemList = dynamoUpdateItem.lazyLoadTransactionWriteItems(
-      existingItem
-    );
+    const updateItemList =
+      dynamoUpdateItem.lazyLoadTransactionWriteItems(existingItem);
 
     await this.connection.transactionManger.writeRaw(updateItemList, {
       requestId,
@@ -487,9 +545,8 @@ export class EntityManager {
       metadataOptions
     );
 
-    const deleteItemList = dynamoDeleteItem.lazyLoadTransactionWriteItems(
-      existingItem
-    );
+    const deleteItemList =
+      dynamoDeleteItem.lazyLoadTransactionWriteItems(existingItem);
 
     // delete main item and all it's unique attributes as part of single transaction
     await this.connection.transactionManger.writeRaw(deleteItemList, {
@@ -657,14 +714,11 @@ export class EntityManager {
     currentCount?: number;
     metadataOptions?: MetadataOptions;
   }): Promise<number> {
-    const {
-      LastEvaluatedKey,
-      Count,
-      ConsumedCapacity,
-    } = await this.connection.documentClient.query({
-      ...queryInput,
-      ExclusiveStartKey: cursor,
-    });
+    const {LastEvaluatedKey, Count, ConsumedCapacity} =
+      await this.connection.documentClient.query({
+        ...queryInput,
+        ExclusiveStartKey: cursor,
+      });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({

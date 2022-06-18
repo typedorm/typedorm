@@ -29,6 +29,7 @@ import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
 import {isObject} from '../../helpers/is-object';
 import {DocumentClientTypes} from '@typedorm/document-client';
+import {autoGenerateValue} from '../../helpers/auto-generate-attribute-value';
 
 export interface ManagerToDynamoPutItemOptions {
   /**
@@ -81,10 +82,13 @@ export interface ManagerToDynamoQueryItemsOptions {
   select?: any[];
 
   onlyCount?: boolean;
+
+  consistentRead?: boolean;
 }
 
 export interface ManagerToDynamoGetItemOptions {
   select?: any[];
+  consistentRead?: boolean;
 }
 
 export class DocumentClientRequestTransformer extends BaseTransformer {
@@ -111,9 +115,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     | DocumentClientTypes.PutItemInput
     | DocumentClientTypes.TransactWriteItemList {
     const entityClass = getConstructorForInstance(entity);
-    const {table, internalAttributes, name} = this.connection.getEntityByTarget(
-      entityClass
-    );
+    const {table, internalAttributes, name} =
+      this.connection.getEntityByTarget(entityClass);
 
     this.connection.logger.logTransform({
       requestId: metadataOptions?.requestId,
@@ -147,9 +150,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     } as DocumentClientTypes.PutItemInput;
 
     // apply attribute not exist condition when creating unique
-    const uniqueRecordConditionExpression = this.expressionBuilder.buildUniqueRecordConditionExpression(
-      table
-    );
+    const uniqueRecordConditionExpression =
+      this.expressionBuilder.buildUniqueRecordConditionExpression(table);
 
     // always prevent overwriting data until explicitly told to do otherwise
     if (!options?.overwriteIfExists) {
@@ -299,23 +301,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       Key: {
         ...parsedPrimaryKey,
       },
+      ConsistentRead: options?.consistentRead,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     } as DocumentClientTypes.GetItemInput;
 
-    // early return if no options were provided
-    if (!options || isEmptyObject(options)) {
-      this.connection.logger.logTransform({
-        requestId: metadataOptions?.requestId,
-        operation: TRANSFORM_TYPE.GET,
-        prefix: 'After',
-        entityName: metadata.name,
-        primaryKey: null,
-        body: transformBody,
-      });
-      return transformBody;
-    }
-
-    if (options.select?.length) {
+    // if restricted item projection was requested
+    if (options?.select?.length) {
       const projection = this.expressionInputParser.parseToProjection(
         options.select
       );
@@ -328,10 +319,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         );
       }
 
-      const {
-        ProjectionExpression,
-        ExpressionAttributeNames,
-      } = this.expressionBuilder.buildProjectionExpression(projection);
+      const {ProjectionExpression, ExpressionAttributeNames} =
+        this.expressionBuilder.buildProjectionExpression(projection);
 
       transformBody = {
         ...transformBody,
@@ -397,14 +386,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // get all the attributes for entity that are marked as to be auto update
-    const autoUpdateAttributes = this.connection.getAutoUpdateAttributes(
-      entityClass
-    );
+    const autoUpdateAttributes =
+      this.connection.getAutoUpdateAttributes(entityClass);
 
     // check if auto update attributes are not referenced by primary key
     const formattedAutoUpdateAttributes = autoUpdateAttributes.reduce(
       (acc, attr) => {
-        acc[attr.name] = attr.autoGenerateValue(attr.strategy);
+        acc[attr.name] = autoGenerateValue(attr.strategy);
         return acc;
       },
       {} as {[key: string]: any}
@@ -424,10 +412,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       ...rawAttributesToUpdate,
     }).reduce(
       (acc, [attrName, attrValue]) => {
-        const valueWithType = this.expressionInputParser.parseAttributeToUpdateValue(
-          attrName,
-          attrValue
-        ) as {value: any; type: 'static' | 'dynamic'};
+        const valueWithType =
+          this.expressionInputParser.parseAttributeToUpdateValue(
+            attrName,
+            attrValue
+          ) as {value: any; type: 'static' | 'dynamic'};
 
         acc.transformed[attrName] = valueWithType.value;
         acc.typeMetadata[attrName] = valueWithType.type;
@@ -459,9 +448,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       return acc;
     }, {} as any);
     onlyStaticAttributes.constructor = entityClass;
-    const classTransformedStaticAttributes = this.applyClassTransformerFormations(
-      onlyStaticAttributes
-    ) as Entity;
+    const classTransformedStaticAttributes =
+      this.applyClassTransformerFormations(onlyStaticAttributes) as Entity;
     staticOrDynamicUpdateAttributesWithMetadata.transformed = {
       ...staticOrDynamicUpdateAttributesWithMetadata.transformed,
       ...classTransformedStaticAttributes,
@@ -492,13 +480,12 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     /**
      * 3.1 - Get referenced primary key attributes and validate that current update body can be safely applied
      */
-    const affectedPrimaryKeyAttributes = this.getAffectedPrimaryKeyAttributes<
-      Entity
-    >(
-      entityClass,
-      staticOrDynamicUpdateAttributesWithMetadata.transformed,
-      staticOrDynamicUpdateAttributesWithMetadata.typeMetadata
-    );
+    const affectedPrimaryKeyAttributes =
+      this.getAffectedPrimaryKeyAttributes<Entity>(
+        entityClass,
+        staticOrDynamicUpdateAttributesWithMetadata.transformed,
+        staticOrDynamicUpdateAttributesWithMetadata.typeMetadata
+      );
 
     // validate primary key attributes
     if (!isEmptyObject(affectedPrimaryKeyAttributes)) {
@@ -583,25 +570,26 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       isObject(affectedPrimaryKeyAttributes) &&
       !isEmptyObject(affectedPrimaryKeyAttributes)
     ) {
-      const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdatePrimaryKeyFactory(
-        metadata.table,
-        metadata.name,
-        metadata.schema.primaryKey,
-        {
-          Item: {
-            ...affectedPrimaryKeyAttributes,
-            ...affectedIndexes,
-            ...staticOrDynamicUpdateAttributesWithMetadata.transformed,
+      const lazyLoadTransactionWriteItems =
+        this.lazyToDynamoUpdatePrimaryKeyFactory(
+          metadata.table,
+          metadata.name,
+          metadata.schema.primaryKey,
+          {
+            Item: {
+              ...affectedPrimaryKeyAttributes,
+              ...affectedIndexes,
+              ...staticOrDynamicUpdateAttributesWithMetadata.transformed,
+            },
+            TableName: metadata.table.name,
+            ReturnConsumedCapacity: itemToUpdate.ReturnConsumedCapacity,
+            ReturnValues: itemToUpdate.ReturnValues,
+            ConditionExpression: itemToUpdate.ConditionExpression,
+            ExpressionAttributeNames: itemToUpdate.ExpressionAttributeNames,
+            ExpressionAttributeValues: itemToUpdate.ExpressionAttributeValues,
           },
-          TableName: metadata.table.name,
-          ReturnConsumedCapacity: itemToUpdate.ReturnConsumedCapacity,
-          ReturnValues: itemToUpdate.ReturnValues,
-          ConditionExpression: itemToUpdate.ConditionExpression,
-          ExpressionAttributeNames: itemToUpdate.ExpressionAttributeNames,
-          ExpressionAttributeValues: itemToUpdate.ExpressionAttributeValues,
-        },
-        metadataOptions
-      );
+          metadataOptions
+        );
 
       return {
         primaryKeyAttributes,
@@ -641,16 +629,15 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
      */
     if (uniqueAttributesToUpdate.length) {
       // if there are unique attributes, return a lazy loader, which will return write item list
-      const lazyLoadTransactionWriteItems = this.lazyToDynamoUpdateUniqueItemFactory<
-        Entity
-      >(
-        metadata.table,
-        metadata.name,
-        uniqueAttributesToUpdate,
-        dropProp(itemToUpdate, 'ReturnValues'),
-        staticOrDynamicUpdateAttributesWithMetadata.transformed,
-        metadataOptions
-      );
+      const lazyLoadTransactionWriteItems =
+        this.lazyToDynamoUpdateUniqueItemFactory<Entity>(
+          metadata.table,
+          metadata.name,
+          uniqueAttributesToUpdate,
+          dropProp(itemToUpdate, 'ReturnValues'),
+          staticOrDynamicUpdateAttributesWithMetadata.transformed,
+          metadataOptions
+        );
 
       return {
         primaryKeyAttributes,
@@ -699,9 +686,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       throw new Error('Primary could not be resolved');
     }
 
-    const uniqueAttributesToRemove = this.connection.getUniqueAttributesForEntity(
-      entityClass
-    );
+    const uniqueAttributesToRemove =
+      this.connection.getUniqueAttributesForEntity(entityClass);
 
     const mainItemToRemove: DocumentClientTypes.DeleteItemInput = {
       TableName: tableName,
@@ -776,9 +762,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     queryOptions?: ManagerToDynamoQueryItemsOptions,
     metadataOptions?: MetadataOptions
   ): DocumentClientTypes.QueryInput {
-    const {table, schema, name} = this.connection.getEntityByTarget(
-      entityClass
-    );
+    const {table, schema, name} =
+      this.connection.getEntityByTarget(entityClass);
     this.connection.logger.logTransform({
       requestId: metadataOptions?.requestId,
       operation: TRANSFORM_TYPE.QUERY,
@@ -841,30 +826,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       parsedPartitionKey.value
     );
 
-    const partitionKeyConditionExpression = this.expressionBuilder.buildKeyConditionExpression(
-      partitionKeyCondition
-    );
-
-    // if no query options are present, resolve key condition expression
-    if (!queryOptions || isEmptyObject(queryOptions)) {
-      const transformedQueryItem = {
-        TableName: table.name,
-        IndexName: queryIndexName,
-        ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-        ...partitionKeyConditionExpression,
-      };
-
-      this.connection.logger.logTransform({
-        requestId: metadataOptions?.requestId,
-        operation: TRANSFORM_TYPE.QUERY,
-        prefix: 'After',
-        entityName: name,
-        primaryKey: partitionKeyAttributes,
-        body: transformedQueryItem,
-      });
-
-      return transformedQueryItem;
-    }
+    const partitionKeyConditionExpression =
+      this.expressionBuilder.buildKeyConditionExpression(partitionKeyCondition);
 
     const parsedSortKey = {} as {name: string};
     // if no we are not querying against index, validate if table is using composite key
@@ -881,115 +844,124 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     // at this point we have resolved partition key and table to query
-    const {
-      keyCondition,
-      limit,
-      orderBy: order,
-      where,
-      select,
-      onlyCount,
-    } = queryOptions;
-
     let queryInputParams = {
       TableName: table.name,
       IndexName: queryIndexName,
       ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-      Limit: limit,
-      ScanIndexForward: !order || order === QUERY_ORDER.ASC,
       ...partitionKeyConditionExpression,
     } as DocumentClientTypes.QueryInput;
 
-    // if key condition was provided
-    if (keyCondition && !isEmptyObject(keyCondition)) {
-      // build sort key condition
-      const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
-        parsedSortKey.name,
-        keyCondition
-      );
-
-      // if condition resolution was successful, we can merge both partition and sort key conditions now
+    if (queryOptions && !isEmptyObject(queryOptions)) {
       const {
-        KeyConditionExpression,
-        ExpressionAttributeNames,
-        ExpressionAttributeValues,
-      } = this.expressionBuilder.buildKeyConditionExpression(
-        partitionKeyCondition.merge(sortKeyCondition)
-      );
+        orderBy: order,
+        limit,
+        keyCondition,
+        where,
+        select,
+        onlyCount,
+        consistentRead,
+      } = queryOptions;
 
       queryInputParams = {
         ...queryInputParams,
-        KeyConditionExpression,
-        ExpressionAttributeNames: {
-          ...queryInputParams.ExpressionAttributeNames,
-          ...ExpressionAttributeNames,
-        },
-        ExpressionAttributeValues: {
-          ...queryInputParams.ExpressionAttributeValues,
-          ...ExpressionAttributeValues,
-        },
+        Limit: limit,
+        ConsistentRead: consistentRead,
       };
-    }
 
-    // when filter conditions are given generate filter expression
-    if (where && !isEmptyObject(where)) {
-      const filter = this.expressionInputParser.parseToFilter(where);
-
-      if (!filter) {
-        throw new InvalidFilterInputError(where);
+      if (order) {
+        queryInputParams.ScanIndexForward = order === QUERY_ORDER.ASC;
       }
 
-      const {
-        FilterExpression,
-        ExpressionAttributeNames,
-        ExpressionAttributeValues,
-      } = this.expressionBuilder.buildFilterExpression(filter);
-
-      queryInputParams = {
-        ...queryInputParams,
-        FilterExpression,
-        ExpressionAttributeNames: {
-          ...queryInputParams.ExpressionAttributeNames,
-          ...ExpressionAttributeNames,
-        },
-        ExpressionAttributeValues: {
-          ...queryInputParams.ExpressionAttributeValues,
-          ...ExpressionAttributeValues,
-        },
-      };
-    }
-
-    // check if only the count was requested
-    if (onlyCount) {
-      if (select?.length) {
-        throw new Error(
-          'Attributes projection and count can not be used together'
+      // if key condition was provided
+      if (keyCondition && !isEmptyObject(keyCondition)) {
+        // build sort key condition
+        const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
+          parsedSortKey.name,
+          keyCondition
         );
+
+        // if condition resolution was successful, we can merge both partition and sort key conditions now
+        const {
+          KeyConditionExpression,
+          ExpressionAttributeNames,
+          ExpressionAttributeValues,
+        } = this.expressionBuilder.buildKeyConditionExpression(
+          partitionKeyCondition.merge(sortKeyCondition)
+        );
+
+        queryInputParams = {
+          ...queryInputParams,
+          KeyConditionExpression,
+          ExpressionAttributeNames: {
+            ...queryInputParams.ExpressionAttributeNames,
+            ...ExpressionAttributeNames,
+          },
+          ExpressionAttributeValues: {
+            ...queryInputParams.ExpressionAttributeValues,
+            ...ExpressionAttributeValues,
+          },
+        };
       }
-      // count and projection selection can not be used together
-      queryInputParams.Select = QUERY_SELECT_TYPE.COUNT;
-    }
 
-    // when projection keys are provided
-    if (select && select.length) {
-      const projection = this.expressionInputParser.parseToProjection(select);
+      // when filter conditions are given generate filter expression
+      if (where && !isEmptyObject(where)) {
+        const filter = this.expressionInputParser.parseToFilter(where);
 
-      if (!projection) {
-        throw new InvalidSelectInputError(select);
+        if (!filter) {
+          throw new InvalidFilterInputError(where);
+        }
+
+        const {
+          FilterExpression,
+          ExpressionAttributeNames,
+          ExpressionAttributeValues,
+        } = this.expressionBuilder.buildFilterExpression(filter);
+
+        queryInputParams = {
+          ...queryInputParams,
+          FilterExpression,
+          ExpressionAttributeNames: {
+            ...queryInputParams.ExpressionAttributeNames,
+            ...ExpressionAttributeNames,
+          },
+          ExpressionAttributeValues: {
+            ...queryInputParams.ExpressionAttributeValues,
+            ...ExpressionAttributeValues,
+          },
+        };
       }
 
-      const {
-        ProjectionExpression,
-        ExpressionAttributeNames,
-      } = this.expressionBuilder.buildProjectionExpression(projection);
+      // check if only the count was requested
+      if (onlyCount) {
+        if (select?.length) {
+          throw new Error(
+            'Attributes projection and count can not be used together'
+          );
+        }
+        // count and projection selection can not be used together
+        queryInputParams.Select = QUERY_SELECT_TYPE.COUNT;
+      }
 
-      queryInputParams = {
-        ...queryInputParams,
-        ProjectionExpression,
-        ExpressionAttributeNames: {
-          ...queryInputParams.ExpressionAttributeNames,
-          ...ExpressionAttributeNames,
-        },
-      };
+      // when projection keys are provided
+      if (select && select.length) {
+        const projection = this.expressionInputParser.parseToProjection(select);
+
+        if (!projection) {
+          throw new InvalidSelectInputError(select);
+        }
+
+        const {ProjectionExpression, ExpressionAttributeNames} =
+          this.expressionBuilder.buildProjectionExpression(projection);
+
+        queryInputParams = {
+          ...queryInputParams,
+          ProjectionExpression,
+          ExpressionAttributeNames: {
+            ...queryInputParams.ExpressionAttributeNames,
+            ...ExpressionAttributeNames,
+          },
+        };
+      }
     }
 
     this.connection.logger.logTransform({
@@ -1012,15 +984,16 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     metadataOptions?: MetadataOptions
   ) {
     return (previousItemBody: any) => {
-      const updateTransactionItems: DocumentClientTypes.TransactWriteItemList = [
-        {
-          Put: {
-            ...newItemBody,
-            // import existing current item
-            Item: {...previousItemBody, ...newItemBody.Item},
+      const updateTransactionItems: DocumentClientTypes.TransactWriteItemList =
+        [
+          {
+            Put: {
+              ...newItemBody,
+              // import existing current item
+              Item: {...previousItemBody, ...newItemBody.Item},
+            },
           },
-        },
-      ] as DocumentClientTypes.TransactWriteItemList;
+        ] as DocumentClientTypes.TransactWriteItemList;
 
       // if there was a previous existing item, basically remove it as part of this transaction
       if (previousItemBody && !isEmptyObject(previousItemBody)) {
@@ -1074,28 +1047,28 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     // returns transact write item list
     return (previousItemBody: any) => {
       // updating unique attributes also require checking if new value exists
-      const uniqueRecordConditionExpression = this.expressionBuilder.buildUniqueRecordConditionExpression(
-        table
-      );
+      const uniqueRecordConditionExpression =
+        this.expressionBuilder.buildUniqueRecordConditionExpression(table);
 
       // map all unique attributes to [put, delete] item tuple
-      const uniqueAttributeInputs: DocumentClientTypes.TransactWriteItemList = uniqueAttributesToUpdate.flatMap(
-        attr => {
-          const uniqueAttributeWriteItems: DocumentClientTypes.TransactWriteItemList = [
-            {
-              Put: {
-                TableName: table.name,
-                Item: {
-                  ...this.getParsedPrimaryKey(
-                    table,
-                    attr.unique,
-                    newBody as Partial<Entity>
-                  ),
+      const uniqueAttributeInputs: DocumentClientTypes.TransactWriteItemList =
+        uniqueAttributesToUpdate.flatMap(attr => {
+          const uniqueAttributeWriteItems: DocumentClientTypes.TransactWriteItemList =
+            [
+              {
+                Put: {
+                  TableName: table.name,
+                  Item: {
+                    ...this.getParsedPrimaryKey(
+                      table,
+                      attr.unique,
+                      newBody as Partial<Entity>
+                    ),
+                  },
+                  ...uniqueRecordConditionExpression,
                 },
-                ...uniqueRecordConditionExpression,
               },
-            },
-          ];
+            ];
 
           // if unique attribute previously existed, remove it as part of the same transaction
           if (previousItemBody && previousItemBody[attr.name]) {
@@ -1114,8 +1087,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           }
 
           return uniqueAttributeWriteItems;
-        }
-      );
+        });
 
       // in order for update express to succeed, all listed must succeed in a transaction
       const updateTransactionItems = [
