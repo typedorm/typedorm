@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@typedorm/common": "^1.14.11",
+    "reflect-metadata": "^0.1.13"
+  }
+}

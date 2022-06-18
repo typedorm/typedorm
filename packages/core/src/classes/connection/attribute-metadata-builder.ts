@@ -17,9 +17,10 @@ export class AttributesMetadataBuilder {
     attributeTargetEntityClass: Function,
     decoratedEntityClass: Function
   ) {
-    const getRawAttributesForEntity = MetadataManager.metadataStorage.getRawAttributesForEntity(
-      attributeTargetEntityClass
-    );
+    const getRawAttributesForEntity =
+      MetadataManager.metadataStorage.getRawAttributesForEntity(
+        attributeTargetEntityClass
+      );
 
     return getRawAttributesForEntity.map(attr => {
       if (IsAutoGenerateAttributeRawMetadataOptions(attr)) {
@@ -72,9 +73,10 @@ export class AttributesMetadataBuilder {
       );
     } catch (err) {
       // fall back to using derived class metadata
-      entityMetadata = MetadataManager.metadataStorage.getRawEntityByTarget(
-        decoratedEntityClass
-      );
+      entityMetadata =
+        MetadataManager.metadataStorage.getRawEntityByTarget(
+          decoratedEntityClass
+        );
     }
 
     return entityMetadata;

@@ -157,10 +157,8 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
           throw new InvalidSelectInputError(select);
         }
 
-        const {
-          ProjectionExpression,
-          ExpressionAttributeNames,
-        } = this.expressionBuilder.buildProjectionExpression(projection);
+        const {ProjectionExpression, ExpressionAttributeNames} =
+          this.expressionBuilder.buildProjectionExpression(projection);
 
         transformedScanInput = {
           ...transformedScanInput,
@@ -237,9 +235,8 @@ export class DocumentClientScanTransformer extends LowOrderTransformers {
         return acc;
       }
 
-      const entityMetadata = this.connection.getEntityByPhysicalName(
-        entityPhysicalName
-      );
+      const entityMetadata =
+        this.connection.getEntityByPhysicalName(entityPhysicalName);
 
       const reverseTransformedItem = this.fromDynamoEntity(
         entityMetadata.target,

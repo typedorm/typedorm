@@ -321,9 +321,8 @@ export class EntityManager {
 
     const metadata = this.connection.getEntityByTarget(entityClass);
 
-    const uniqueAttributesMetadata = this.connection.getUniqueAttributesForEntity(
-      entityClass
-    );
+    const uniqueAttributesMetadata =
+      this.connection.getUniqueAttributesForEntity(entityClass);
 
     const uniqueAttributeNames = uniqueAttributesMetadata.map(
       attr => attr.name
@@ -483,9 +482,8 @@ export class EntityManager {
       metadataOptions
     );
 
-    const updateItemList = dynamoUpdateItem.lazyLoadTransactionWriteItems(
-      existingItem
-    );
+    const updateItemList =
+      dynamoUpdateItem.lazyLoadTransactionWriteItems(existingItem);
 
     await this.connection.transactionManger.writeRaw(updateItemList, {
       requestId,
@@ -547,9 +545,8 @@ export class EntityManager {
       metadataOptions
     );
 
-    const deleteItemList = dynamoDeleteItem.lazyLoadTransactionWriteItems(
-      existingItem
-    );
+    const deleteItemList =
+      dynamoDeleteItem.lazyLoadTransactionWriteItems(existingItem);
 
     // delete main item and all it's unique attributes as part of single transaction
     await this.connection.transactionManger.writeRaw(deleteItemList, {
@@ -717,14 +714,11 @@ export class EntityManager {
     currentCount?: number;
     metadataOptions?: MetadataOptions;
   }): Promise<number> {
-    const {
-      LastEvaluatedKey,
-      Count,
-      ConsumedCapacity,
-    } = await this.connection.documentClient.query({
-      ...queryInput,
-      ExclusiveStartKey: cursor,
-    });
+    const {LastEvaluatedKey, Count, ConsumedCapacity} =
+      await this.connection.documentClient.query({
+        ...queryInput,
+        ExclusiveStartKey: cursor,
+      });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({

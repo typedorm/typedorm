@@ -27,7 +27,8 @@ export interface UserUniqueEmailGSI1 {
   },
 })
 export class UserUniqueEmail
-  implements UserUniqueEmailPrimaryKey, UserUniqueEmailGSI1 {
+  implements UserUniqueEmailPrimaryKey, UserUniqueEmailGSI1
+{
   @Attribute()
   id: string;
 

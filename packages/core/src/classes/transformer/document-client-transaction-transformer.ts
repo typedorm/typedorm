@@ -194,7 +194,8 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
       },
       {
         transactionItemList: [] as DocumentClientTypes.TransactWriteItemList,
-        lazyTransactionWriteItemListLoader: [] as LazyTransactionWriteItemListLoader[],
+        lazyTransactionWriteItemListLoader:
+          [] as LazyTransactionWriteItemListLoader[],
       }
     );
   }

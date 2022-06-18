@@ -48,9 +48,8 @@ test('transforms simple transaction write items', () => {
       }
     );
 
-  const transformed = dcTransactionTransformer.toDynamoWriteTransactionItems(
-    writeTransaction
-  );
+  const transformed =
+    dcTransactionTransformer.toDynamoWriteTransactionItems(writeTransaction);
   expect(transformed).toEqual({
     lazyTransactionWriteItemListLoader: [],
     transactionItemList: [
@@ -114,9 +113,8 @@ test('transforms transaction write items with unique attributes', () => {
       }
     );
 
-  const transformed = dcTransactionTransformer.toDynamoWriteTransactionItems(
-    writeTransaction
-  );
+  const transformed =
+    dcTransactionTransformer.toDynamoWriteTransactionItems(writeTransaction);
   expect(transformed).toEqual({
     lazyTransactionWriteItemListLoader: [
       {
@@ -175,9 +173,8 @@ test('creates transaction put item with given condition', () => {
     },
   ]);
 
-  const transformed = dcTransactionTransformer.toDynamoWriteTransactionItems(
-    transaction
-  );
+  const transformed =
+    dcTransactionTransformer.toDynamoWriteTransactionItems(transaction);
 
   expect(transformed).toEqual({
     lazyTransactionWriteItemListLoader: [],
@@ -223,9 +220,8 @@ test('transforms get transaction', () => {
       id: 2,
     });
 
-  const transformed = dcTransactionTransformer.toDynamoReadTransactionItems(
-    readTransaction
-  );
+  const transformed =
+    dcTransactionTransformer.toDynamoReadTransactionItems(readTransaction);
 
   expect(transformed).toEqual({
     transactionItemList: [
@@ -266,9 +262,8 @@ test('transforms get transaction with projection', () => {
       }
     );
 
-  const transformed = dcTransactionTransformer.toDynamoReadTransactionItems(
-    readTransaction
-  );
+  const transformed =
+    dcTransactionTransformer.toDynamoReadTransactionItems(readTransaction);
 
   expect(transformed).toEqual({
     transactionItemList: [
