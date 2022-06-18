@@ -1,6 +1,15 @@
 {
   "name": "@typedorm/document-client",
   "version": "0.0.0-PLACEHOLDER",
+  "type": "commonjs",
+  "main": "cjs/index.js",
+  "module": "esm/index.js",
+  "exports": {
+    ".": {
+      "require": "./cjs/index.js",
+      "import": "./esm/index.js"
+    }
+  },
   "description": "Lightweight Document Client helper for DynamoDB",
   "keywords": [
     "core",

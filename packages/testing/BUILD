@@ -3,7 +3,11 @@ load("//:tools/pkg.bzl", "typedorm_package")
 
 setup_ts_build(
     name = "library",
-    visibility = ["//packages:__subpackages__"],
+    visibility = [
+        "//packages:__subpackages__"
+    ],
+    tsconfig_cjs = "//:tsconfig_cjs",
+    tsconfig_esm = "//:tsconfig_esm",    
     deps = [
         "//packages/common:library",
         "//packages/core:library",

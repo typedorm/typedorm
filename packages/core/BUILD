@@ -7,6 +7,8 @@ setup_ts_build(
         "//examples:__subpackages__",
         "//packages:__subpackages__",
     ],
+    tsconfig_cjs = "//:tsconfig_cjs",
+    tsconfig_esm = "//:tsconfig_esm",
     deps = [
         "//packages/common:library",
         "//packages/document-client:library",

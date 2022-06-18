@@ -8,12 +8,10 @@ exports_files(
 setup_ts_build(
     name = "library",
     visibility = ["//examples:__subpackages__"],
+    tsconfig = "//:tsconfig.json",
     deps = [
         "//packages/common:library",
         "//packages/core:library",
-        "@npm//@rollup/plugin-json",
-        "@npm//reflect-metadata",
-        "@npm//@rollup/plugin-commonjs",
-        "@npm//@rollup/plugin-node-resolve",
+        "@npm//reflect-metadata"
     ],
 )

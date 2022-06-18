@@ -15,5 +15,7 @@
   ],
   "editor.formatOnSave": true,
   "typescript.tsdk": "node_modules/typescript/lib",
-  "jest.autoRun": "off"
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }

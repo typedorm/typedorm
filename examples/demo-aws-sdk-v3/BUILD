@@ -4,6 +4,7 @@ load("@npm//@bazel/rollup:index.bzl", "rollup_bundle")
 setup_ts_build(
     name = "library",
     visibility = ["//examples:__subpackages__"],
+    tsconfig = "//:tsconfig.json",
     deps = [
         "//examples/shared-base:library",
         "//packages/core:library",
@@ -18,6 +19,12 @@ rollup_bundle(
     srcs = [],
     config_file = "//examples/shared-base:rollup.config.js",
     entry_point = ":index.ts",
-    format = "cjs",
-    deps = [":library"],
+    output_dir = True,
+    deps = [
+        ":library",
+        "@npm//reflect-metadata",
+        "@npm//@rollup/plugin-json",
+        "@npm//@rollup/plugin-commonjs",
+        "@npm//@rollup/plugin-node-resolve"    
+    ],
 )

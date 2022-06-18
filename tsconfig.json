@@ -35,23 +35,57 @@
     "paths": {
       "@typedorm/*": [
         "packages/*",
+
         "bazel-out/x64_windows-fastbuild/bin/packages/*",
         "bazel-out/x64_windows-dbg/bin/packages/*",
         "bazel-out/k8-fastbuild/bin/packages/*",
         "bazel-out/k8-dbg/bin/packages/*",
         "bazel-out/host/bin/packages/*",
         "bazel-out/darwin-fastbuild/bin/packages/*",
-        "bazel-out/darwin-dbg/bin/packages/*"
+        "bazel-out/darwin-dbg/bin/packages/*",
+
+        "bazel-out/x64_windows-fastbuild/bin/packages/*/cjs",
+        "bazel-out/x64_windows-dbg/bin/packages/*/cjs",
+        "bazel-out/k8-fastbuild/bin/packages/*/cjs",
+        "bazel-out/k8-dbg/bin/packages/*/cjs",
+        "bazel-out/host/bin/packages/*/cjs",
+        "bazel-out/darwin-fastbuild/bin/packages/*/cjs",
+        "bazel-out/darwin-dbg/bin/packages/*/cjs",
+
+        "bazel-out/x64_windows-fastbuild/bin/packages/*/esm",
+        "bazel-out/x64_windows-dbg/bin/packages/*/esm",
+        "bazel-out/k8-fastbuild/bin/packages/*/esm",
+        "bazel-out/k8-dbg/bin/packages/*/esm",
+        "bazel-out/host/bin/packages/*/esm",
+        "bazel-out/darwin-fastbuild/bin/packages/*/esm",
+        "bazel-out/darwin-dbg/bin/packages/*/esm"
       ],
       "@typedorm-example/*": [
         "examples/*",
+
         "bazel-out/x64_windows-fastbuild/bin/examples/*",
         "bazel-out/x64_windows-dbg/bin/examples/*",
         "bazel-out/k8-fastbuild/bin/examples/*",
         "bazel-out/k8-dbg/bin/examples/*",
         "bazel-out/host/bin/examples/*",
         "bazel-out/darwin-fastbuild/bin/examples/*",
-        "bazel-out/darwin-dbg/bin/examples/*"
+        "bazel-out/darwin-dbg/bin/examples/*",
+
+        "bazel-out/x64_windows-fastbuild/bin/examples/*/cjs",
+        "bazel-out/x64_windows-dbg/bin/examples/*/cjs",
+        "bazel-out/k8-fastbuild/bin/examples/*/cjs",
+        "bazel-out/k8-dbg/bin/examples/*/cjs",
+        "bazel-out/host/bin/examples/*/cjs",
+        "bazel-out/darwin-fastbuild/bin/examples/*/cjs",
+        "bazel-out/darwin-dbg/bin/examples/*/cjs",
+
+        "bazel-out/x64_windows-fastbuild/bin/examples/*/esm",
+        "bazel-out/x64_windows-dbg/bin/examples/*/esm",
+        "bazel-out/k8-fastbuild/bin/examples/*/esm",
+        "bazel-out/k8-dbg/bin/examples/*/esm",
+        "bazel-out/host/bin/examples/*/esm",
+        "bazel-out/darwin-fastbuild/bin/examples/*/esm",
+        "bazel-out/darwin-dbg/bin/examples/*/esm"
       ]
     },
     "rootDirs": [
@@ -65,5 +99,5 @@
       "bazel-out/darwin-dbg/bin/*"
     ]
   },
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules", "tools"]
 }
