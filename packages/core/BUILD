@@ -3,26 +3,30 @@ load("//:tools/pkg.bzl", "typedorm_package")
 
 setup_ts_build(
     name = "library",
-    module_name = "@typedorm/core",
+    visibility = [
+        "//examples:__subpackages__",
+        "//packages:__subpackages__",
+    ],
+    tsconfig_cjs = "//:tsconfig_cjs",
+    tsconfig_esm = "//:tsconfig_esm",
     deps = [
         "//packages/common:library",
         "//packages/document-client:library",
-        "@npm//aws-sdk",
-        "@npm//uuid",
-        "@npm//ksuid",
-        "@npm//fast-glob",
         "@npm//@types/uuid",
+        "@npm//aws-sdk",
+        "@npm//class-transformer",
+        "@npm//fast-glob",
+        "@npm//ksuid",
         "@npm//p-limit",
-        "@npm//class-transformer"
+        "@npm//uuid",
     ],
-    visibility = ["//packages:__subpackages__","//examples:__subpackages__"]
-
 )
 
 typedorm_package(
     name = "core",
+    package_name = "@typedorm/core",
     readme_md = "README.md",
     deps = [
-        ":library"
-    ]
+        ":library",
+    ],
 )

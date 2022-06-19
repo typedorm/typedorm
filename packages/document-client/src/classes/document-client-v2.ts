@@ -97,8 +97,9 @@ export class DocumentClientV2<
     }[];
     transactionRequest.on('extractError', response => {
       try {
-        cancellationReasons = JSON.parse(response.httpResponse.body.toString())
-          .CancellationReasons;
+        cancellationReasons = JSON.parse(
+          response.httpResponse.body.toString()
+        ).CancellationReasons;
       } catch (err) {
         // suppress this just in case some types of errors aren't JSON parsable
         console.error('Error extracting cancellation error', err);

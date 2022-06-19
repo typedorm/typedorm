@@ -33,7 +33,8 @@ export interface UserAttrAliasGSI1 {
   },
 })
 export class UserAttrAlias
-  implements UserAttrAliasPrimaryKey, UserAttrAliasGSI1 {
+  implements UserAttrAliasPrimaryKey, UserAttrAliasGSI1
+{
   @Attribute()
   id: string;
 

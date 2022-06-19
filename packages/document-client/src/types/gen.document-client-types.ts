@@ -57,11 +57,10 @@ export namespace DocumentClientTypes {
     ? DynamoDB.DocumentClient.UpdateItemInput
     : DynamoDBClientV3.UpdateItemInput;
 
-  export type UpdateItemOutput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.UpdateItemOutput
-    : DynamoDBClientV3.UpdateItemOutput;
+  export type UpdateItemOutput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.UpdateItemOutput
+      : DynamoDBClientV3.UpdateItemOutput;
 
   /**
    * Delete
@@ -70,11 +69,10 @@ export namespace DocumentClientTypes {
     ? DynamoDB.DocumentClient.DeleteItemInput
     : DynamoDBClientV3.DeleteItemInput;
 
-  export type DeleteItemOutput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.DeleteItemOutput
-    : DynamoDBClientV3.DeleteItemOutput;
+  export type DeleteItemOutput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.DeleteItemOutput
+      : DynamoDBClientV3.DeleteItemOutput;
 
   /**
    * Query
@@ -90,95 +88,80 @@ export namespace DocumentClientTypes {
   /**
    * BatchWrite
    */
-  export type BatchWriteItemRequestMap<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.BatchWriteItemRequestMap
-    : {
-        [key: string]: DynamoDBClientV3.WriteRequest[];
-      };
+  export type BatchWriteItemRequestMap<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.BatchWriteItemRequestMap
+      : {
+          [key: string]: DynamoDBClientV3.WriteRequest[];
+        };
 
-  export type BatchWriteItemRequestMapList<
-    T = DocumentClientV2
-  > = BatchWriteItemRequestMap<T>[];
+  export type BatchWriteItemRequestMapList<T = DocumentClientV2> =
+    BatchWriteItemRequestMap<T>[];
 
-  export type BatchWriteItemInput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.BatchWriteItemInput
-    : DynamoDBClientV3.BatchWriteItemInput;
+  export type BatchWriteItemInput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.BatchWriteItemInput
+      : DynamoDBClientV3.BatchWriteItemInput;
 
-  export type BatchWriteItemOutput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.BatchWriteItemOutput
-    : DynamoDBClientV3.BatchWriteItemOutput;
+  export type BatchWriteItemOutput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.BatchWriteItemOutput
+      : DynamoDBClientV3.BatchWriteItemOutput;
 
-  export type BatchWriteItemOutputList<
-    T = DocumentClientV2
-  > = BatchWriteItemOutput<T>[];
+  export type BatchWriteItemOutputList<T = DocumentClientV2> =
+    BatchWriteItemOutput<T>[];
 
   /**
    * BatchGet
    */
-  export type BatchGetRequestMap<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.BatchGetRequestMap
-    : {
-        [key: string]: DynamoDBClientV3.KeysAndAttributes;
-      };
+  export type BatchGetRequestMap<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.BatchGetRequestMap
+      : {
+          [key: string]: DynamoDBClientV3.KeysAndAttributes;
+        };
 
-  export type BatchGetRequestMapList<T = DocumentClientV2> = BatchGetRequestMap<
-    T
-  >[];
+  export type BatchGetRequestMapList<T = DocumentClientV2> =
+    BatchGetRequestMap<T>[];
 
-  export type BatchGetItemInput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.BatchGetItemInput
-    : DynamoDBClientV3.BatchGetItemInput;
+  export type BatchGetItemInput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.BatchGetItemInput
+      : DynamoDBClientV3.BatchGetItemInput;
 
-  export type BatchGetItemOutput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.BatchGetItemOutput
-    : DynamoDBClientV3.BatchGetItemOutput;
+  export type BatchGetItemOutput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.BatchGetItemOutput
+      : DynamoDBClientV3.BatchGetItemOutput;
 
-  export type BatchGetItemOutputList<T = DocumentClientV2> = BatchGetItemOutput<
-    T
-  >[];
+  export type BatchGetItemOutputList<T = DocumentClientV2> =
+    BatchGetItemOutput<T>[];
 
-  export type BatchGetResponseMap<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.BatchGetResponseMap
-    : {[key: string]: ItemList};
+  export type BatchGetResponseMap<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.BatchGetResponseMap
+      : {[key: string]: ItemList};
 
   /**
    * TransactWrite
    */
-  export type TransactWriteItem<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.TransactWriteItem
-    : DynamoDBClientV3.TransactWriteItem;
+  export type TransactWriteItem<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.TransactWriteItem
+      : DynamoDBClientV3.TransactWriteItem;
 
-  export type TransactWriteItemList<T = DocumentClientV2> = TransactWriteItem<
-    T
-  >[];
+  export type TransactWriteItemList<T = DocumentClientV2> =
+    TransactWriteItem<T>[];
 
-  export type TransactWriteItemInput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.TransactWriteItemsInput
-    : DynamoDBClientV3.TransactWriteItemsInput;
+  export type TransactWriteItemInput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.TransactWriteItemsInput
+      : DynamoDBClientV3.TransactWriteItemsInput;
 
-  export type TransactWriteItemOutput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.TransactWriteItemsOutput
-    : DynamoDBClientV3.TransactWriteItemsOutput;
+  export type TransactWriteItemOutput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.TransactWriteItemsOutput
+      : DynamoDBClientV3.TransactWriteItemsOutput;
 
   /**
    * TransactGet
@@ -189,17 +172,15 @@ export namespace DocumentClientTypes {
 
   export type TransactGetItemList<T = DocumentClientV2> = TransactGetItem<T>[];
 
-  export type TransactGetItemInput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.TransactGetItemsInput
-    : DynamoDBClientV3.TransactGetItemsInput;
+  export type TransactGetItemInput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.TransactGetItemsInput
+      : DynamoDBClientV3.TransactGetItemsInput;
 
-  export type TransactGetItemOutput<
-    T = DocumentClientV2
-  > = T extends DocumentClientV2
-    ? DynamoDB.DocumentClient.TransactGetItemsOutput
-    : DynamoDBClientV3.TransactGetItemsOutput;
+  export type TransactGetItemOutput<T = DocumentClientV2> =
+    T extends DocumentClientV2
+      ? DynamoDB.DocumentClient.TransactGetItemsOutput
+      : DynamoDBClientV3.TransactGetItemsOutput;
 
   /**
    * Scan

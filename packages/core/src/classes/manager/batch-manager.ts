@@ -132,9 +132,8 @@ export class BatchManager {
               }
             );
 
-            const deleteTransactionItemList = transformedInput.lazyLoadTransactionWriteItems(
-              existingItem
-            );
+            const deleteTransactionItemList =
+              transformedInput.lazyLoadTransactionWriteItems(existingItem);
 
             return this.connection.transactionManger.writeRaw(
               deleteTransactionItemList,
@@ -261,12 +260,10 @@ export class BatchManager {
     });
 
     // 0. transform batch request
-    const {
-      batchRequestItemsList,
-      metadata,
-    } = this._dcBatchTransformer.toDynamoReadBatchItems(batch, {
-      requestId,
-    });
+    const {batchRequestItemsList, metadata} =
+      this._dcBatchTransformer.toDynamoReadBatchItems(batch, {
+        requestId,
+      });
 
     // 1. get items requests with concurrency applied
     const batchRequests = batchRequestItemsList.map(batchRequestItems => {
@@ -298,19 +295,17 @@ export class BatchManager {
     });
 
     // 3. run retries
-    const {
-      items,
-      unprocessedItemsList,
-    } = await this.recursiveHandleBatchReadItemsResponse(
-      initialResponses,
-      0,
-      options,
-      [],
-      {
-        requestId,
-        returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-      }
-    );
+    const {items, unprocessedItemsList} =
+      await this.recursiveHandleBatchReadItemsResponse(
+        initialResponses,
+        0,
+        options,
+        [],
+        {
+          requestId,
+          returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
+        }
+      );
 
     // 4.1 transform responses to look like model
     const transformedItems = items.map(item => {
@@ -326,9 +321,8 @@ export class BatchManager {
         return item;
       }
 
-      const {target} = this.connection.getEntityByPhysicalName(
-        entityPhysicalName
-      );
+      const {target} =
+        this.connection.getEntityByPhysicalName(entityPhysicalName);
       return this._dcBatchTransformer.fromDynamoEntity(target, item, {
         requestId,
       });
@@ -421,9 +415,10 @@ export class BatchManager {
       {} as DocumentClientTypes.BatchWriteItemRequestMap
     );
 
-    const batchRequestsItems = this._dcBatchTransformer.mapTableWriteItemsToBatchWriteItems(
-      sortedUnprocessedItems
-    );
+    const batchRequestsItems =
+      this._dcBatchTransformer.mapTableWriteItemsToBatchWriteItems(
+        sortedUnprocessedItems
+      );
 
     // apply limit on all parallel requests
     const batchRequests = batchRequestsItems.map(batchRequestMap => {
@@ -550,9 +545,10 @@ export class BatchManager {
       {} as DocumentClientTypes.BatchGetRequestMap
     );
 
-    const batchRequestsItemsList = this._dcBatchTransformer.mapTableReadItemsToBatchReadItems(
-      sortedUnprocessedItems
-    );
+    const batchRequestsItemsList =
+      this._dcBatchTransformer.mapTableReadItemsToBatchReadItems(
+        sortedUnprocessedItems
+      );
 
     // apply limit
     const batchRequests = batchRequestsItemsList.map(batchRequestMap => {

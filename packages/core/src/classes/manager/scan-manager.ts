@@ -434,9 +434,10 @@ export class ScanManager {
       },
     });
 
-    const entities = this._dcScanTransformer.fromDynamoScanResponseItemList<
-      Entity
-    >(response.items);
+    const entities =
+      this._dcScanTransformer.fromDynamoScanResponseItemList<Entity>(
+        response.items
+      );
 
     if (scanOptions?.entity && entities.unknownItems) {
       this.connection.logger.logWarn({
@@ -545,14 +546,11 @@ export class ScanManager {
     currentCount?: number;
     metadataOptions?: MetadataOptions;
   }): Promise<number> {
-    const {
-      Count,
-      LastEvaluatedKey,
-      ConsumedCapacity,
-    } = await this.connection.documentClient.scan({
-      ...scanInput,
-      ExclusiveStartKey: cursor,
-    });
+    const {Count, LastEvaluatedKey, ConsumedCapacity} =
+      await this.connection.documentClient.scan({
+        ...scanInput,
+        ExclusiveStartKey: cursor,
+      });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({

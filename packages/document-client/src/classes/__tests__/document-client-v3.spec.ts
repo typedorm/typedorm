@@ -10,7 +10,7 @@ const awsDcMock = {
 } as Partial<DynamoDBClient>;
 
 beforeEach(() => {
-  dc = new DocumentClientV3((awsDcMock as unknown) as DynamoDBClient);
+  dc = new DocumentClientV3(awsDcMock as unknown as DynamoDBClient);
 });
 
 test('registers a valid documentClient instance', async () => {

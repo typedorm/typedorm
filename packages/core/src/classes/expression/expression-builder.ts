@@ -65,9 +65,7 @@ export class ExpressionBuilder {
     return this.removeEmptyFieldsAndReturn(expression);
   }
 
-  buildConditionExpression(
-    condition: Condition
-  ): {
+  buildConditionExpression(condition: Condition): {
     ConditionExpression?: string;
     ExpressionAttributeNames?: Record<string, any>;
     ExpressionAttributeValues?: Record<string, any>;
@@ -85,9 +83,7 @@ export class ExpressionBuilder {
     return this.removeEmptyFieldsAndReturn(expression);
   }
 
-  buildProjectionExpression(
-    projection: Projection
-  ): {
+  buildProjectionExpression(projection: Projection): {
     ProjectionExpression?: string;
     ExpressionAttributeNames?: Record<string, any>;
   } {
@@ -116,9 +112,7 @@ export class ExpressionBuilder {
     return this.removeEmptyFieldsAndReturn(expression);
   }
 
-  buildKeyConditionExpression(
-    condition: KeyCondition
-  ): {
+  buildKeyConditionExpression(condition: KeyCondition): {
     KeyConditionExpression?: string;
     ExpressionAttributeNames?: Record<string, any>;
     ExpressionAttributeValues?: Record<string, any>;
@@ -135,9 +129,7 @@ export class ExpressionBuilder {
     return this.removeEmptyFieldsAndReturn(expression);
   }
 
-  buildFilterExpression(
-    filter: Filter
-  ): {
+  buildFilterExpression(filter: Filter): {
     FilterExpression?: string;
     ExpressionAttributeNames?: Record<string, any>;
     ExpressionAttributeValues?: Record<string, any>;

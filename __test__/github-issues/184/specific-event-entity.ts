@@ -13,9 +13,9 @@ class BaseEvent {
   table: testTable,
   primaryKey: {
     partitionKey: 'SpecificEvent___{{id}}',
-    sortKey: ({
+    sortKey: {
       alias: 'sortKey',
-    } as unknown) as string,
+    } as unknown as string,
   },
 })
 export class SpecificEvent extends BaseEvent {

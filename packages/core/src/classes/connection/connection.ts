@@ -7,7 +7,7 @@ import {
   getEntityDefinition,
   NoSuchEntityExistsError,
 } from '@typedorm/common';
-import {loadPackage} from '@typedorm/common/src/helpers/load-package';
+import {loadPackage} from '@typedorm/common';
 import {
   DocumentClient,
   DocumentClientV2,

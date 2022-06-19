@@ -32,7 +32,8 @@ export interface UserSparseIndexesGSI1 {
   },
 })
 export class UserSparseIndexes
-  implements UserSparseIndexesPrimaryKey, UserSparseIndexesGSI1 {
+  implements UserSparseIndexesPrimaryKey, UserSparseIndexesGSI1
+{
   @Attribute()
   id: string;
 

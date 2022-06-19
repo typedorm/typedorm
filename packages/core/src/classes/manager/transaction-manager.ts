@@ -32,15 +32,13 @@ export class TransactionManager {
     metadataOptions?: MetadataOptions
   ) {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
-    const {
-      transactionItemList,
-      lazyTransactionWriteItemListLoader,
-    } = this._dcTransactionTransformer.toDynamoWriteTransactionItems(
-      transaction,
-      {
-        requestId,
-      }
-    );
+    const {transactionItemList, lazyTransactionWriteItemListLoader} =
+      this._dcTransactionTransformer.toDynamoWriteTransactionItems(
+        transaction,
+        {
+          requestId,
+        }
+      );
 
     this.connection.logger.logInfo({
       requestId,
@@ -101,14 +99,10 @@ export class TransactionManager {
   async read(transaction: ReadTransaction, metadataOptions?: MetadataOptions) {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
-    const {
-      transactionItemList,
-    } = this._dcTransactionTransformer.toDynamoReadTransactionItems(
-      transaction,
-      {
+    const {transactionItemList} =
+      this._dcTransactionTransformer.toDynamoReadTransactionItems(transaction, {
         requestId,
-      }
-    );
+      });
 
     if (transactionItemList.length > TRANSACTION_READ_ITEMS_LIMIT) {
       throw new ReadTransactionItemLimitExceededError(
