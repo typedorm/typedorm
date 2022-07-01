@@ -18,9 +18,8 @@ test('adds raw metadata', () => {
   })
   class User {}
 
-  const userRawMetadata = MetadataManager.metadataStorage.getRawEntityByTarget(
-    User
-  );
+  const userRawMetadata =
+    MetadataManager.metadataStorage.getRawEntityByTarget(User);
 
   expect(userRawMetadata).toEqual({
     name: 'user',

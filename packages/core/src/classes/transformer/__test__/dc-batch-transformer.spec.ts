@@ -268,9 +268,8 @@ test('transforms requests of items with multiple tables', () => {
 
   const writeBatch = new WriteBatch().add(largeBatchOfMixedUsers);
 
-  const {
-    batchWriteRequestMapItems,
-  } = dcBatchTransformer.toDynamoWriteBatchItems(writeBatch);
+  const {batchWriteRequestMapItems} =
+    dcBatchTransformer.toDynamoWriteBatchItems(writeBatch);
   expect(batchWriteRequestMapItems.length).toEqual(2);
   expect(batchWriteRequestMapItems[0][table.name].length).toEqual(16);
   expect(batchWriteRequestMapItems[0][oldUserTable.name].length).toEqual(9);

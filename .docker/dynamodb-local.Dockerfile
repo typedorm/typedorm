@@ -1,1 +1,0 @@
-FROM amazon/dynamodb-local

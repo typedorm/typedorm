@@ -18,15 +18,10 @@ export class EntityMetadataBuilder {
   }
   build(entityClasses: Function[]): EntityMetadata[] {
     return entityClasses.map(decoratedEntityClass => {
-      const {
-        target,
-        table,
-        name,
-        primaryKey,
-        indexes,
-      } = MetadataManager.metadataStorage.getRawEntityByTarget(
-        decoratedEntityClass
-      );
+      const {target, table, name, primaryKey, indexes} =
+        MetadataManager.metadataStorage.getRawEntityByTarget(
+          decoratedEntityClass
+        );
 
       if (table) {
         // if no entity level table is defined fallback to global connection table
@@ -39,9 +34,8 @@ export class EntityMetadataBuilder {
         throw new MissingRequiredTableConfig(decoratedEntityClass.name);
       }
 
-      const inheritedClasses = this.recursiveGetInheritanceTree(
-        decoratedEntityClass
-      );
+      const inheritedClasses =
+        this.recursiveGetInheritanceTree(decoratedEntityClass);
 
       // metadata are sorted by [very base class] -> [very derived class]
       const inheritedEntitiesAttributesMetadata = inheritedClasses

@@ -48,12 +48,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     metadataOptions?: MetadataOptions
   ): {
     batchWriteRequestMapItems: DocumentClientTypes.BatchWriteItemRequestMapList;
-    transactionListItems: BatchWriteItemTransform<
-      DocumentClientTypes.TransactWriteItemList
-    >[];
-    lazyTransactionWriteItemListLoaderItems: BatchWriteItemTransform<
-      LazyTransactionWriteItemListLoader
-    >[];
+    transactionListItems: BatchWriteItemTransform<DocumentClientTypes.TransactWriteItemList>[];
+    lazyTransactionWriteItemListLoaderItems: BatchWriteItemTransform<LazyTransactionWriteItemListLoader>[];
     metadata: {
       namespaceId: string;
       itemTransformHashMap: Map<string, WriteBatchItem<any, any>>;
@@ -79,9 +75,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
 
     // divide sorted requests in multiple batch items requests, as there are max
     // 25 items are allowed in a single batch operation
-    const batchWriteRequestItems = this.mapTableWriteItemsToBatchWriteItems(
-      sorted
-    );
+    const batchWriteRequestItems =
+      this.mapTableWriteItemsToBatchWriteItems(sorted);
 
     const transformed = {
       batchWriteRequestMapItems: batchWriteRequestItems,
@@ -119,9 +114,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       body: items,
     });
 
-    const {metadata, batchReadRequestItems} = this.transformBatchReadItems(
-      items
-    );
+    const {metadata, batchReadRequestItems} =
+      this.transformBatchReadItems(items);
 
     // organize all requests in "tableName - requestItem" format
     const sortedByTableName = this.getReadRequestsSortedByTable(
@@ -130,9 +124,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
 
     // divide sorted requests in multiple batch items requests, as there are max
     // 100 items are allowed in a single batch read operation
-    const batchRequestItemsList = this.mapTableReadItemsToBatchReadItems(
-      sortedByTableName
-    );
+    const batchRequestItemsList =
+      this.mapTableReadItemsToBatchReadItems(sortedByTableName);
 
     const transformed = {
       batchRequestItemsList,
@@ -375,12 +368,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       },
       {
         simpleBatchRequestItems: [] as WriteRequestWithMeta[],
-        transactionListItems: [] as BatchWriteItemTransform<
-          DocumentClientTypes.TransactWriteItemList
-        >[],
-        lazyTransactionWriteItemListLoaderItems: [] as BatchWriteItemTransform<
-          LazyTransactionWriteItemListLoader
-        >[],
+        transactionListItems:
+          [] as BatchWriteItemTransform<DocumentClientTypes.TransactWriteItemList>[],
+        lazyTransactionWriteItemListLoaderItems:
+          [] as BatchWriteItemTransform<LazyTransactionWriteItemListLoader>[],
         metadata: {
           namespaceId,
           itemTransformHashMap,

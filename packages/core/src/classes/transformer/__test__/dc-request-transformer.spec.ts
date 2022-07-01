@@ -980,13 +980,13 @@ test('allows updating primary key attribute and non key attribute in the same re
   });
 
   expect(
-    (updateItem as LazyTransactionWriteItemListLoader).lazyLoadTransactionWriteItems(
-      {
-        id: 1,
-        category: CATEGORY.KIDS,
-        name: 'old name',
-      }
-    )
+    (
+      updateItem as LazyTransactionWriteItemListLoader
+    ).lazyLoadTransactionWriteItems({
+      id: 1,
+      category: CATEGORY.KIDS,
+      name: 'old name',
+    })
   ).toEqual([
     {
       Put: {
