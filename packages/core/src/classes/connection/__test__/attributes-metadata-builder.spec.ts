@@ -6,6 +6,7 @@ import {
   Attribute,
   AutoGenerateAttribute,
   AUTO_GENERATE_ATTRIBUTE_STRATEGY,
+  ConflictingAttributeNameError,
 } from '@typedorm/common';
 import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
 import {User} from '../../../../__mocks__/user';
@@ -269,6 +270,5 @@ test('throws an error when attribute name conflicts with a primary key or sort k
     attributesMetadataBuilder
       .build(mockTable, AdminTest, AdminTest)
       .map(obj => Object.assign({}, obj));
-
-  expect(metadata).toThrow('dasdasds');
+  expect(metadata).toThrow(ConflictingAttributeNameError);
 });
