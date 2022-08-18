@@ -17,6 +17,7 @@ export * from './src/classes/batch/read-batch';
 export * from './src/classes/manager/entity-manager';
 export * from './src/classes/manager/batch-manager';
 export * from './src/classes/manager/transaction-manager';
+export * from './src/classes/manager/scan-manager';
 
 // classes
 export {Connection} from './src/classes/connection/connection';

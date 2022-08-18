@@ -25,7 +25,6 @@ exports_files(
         ".npmignore",
     ],
     visibility = [
-        "//examples:__subpackages__",
-        "//packages:__subpackages__",
+        "//packages:__subpackages__"
     ],
 )
