@@ -1,7 +1,9 @@
 import {
   CONSUMED_CAPACITY_TYPE,
   EntityAttributes,
+  EntityInstance,
   EntityTarget,
+  IsEntityInstance,
   MANAGER_NAME,
   QUERY_ORDER,
   STATS_TYPE,
@@ -189,10 +191,17 @@ export class EntityManager {
    * @param entity Entity to add to table as a new record
    */
   async create<Entity>(
-    entity: Entity,
+    entity: EntityInstance,
     options?: EntityManagerCreateOptions<Entity>,
     metadataOptions?: MetadataOptions
   ): Promise<Entity> {
+    if (!IsEntityInstance(entity)) {
+      throw new Error(
+        `Provided entity ${JSON.stringify(
+          entity
+        )} must be an instance of an entity class`
+      );
+    }
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
     const dynamoPutItemInput = this._dcReqTransformer.toDynamoPutItem(
