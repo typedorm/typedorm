@@ -31,7 +31,6 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "emitDecoratorMetadata": true,
-    "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
       "@typedorm/*": [
