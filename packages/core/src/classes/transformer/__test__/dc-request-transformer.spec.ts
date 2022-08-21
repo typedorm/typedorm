@@ -956,6 +956,30 @@ test('throws when trying to update primary key attribute and unique attribute in
   expect(updateItem).toThrow(InvalidUniqueAttributeUpdateError);
 });
 
+test('should not throw when trying to update unique attribute that is also made up of primary key attribute', () => {
+  const updateItem = transformer.toDynamoUpdateItem<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: 'ID',
+    },
+    {
+      id: 'ID',
+      email: 'new@email.com',
+    }
+  );
+
+  expect(updateItem).not.toBeNull();
+  expect(updateItem).toMatchObject({
+    entityClass: UserUniqueEmail,
+    primaryKeyAttributes: {
+      id: 'ID',
+    },
+  });
+});
+
 test('allows updating primary key attribute and non key attribute in the same request', () => {
   const updateItem = transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
     Photo,
