@@ -343,7 +343,11 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     return transformBody;
   }
 
-  toDynamoUpdateItem<Entity, PrimaryKey, AdditionalProperties = Entity>(
+  toDynamoUpdateItem<
+    Entity,
+    PrimaryKey = Record<string, unknown>,
+    AdditionalProperties = Entity
+  >(
     entityClass: EntityTarget<Entity>,
     primaryKeyAttributes: PrimaryKey,
     body: UpdateBody<Entity, AdditionalProperties>,
@@ -397,6 +401,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       },
       {} as {[key: string]: any}
     );
+
     const rawAttributesToUpdate = {
       ...body,
       ...formattedAutoUpdateAttributes,
@@ -407,6 +412,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
      *
      * Here we parse all attributes to it's update value and determine
      * if it's value can be statically inferred
+     * and also omit all attributes
+     * from body that has the same defined in primary key
+     *
      */
     const staticOrDynamicUpdateAttributesWithMetadata = Object.entries({
       ...rawAttributesToUpdate,
@@ -480,11 +488,27 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     /**
      * 3.1 - Get referenced primary key attributes and validate that current update body can be safely applied
      */
+    const explicitAttributesToUpdate = Object.entries({
+      ...staticOrDynamicUpdateAttributesWithMetadata.transformed,
+    }).reduce((acc, [attrKey, attrValue]) => {
+      // Attribute in Body that are in primary key attributes and have the do not require any updates
+      if (
+        (primaryKeyAttributes as Record<string, unknown>)[attrKey] !== attrValue
+      ) {
+        acc[attrKey] = attrValue;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
     const affectedPrimaryKeyAttributes =
       this.getAffectedPrimaryKeyAttributes<Entity>(
         entityClass,
-        staticOrDynamicUpdateAttributesWithMetadata.transformed,
-        staticOrDynamicUpdateAttributesWithMetadata.typeMetadata
+        explicitAttributesToUpdate,
+        staticOrDynamicUpdateAttributesWithMetadata.typeMetadata,
+        {
+          additionalAttributesDict:
+            staticOrDynamicUpdateAttributesWithMetadata.transformed,
+        }
       );
 
     // validate primary key attributes

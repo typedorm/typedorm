@@ -152,7 +152,10 @@ export abstract class BaseTransformer {
   getAffectedPrimaryKeyAttributes<Entity>(
     entityClass: EntityTarget<Entity>,
     attributes: Record<string, any>,
-    attributesTypeMetadata: Record<string, 'static' | 'dynamic'>
+    attributesTypeMetadata: Record<string, 'static' | 'dynamic'>,
+    options?: {
+      additionalAttributesDict?: Record<string, any>;
+    }
   ) {
     const {
       schema: {primaryKey},
@@ -191,7 +194,7 @@ export abstract class BaseTransformer {
 
             const parsedKey = parseKey(
               primaryKey.attributes[primaryKeyAttrName],
-              attributes
+              {...options?.additionalAttributesDict, ...attributes}
             );
             acc[primaryKeyAttrName] = parsedKey;
           }
