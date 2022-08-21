@@ -56,7 +56,7 @@
         "bazel-out/host/bin/packages/*/esm",
         "bazel-out/darwin-fastbuild/bin/packages/*/esm",
         "bazel-out/darwin-dbg/bin/packages/*/esm"
-      ],
+      ]
     },
     "rootDirs": [
       ".",
