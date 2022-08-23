@@ -17,6 +17,8 @@ import {
   BaseAttributeMetadata,
 } from './base-attribute-metadata';
 
+export type DefaultValueProvider = (entity: any) => ScalarType;
+
 export interface AttributeMetadataOptions extends BaseAttributeMetadataOptions {
   table: Table;
   entityClass: EntityTarget<any>;
@@ -26,7 +28,7 @@ export interface AttributeMetadataOptions extends BaseAttributeMetadataOptions {
 
 export class AttributeMetadata extends BaseAttributeMetadata {
   readonly unique?: DynamoEntitySchemaPrimaryKey;
-  readonly default?: (entity: any) => ScalarType;
+  readonly default?: DefaultValueProvider;
   readonly table: Table;
   readonly entityClass: EntityTarget<any>;
   constructor(options: AttributeMetadataOptions) {

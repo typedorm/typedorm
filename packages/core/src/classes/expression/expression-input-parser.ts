@@ -1,5 +1,6 @@
 import {
   ATTRIBUTE_TYPE,
+  isSerializableToScalarType,
   RangeOperator,
   ScalarType,
   SimpleOperator,
@@ -380,10 +381,17 @@ export class ExpressionInputParser {
             )}" found for attribute: ${attribute}`
           );
         }
-        const [innerOp, innerVal] = operatorAndValue[0] as [any, ScalarType];
+        const [innerOp, innerVal] = operatorAndValue[0] as [any, any];
 
         if (isScalarType(innerVal)) {
           return this.parseScalarValueToExp(innerOp, attribute, innerVal, exp);
+        } else if (isSerializableToScalarType(innerVal)) {
+          return this.parseScalarValueToExp(
+            innerOp,
+            attribute,
+            innerVal.toDynamoDB(),
+            exp
+          );
         } else {
           return this.parseNonScalarValueToExp(
             innerOp,
