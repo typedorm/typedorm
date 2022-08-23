@@ -1,5 +1,4 @@
-import {IScalarTypeProvider} from './scalar-type-provider';
+import {ITransformable} from './transformable';
 
-export const isSerializableToScalarType = (
-  item: any
-): item is IScalarTypeProvider => 'toDynamoDB' in item;
+export const isSerializableToScalarType = (item: any): item is ITransformable =>
+  'toDynamoDB' in item;

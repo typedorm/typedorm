@@ -1,3 +1,4 @@
+import {ExampleScalarValueProvider} from '../../../../__mocks__/example-scalar-value-provider';
 import {ATTRIBUTE_TYPE} from '@typedorm/common';
 import {User, UserPrimaryKey} from '@typedorm/core/__mocks__/user';
 import {Condition} from '../condition';
@@ -26,6 +27,16 @@ test('parses keyCondition input', () => {
   );
 });
 
+test('parses value from ScalarProvider type to keyCondition input', () => {
+  const parsedCondition = expInputParser.parseToKeyCondition('SK', {
+    EQ: new ExampleScalarValueProvider(1),
+  });
+
+  expect(parsedCondition).toBeInstanceOf(KeyCondition);
+  expect(parsedCondition.expression).toEqual('#KY_CE_SK = :KY_CE_SK');
+  expect(parsedCondition.values).toEqual({':KY_CE_SK': 'DEMO#1'});
+});
+
 /**
  * @group parseToFilter
  */
@@ -38,6 +49,19 @@ test('parses simple filter input', () => {
 
   expect(parsedFilter).toBeInstanceOf(Filter);
   expect(parsedFilter?.expression).toEqual('#FE_age = :FE_age');
+});
+
+test('parses simple filter input with complex scalar type provider', () => {
+  const parsedFilter = expInputParser.parseToFilter<User, UserPrimaryKey>({
+    complexAttribute: {
+      IN: [new ExampleScalarValueProvider(12)],
+    },
+  });
+
+  expect(parsedFilter).toBeInstanceOf(Filter);
+  expect(parsedFilter?.expression).toEqual(
+    '#FE_complexAttribute IN (:FE_complexAttribute_0)'
+  );
 });
 
 /**
@@ -293,6 +317,19 @@ test('parses logical condition expression with no attributes', () => {
   });
   expect(parsedCondition).toBeInstanceOf(Condition);
   expect(parsedCondition?.expression).toEqual('');
+});
+
+test('parses logical condition expression with scalar value provider', () => {
+  const parsedCondition = expInputParser.parseToCondition<User>({
+    complexAttribute: {
+      EQ: new ExampleScalarValueProvider(3),
+    },
+  });
+  expect(parsedCondition).toBeInstanceOf(Condition);
+  expect(parsedCondition?.expression).toEqual(
+    '#CE_complexAttribute = :CE_complexAttribute'
+  );
+  expect(parsedCondition?.values).toEqual({':CE_complexAttribute': 'DEMO#3'});
 });
 
 test('parses logical condition expression with single attribute value', () => {

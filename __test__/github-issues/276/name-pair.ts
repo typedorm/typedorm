@@ -1,6 +1,6 @@
-import {IScalarTypeProvider} from '@typedorm/common';
+import {ITransformable} from '@typedorm/common';
 
-export class NamePair implements IScalarTypeProvider {
+export class NamePair implements ITransformable {
   firstName: string;
   lastName: string;
 

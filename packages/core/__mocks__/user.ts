@@ -1,4 +1,5 @@
 import {Attribute, Entity, INDEX_TYPE} from '@typedorm/common';
+import {ExampleScalarValueProvider} from './example-scalar-value-provider';
 import {table} from './table';
 
 export interface UserPrimaryKey {
@@ -41,4 +42,7 @@ export class User implements UserPrimaryKey, UserGSI1 {
 
   @Attribute()
   addresses: string[];
+
+  @Attribute()
+  complexAttribute: ExampleScalarValueProvider;
 }

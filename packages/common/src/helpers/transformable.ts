@@ -1,5 +1,5 @@
 import {ScalarType} from './scalar-type';
 
-export interface IScalarTypeProvider {
+export interface ITransformable {
   toDynamoDB: () => ScalarType;
 }

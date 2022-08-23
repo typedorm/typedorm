@@ -55,6 +55,12 @@ test('builds simple attribute metadata', () => {
       name: 'addresses',
       table,
     },
+    {
+      entityClass: User,
+      type: 'ExampleScalarValueProvider',
+      name: 'complexAttribute',
+      table,
+    },
   ]);
 });
 
@@ -101,6 +107,12 @@ test('builds attribute metadata for inherited entity', () => {
       entityClass: Admin,
       type: 'Array',
       name: 'addresses',
+      table,
+    },
+    {
+      entityClass: Admin,
+      type: 'ExampleScalarValueProvider',
+      name: 'complexAttribute',
       table,
     },
   ]);

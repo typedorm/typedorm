@@ -24,7 +24,7 @@ export * from './src/helpers/nested-attributes-type';
 export * from './src/utils/get-entity-definition';
 export * from './src/helpers/invalid-type';
 export * from './src/helpers/resolve-scalar-type';
-export * from './src/helpers/scalar-type-provider';
+export * from './src/helpers/transformable';
 
 // classes
 export * from './src/table';
