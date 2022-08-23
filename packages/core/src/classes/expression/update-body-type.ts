@@ -102,12 +102,11 @@ export type UpdateBody<Entity, AdditionalProperties> = {
     | AddValueType<Entity, enKey>
     | RemoveValueType<Entity, enKey>
     | DeleteValueType<Entity, enKey>;
-} &
-  {
-    // implicit set  type
-    [additionalKey in keyof AdditionalProperties]?:
-      | SetValueType<AdditionalProperties, additionalKey>
-      | AddValueType<AdditionalProperties, additionalKey>
-      | RemoveValueType<AdditionalProperties, additionalKey>
-      | DeleteValueType<AdditionalProperties, additionalKey>;
-  };
+} & {
+  // implicit set  type
+  [additionalKey in keyof AdditionalProperties]?:
+    | SetValueType<AdditionalProperties, additionalKey>
+    | AddValueType<AdditionalProperties, additionalKey>
+    | RemoveValueType<AdditionalProperties, additionalKey>
+    | DeleteValueType<AdditionalProperties, additionalKey>;
+};

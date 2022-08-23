@@ -52,6 +52,8 @@ createConnection({
   dynamoQueryItemsImplicitLimit
 
   // Document client to register for current connection
+  // When using AWS SDK V2 - This needs to be a valid DocumentClient instance from AWS SDK V2
+  // When using AWS SDK V3 - This needs to be a valid DocumentClient instance from AWS SDK V3
   // @default new document client will be auto instantiated
   documentClient
 })
@@ -241,6 +243,11 @@ findOne(
     // Specify attributes to get, only selected attributes are fetched
     // @default `ALL`
     select
+
+    // @optional
+    // Perform a consistent read on the table, consumes twice as much RCUs then normal
+    // @default false
+    consistentRead
   },
 
   // @optional
@@ -269,6 +276,14 @@ exists(
 
   // Primary key attributes or unique attributes referenced in schemas
   attributes,
+
+  // @optional
+  options: {
+    // @optional
+    // Perform a consistent read on the table, consumes twice as much RCUs then normal
+    // @default false
+    consistentRead
+  }
 
   // @optional
   // extra non-functional options
@@ -426,6 +441,11 @@ find(
     // Specify attributes to get, only selected attributes are fetched
     // @default `ALL`
     select
+
+    // @optional
+    // Perform a consistent read on the table, consumes twice as much RCUs then normal
+    // @default false
+    consistentRead
   },
 
   // @optional
@@ -475,6 +495,11 @@ count(
     // therefore this should be avoided wherever possible, but can be helpful in some cases
     // see this https://www.alexdebrie.com/posts/dynamodb-filter-expressions/ for more details
     where
+
+    // @optional
+    // Perform a consistent read on the table, consumes twice as much RCUs then normal
+    // @default false
+    consistentRead
   },
 
   // @optional

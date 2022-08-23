@@ -3,21 +3,24 @@ load("//:tools/pkg.bzl", "typedorm_package")
 
 setup_ts_build(
     name = "library",
-    module_name = "@typedorm/testing",
-    deps = [
-        "//packages/core:library",
-        "//packages/common:library",
-        "@npm//aws-sdk",
-        "@npm//@types/jest"
+    visibility = [
+        "//packages:__subpackages__"
     ],
-    visibility = ["//packages:__subpackages__"]
-
+    tsconfig_cjs = "//:tsconfig_cjs",
+    tsconfig_esm = "//:tsconfig_esm",    
+    deps = [
+        "//packages/common:library",
+        "//packages/core:library",
+        "@npm//@types/jest",
+        "@npm//aws-sdk",
+    ],
 )
 
 typedorm_package(
     name = "testing",
+    package_name = "@typedorm/testing",
     readme_md = "README.md",
     deps = [
-        ":library"
-    ]
+        ":library",
+    ],
 )

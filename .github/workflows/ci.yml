@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '16.x'
       - name: Cache NPM dependencies
         uses: actions/cache@v2
         with:
@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '16.x'
       - name: Load dependencies
         uses: actions/cache@v2
         with:
@@ -60,7 +60,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '16.x'
       - name: Load dependencies
         uses: actions/cache@v2
         with:
@@ -80,7 +80,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '16.x'
       - name: Load dependencies
         uses: actions/cache@v2
         with:

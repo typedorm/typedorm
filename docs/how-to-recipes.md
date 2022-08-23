@@ -34,6 +34,7 @@ This page will walk you through some of the unique recipes to enhance your devel
   - [Read items in batches](#read-items-in-batches)
     - [Read items](#read-items)
     - [Retry unprocessed read items in batches](#retry-unprocessed-read-items-in-batches)
+  - [Bundling TypeDORM using webpack](#bundling-typedorm-using-webpack)
 
 ## Entity configuration
 
@@ -609,3 +610,10 @@ const retryBatchWriteResponse = await getBatchManager().read(newBatchFromUnproce
 // response
 // run some application logic.
 ```
+
+## Bundling TypeDORM using webpack
+
+TypeDORM is often useful in serverless environments (when running it it on lambda) or executing it from browser directly, in either cases you might want to bundle the TypeDORM and other dependencies into single runable file.
+From v1.15.0 TypeDORM by default ships with two different formats out of the box. Commonjs - for legacy packages and is the default in most cases, and ESM - for treeshakable bundling.
+
+For a working example on bundling TypeDORM with webpack refer to this [link](https://github.com/typedorm/typedorm-examples).

@@ -25,8 +25,5 @@ export * from './src/utils/get-entity-definition';
 export * from './src/helpers/invalid-type';
 export * from './src/helpers/resolve-scalar-type';
 
-// exceptions
-export * from './src/exceptions';
-
 // classes
 export * from './src/table';

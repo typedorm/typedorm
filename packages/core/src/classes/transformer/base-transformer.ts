@@ -27,6 +27,11 @@ export interface MetadataOptions {
   returnConsumedCapacity?: CONSUMED_CAPACITY_TYPE;
 }
 
+export interface MetadataOptions {
+  requestId?: string;
+  returnConsumedCapacity?: CONSUMED_CAPACITY_TYPE;
+}
+
 export abstract class BaseTransformer {
   protected _expressionInputParser: ExpressionInputParser;
 
@@ -147,7 +152,10 @@ export abstract class BaseTransformer {
   getAffectedPrimaryKeyAttributes<Entity>(
     entityClass: EntityTarget<Entity>,
     attributes: Record<string, any>,
-    attributesTypeMetadata: Record<string, 'static' | 'dynamic'>
+    attributesTypeMetadata: Record<string, 'static' | 'dynamic'>,
+    options?: {
+      additionalAttributesDict?: Record<string, any>;
+    }
   ) {
     const {
       schema: {primaryKey},
@@ -186,7 +194,7 @@ export abstract class BaseTransformer {
 
             const parsedKey = parseKey(
               primaryKey.attributes[primaryKeyAttrName],
-              attributes
+              {...options?.additionalAttributesDict, ...attributes}
             );
             acc[primaryKeyAttrName] = parsedKey;
           }

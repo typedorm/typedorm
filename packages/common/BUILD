@@ -3,23 +3,27 @@ load("//:tools/pkg.bzl", "typedorm_package")
 
 setup_ts_build(
     name = "library",
-    module_name = "@typedorm/common",
+    visibility = [
+        "//packages:__subpackages__"
+    ],
+    tsconfig_cjs = "//:tsconfig_cjs",
+    tsconfig_esm = "//:tsconfig_esm",
     deps = [
+        "@npm//@types/debug",
+        "@npm//@types/uuid",
+        "@npm//chalk",
+        "@npm//class-transformer",
+        "@npm//debug",
         "@npm//reflect-metadata",
         "@npm//uuid",
-        "@npm//@types/uuid",
-        "@npm//debug",
-        "@npm//@types/debug",
-        "@npm//chalk",
-        "@npm//class-transformer"
     ],
-    visibility = ["//packages:__subpackages__"]
 )
 
 typedorm_package(
     name = "common",
+    package_name = "@typedorm/common",
     readme_md = "README.md",
     deps = [
-        ":library"
-    ]
+        ":library",
+    ],
 )

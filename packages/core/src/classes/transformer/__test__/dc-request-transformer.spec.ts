@@ -1,7 +1,7 @@
+import {LazyTransactionWriteItemListLoader} from './../is-lazy-transaction-write-item-list-loader';
 import {
   Attribute,
   Entity,
-  InvalidPrimaryKeyAttributesUpdateError,
   InvalidUniqueAttributeUpdateError,
   QUERY_ORDER,
 } from '@typedorm/common';
@@ -82,6 +82,27 @@ test('transforms get item requests for inherited class', () => {
       SK: 'CUS#user@example.com',
     },
     TableName: 'test-table',
+  });
+});
+
+test('transforms get item requests with consistent read options', () => {
+  const getItem = transformer.toDynamoGetItem(
+    Customer,
+    {
+      id: '1',
+      email: 'user@example.com',
+    },
+    {
+      consistentRead: true,
+    }
+  );
+  expect(getItem).toEqual({
+    Key: {
+      PK: 'CUS#1',
+      SK: 'CUS#user@example.com',
+    },
+    TableName: 'test-table',
+    ConsistentRead: true,
   });
 });
 
@@ -935,21 +956,87 @@ test('throws when trying to update primary key attribute and unique attribute in
   expect(updateItem).toThrow(InvalidUniqueAttributeUpdateError);
 });
 
-test('throws when trying to update primary key attribute and non key attribute in the same request', () => {
-  const updateItem = () =>
-    transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
-      Photo,
-      {
-        category: CATEGORY.PETS,
-        id: 1,
-      },
-      {
-        id: 2,
-        createdAt: moment(),
-      }
-    );
+test('should not throw when trying to update unique attribute that is also made up of primary key attribute', () => {
+  const updateItem = transformer.toDynamoUpdateItem<
+    UserUniqueEmail,
+    UserUniqueEmailPrimaryKey
+  >(
+    UserUniqueEmail,
+    {
+      id: 'ID',
+    },
+    {
+      id: 'ID',
+      email: 'new@email.com',
+    }
+  );
 
-  expect(updateItem).toThrow(InvalidPrimaryKeyAttributesUpdateError);
+  expect(updateItem).not.toBeNull();
+  expect(updateItem).toMatchObject({
+    entityClass: UserUniqueEmail,
+    primaryKeyAttributes: {
+      id: 'ID',
+    },
+  });
+});
+
+test('allows updating primary key attribute and non key attribute in the same request', () => {
+  const updateItem = transformer.toDynamoUpdateItem<Photo, PhotoPrimaryKey>(
+    Photo,
+    {
+      category: CATEGORY.PETS,
+      id: 1,
+    },
+    {
+      id: 2,
+      createdAt: moment(),
+      name: 'new name',
+    }
+  );
+
+  expect(updateItem).toEqual({
+    entityClass: Photo,
+    lazyLoadTransactionWriteItems: expect.any(Function),
+    primaryKeyAttributes: {
+      category: 'PETS',
+      id: 1,
+    },
+  });
+
+  expect(
+    (
+      updateItem as LazyTransactionWriteItemListLoader
+    ).lazyLoadTransactionWriteItems({
+      id: 1,
+      category: CATEGORY.KIDS,
+      name: 'old name',
+    })
+  ).toEqual([
+    {
+      Put: {
+        Item: {
+          GSI1PK: 'PHOTO#2',
+          SK: 'PHOTO#2',
+          category: 'KIDS',
+          createdAt: '2021-06-01',
+          id: 2,
+          name: 'new name',
+          updatedAt: '1622530750',
+        },
+        ReturnValues: 'ALL_NEW',
+        TableName: 'test-table',
+      },
+    },
+    {
+      Delete: {
+        Key: {
+          PK: 'PHOTO#KIDS',
+          SK: 'PHOTO#1',
+        },
+        TableName: 'test-table',
+      },
+    },
+  ]);
 });
 
 test('transforms update item request with complex condition input', () => {
@@ -1180,6 +1267,29 @@ test('transforms simple query item request', () => {
   });
 });
 
+test('transforms simple query item request with consistent read option', () => {
+  const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
+    User,
+    {
+      id: '1',
+    },
+    {
+      consistentRead: true,
+    }
+  );
+  expect(queryItem).toEqual({
+    ExpressionAttributeNames: {
+      '#KY_CE_PK': 'PK',
+    },
+    ExpressionAttributeValues: {
+      ':KY_CE_PK': 'USER#1',
+    },
+    KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
+    TableName: 'test-table',
+    ConsistentRead: true,
+  });
+});
+
 test('transforms simple query item request with projection expression', () => {
   const queryItem = transformer.toDynamoQueryItem<User, UserPrimaryKey>(
     User,
@@ -1199,7 +1309,6 @@ test('transforms simple query item request with projection expression', () => {
     ExpressionAttributeValues: {
       ':KY_CE_PK': 'USER#1',
     },
-    ScanIndexForward: true,
     KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
     TableName: 'test-table',
     ProjectionExpression: '#PE_status, #PE_name',
@@ -1223,7 +1332,6 @@ test('transforms simple count query item request', () => {
     ExpressionAttributeValues: {
       ':KY_CE_PK': 'USER#1',
     },
-    ScanIndexForward: true,
     KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
     TableName: 'test-table',
     Select: 'COUNT',
@@ -1253,7 +1361,6 @@ test('transforms query item request with filter input', () => {
       ':KY_CE_PK': 'USER#1',
       ':FE_name': 'suzan',
     },
-    ScanIndexForward: true,
     KeyConditionExpression: '#KY_CE_PK = :KY_CE_PK',
     FilterExpression: '#FE_name = :FE_name',
     TableName: 'test-table',

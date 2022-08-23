@@ -64,7 +64,7 @@ export class Update extends BaseExpressionInput {
    */
   mergeMany<T = this>(inputs: T[]): any {
     const merged = inputs.reduce((acc, upd) => {
-      acc.merge((upd as unknown) as this);
+      acc.merge(upd as unknown as this);
       return acc;
     }, this);
 

@@ -1,0 +1,40 @@
+{
+  "name": "@typedorm/document-client",
+  "version": "0.0.0-PLACEHOLDER",
+  "type": "commonjs",
+  "main": "cjs/index.js",
+  "module": "esm/index.js",
+  "exports": {
+    ".": {
+      "require": "./cjs/index.js",
+      "import": "./esm/index.js"
+    }
+  },
+  "description": "Lightweight Document Client helper for DynamoDB",
+  "keywords": [
+    "core",
+    "typedorm",
+    "dynamoDb orm",
+    "document-client",
+    "document-client-v3",
+    "aws-sdk",
+    "aws-sdk-v3",
+    "orm"
+  ],
+  "peerDependencies": {
+    "aws-sdk": "^2.799.0",
+    "@aws-sdk/lib-dynamodb": "^3.53.0",
+    "@aws-sdk/client-dynamodb": "^3.53.0"
+  },
+  "publishConfig": {
+    "tag": "TAG-PLACEHOLDER",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/typedorm/typedorm.git",
+    "directory": "packages/document-client"
+  },
+  "author": "typedorm",
+  "license": "MIT"
+}
