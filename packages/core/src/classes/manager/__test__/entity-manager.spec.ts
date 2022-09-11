@@ -14,6 +14,7 @@ import {
 import {Connection} from '../../connection/connection';
 import {
   CONSUMED_CAPACITY_TYPE,
+  EntityInstance,
   InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
 import {
@@ -210,6 +211,34 @@ test('creates entity and returns all attributes, including auto generated ones',
     id: '1',
     updatedAt: 1606896235,
   });
+});
+
+/**
+ * Issue: #203
+ */
+test('will throw when called with a POJO rather than an instance of a entity class', async () => {
+  dcMock.put.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const user = new User();
+  user.id = '1';
+  user.name = 'Test User';
+  user.status = 'active';
+
+  await manager.create<User>(user); // works
+
+  const userProperties = {
+    id: '2',
+    age: 2,
+    name: 'two',
+    status: 'broken',
+    addresses: ['address a'],
+  };
+
+  await expect(
+    manager.create<User>(userProperties as EntityInstance)
+  ).rejects.toBeInstanceOf(Error);
 });
 
 /**

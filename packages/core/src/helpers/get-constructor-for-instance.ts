@@ -1,11 +1,10 @@
-import {EntityInstance, EntityTarget, IsEntityInstance} from '@typedorm/common';
+import {EntityTarget, IsEntityInstance} from '@typedorm/common';
 
-export function getConstructorForInstance<Entity>(entity: Entity) {
-  let entityClass: EntityTarget<Entity>;
-  if (IsEntityInstance(entity)) {
-    entityClass = (entity as EntityInstance).constructor;
-  } else {
+export function getConstructorForInstance<Entity>(
+  entity: unknown
+): EntityTarget<Entity> {
+  if (!IsEntityInstance(entity)) {
     throw new Error('Cannot transform Class to dynamo object');
   }
-  return entityClass;
+  return entity.constructor;
 }

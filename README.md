@@ -50,6 +50,7 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 - Complex update, key condition and condition expression all made easy to work with
 - Powerful expression builder to auto generate expressions from input
 - Typescript and javascript support
+- Commonjs and ESM module support out of the box (see more [here](./docs/how-to-recipes.md#bundling-typedorm-using-webpack))
 
 And many more to come.
 

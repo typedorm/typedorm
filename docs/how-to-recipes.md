@@ -5,7 +5,8 @@ This page will walk you through some of the unique recipes to enhance your devel
 - [How to recipes](#how-to-recipes)
   - [Entity configuration](#entity-configuration)
     - [Define a simple entity](#define-a-simple-entity)
-    - [Define an entity with index](#define-an-entity-with-index)
+    - [Define an entity with attribute aliases in primary key](#define-an-entity-with-attribute-aliases-in-primary-key)
+    - [Define an entity with attribute aliases in index](#define-an-entity-with-attribute-aliases-in-index)
   - [Attribute Transformation](#attribute-transformation)
     - [Using TransformToDynamo](#using-transformtodynamo)
     - [Using TransformFromDynamo](#using-transformfromdynamo)
@@ -33,6 +34,7 @@ This page will walk you through some of the unique recipes to enhance your devel
   - [Read items in batches](#read-items-in-batches)
     - [Read items](#read-items)
     - [Retry unprocessed read items in batches](#retry-unprocessed-read-items-in-batches)
+  - [Bundling TypeDORM using webpack](#bundling-typedorm-using-webpack)
 
 ## Entity configuration
 
@@ -58,7 +60,30 @@ class User {
 }
 ```
 
-### Define an entity with index
+### Define an entity with attribute aliases in primary key
+
+```Typescript
+@Entity<User>(
+  name: 'user', // name of the entity that will be added to each item as an attribute
+  // primary key
+  primaryKey: {
+    partitionKey: 'USER#{{id}}',
+    sortKey: {
+      alias: 'age' // <- this tells TypeDORM to auto infer "type" and "value" for partition key from age attribute.
+    },
+  }
+)
+class User {
+  @Attribute()
+  id: string  // <- this attribute is required as it is referenced by primary key
+
+  @Attribute()
+  age: number
+
+}
+```
+
+### Define an entity with attribute aliases in index
 
 ```Typescript
 @Entity<User>(
@@ -585,3 +610,10 @@ const retryBatchWriteResponse = await getBatchManager().read(newBatchFromUnproce
 // response
 // run some application logic.
 ```
+
+## Bundling TypeDORM using webpack
+
+TypeDORM is often useful in serverless environments (when running it it on lambda) or executing it from browser directly, in either cases you might want to bundle the TypeDORM and other dependencies into single runable file.
+From v1.15.0 TypeDORM by default ships with two different formats out of the box. Commonjs - for legacy packages and is the default in most cases, and ESM - for treeshakable bundling.
+
+For a working example on bundling TypeDORM with webpack refer to this [link](https://github.com/typedorm/typedorm-examples).

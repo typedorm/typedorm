@@ -4,8 +4,7 @@ load("//:tools/pkg.bzl", "typedorm_package")
 setup_ts_build(
     name = "library",
     visibility = [
-        "//examples:__subpackages__",
-        "//packages:__subpackages__",
+        "//packages:__subpackages__"
     ],
     tsconfig_cjs = "//:tsconfig_cjs",
     tsconfig_esm = "//:tsconfig_esm",    
