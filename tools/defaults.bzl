@@ -43,7 +43,8 @@ def setup_ts_build(name, visibility, tsconfig_cjs = "", tsconfig_esm = "", tscon
             """
         )
         filegroup_srcs.append(":" + name + "_cjs")
-        filegroup_data.append(":" + name + "_cjs" + "_package_json")
+        # WORKAROUND - #282 - Disabling generation of custom resource type declarations
+        # filegroup_data.append(":" + name + "_cjs" + "_package_json")
 
     if tsconfig_esm != "":
         ts_project(
@@ -78,7 +79,8 @@ def setup_ts_build(name, visibility, tsconfig_cjs = "", tsconfig_esm = "", tscon
             """
         )
         filegroup_srcs.append(":" + name + "_esm")
-        filegroup_data.append(":" + name + "_esm" + "_package_json")
+        # WORKAROUND - #282 - Disabling generation of custom resource type declarations
+        # filegroup_data.append(":" + name + "_esm" + "_package_json")
 
     if tsconfig != "":
         ts_project(
