@@ -365,7 +365,7 @@ export class Order {
   })
   id: string;
 
-  // userId must be present on each oder, so that we can link it back to belonging user
+  // userId must be present on each order, so that we can link it back to belonging user
   @Attribute()
   userId: string
 
