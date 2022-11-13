@@ -705,7 +705,7 @@ export class EntityManager {
         metadataOptions,
       });
     }
-    return {items: itemsFetched, cursor: LastEvaluatedKey};
+    return {items: itemsFetched.slice(0, limit), cursor: LastEvaluatedKey};
   }
 
   /**
