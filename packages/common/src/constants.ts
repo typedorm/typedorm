@@ -1,7 +1,7 @@
 /**
  * Current transaction write items limit set by dynamodb
  */
-export const TRANSACTION_WRITE_ITEMS_LIMIT = 25;
+export const TRANSACTION_WRITE_ITEMS_LIMIT = 100;
 
 /**
  * Current transaction read items limit set by dynamodb
