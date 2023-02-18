@@ -7,7 +7,7 @@ TypeDORM provides unified support for working with AWS SDK V2 and V3. This means
 To make use of this, you need to provide the appropriate wrapper instances of document client to the connection.
 
 From the release 1.15.0, TypeDORM has introduced a new helper package `@typedorm/document-client` - A very lightweight Document Client helper to make interactions with DynamoDB less painful across the AWS SDK v2 and AWS SDK v3.
-From version 1.15.0, this gets automatically installed when installing the `@typedorm/core`, so you do not need to change any anything here.
+From version 1.15.0, this gets automatically installed when installing the `@typedorm/core`, so you do not need to change anything here.
 
 ## Installing required AWS SDK libs
 
