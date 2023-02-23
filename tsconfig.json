@@ -41,6 +41,7 @@
         "bazel-out/k8-dbg/bin/packages/*",
         "bazel-out/host/bin/packages/*",
         "bazel-out/darwin-fastbuild/bin/packages/*",
+        "bazel-out/darwin_arm64-fastbuild/bin/packages/*",
         "bazel-out/darwin-dbg/bin/packages/*",
         "bazel-out/x64_windows-fastbuild/bin/packages/*/cjs",
         "bazel-out/x64_windows-dbg/bin/packages/*/cjs",
@@ -48,6 +49,7 @@
         "bazel-out/k8-dbg/bin/packages/*/cjs",
         "bazel-out/host/bin/packages/*/cjs",
         "bazel-out/darwin-fastbuild/bin/packages/*/cjs",
+        "bazel-out/darwin_arm64-fastbuild/bin/packages/*/cjs",
         "bazel-out/darwin-dbg/bin/packages/*/cjs",
         "bazel-out/x64_windows-fastbuild/bin/packages/*/esm",
         "bazel-out/x64_windows-dbg/bin/packages/*/esm",
@@ -55,6 +57,7 @@
         "bazel-out/k8-dbg/bin/packages/*/esm",
         "bazel-out/host/bin/packages/*/esm",
         "bazel-out/darwin-fastbuild/bin/packages/*/esm",
+        "bazel-out/darwin_arm64-fastbuild/bin/packages/*/esm",
         "bazel-out/darwin-dbg/bin/packages/*/esm"
       ]
     },
@@ -66,6 +69,7 @@
       "bazel-out/k8-dbg/bin/*",
       "bazel-out/host/bin/*",
       "bazel-out/darwin-fastbuild/bin/*",
+      "bazel-out/darwin_arm64-fastbuild/bin/*",
       "bazel-out/darwin-dbg/bin/*"
     ]
   },
