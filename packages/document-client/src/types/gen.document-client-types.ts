@@ -1,9 +1,10 @@
 import {DocumentClientV2} from '../classes/document-client-v2';
-import AWS, {DynamoDB} from 'aws-sdk';
-import DynamoDBClientV3 from '@aws-sdk/client-dynamodb';
+import * as AWS from 'aws-sdk';
+import {DynamoDB} from 'aws-sdk';
+import * as DynamoDBClientV3 from '@aws-sdk/client-dynamodb';
 
 /**
- * !!important!! Experiment with generics to provider stronger typing
+ * !!important!! Experiment with generics to provide stronger typing
  */
 /* eslint-disable @typescript-eslint/no-namespace */
 export namespace DocumentClientTypes {

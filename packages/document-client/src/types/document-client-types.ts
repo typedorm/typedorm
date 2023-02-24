@@ -1,5 +1,6 @@
-import AWS, {DynamoDB} from 'aws-sdk';
-import DynamoDBClientV3 from '@aws-sdk/client-dynamodb';
+import * as AWS from 'aws-sdk';
+import {DynamoDB} from 'aws-sdk';
+import * as DynamoDBClientV3 from '@aws-sdk/client-dynamodb';
 
 /* eslint-disable @typescript-eslint/no-namespace */
 
