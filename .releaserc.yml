@@ -1,9 +1,9 @@
 branches:
   - main
+  - name: develop
+    prerelease: beta
   - name: next
     prerelease: rc
-  - name: beta
-    prerelease: beta
   - name: alpha
     prerelease: alpha
 plugins:
@@ -11,3 +11,4 @@ plugins:
   - '@semantic-release/release-notes-generator'
   - '@semantic-release/changelog'
   - '@semantic-release/github'
+  - '@semantic-release/git'

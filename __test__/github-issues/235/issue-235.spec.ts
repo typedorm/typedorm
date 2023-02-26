@@ -5,7 +5,7 @@ import {ProductEntity} from './specific-event-entity';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityManager} from '@typedorm/core';
 
-jest.useFakeTimers('modern').setSystemTime(new Date('2020-10-10'));
+jest.useFakeTimers().setSystemTime(new Date('2020-10-10'));
 
 let entityManager: EntityManager;
 

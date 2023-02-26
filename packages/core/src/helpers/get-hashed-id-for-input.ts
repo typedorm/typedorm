@@ -8,7 +8,10 @@ import {deepSortObject} from './deep-sort-object';
  * @returns string
  *
  */
-export function getHashedIdForInput<T>(namespaceId: string, dataToHash: T) {
+export function getHashedIdForInput<T extends object>(
+  namespaceId: string,
+  dataToHash: T
+) {
   if (!validate(namespaceId)) {
     throw new Error('Workspace id must be an uuid');
   }

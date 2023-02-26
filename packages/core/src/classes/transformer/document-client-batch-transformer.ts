@@ -275,7 +275,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     }
   ): Output[] {
     return transformedItems.map(transformedItem => {
-      const hashId = getHashedIdForInput(namespaceId, transformedItem);
+      const hashId = getHashedIdForInput(
+        namespaceId,
+        transformedItem as object
+      );
       const originalItem = itemTransformHashMap.get(hashId);
       return originalItem!;
     });
@@ -405,7 +408,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
         // store batch item input and it's transform in map, for reverse transform later
         const transformedItemHashId = getHashedIdForInput(
           namespaceId,
-          itemToGet.Key
+          itemToGet.Key as object
         );
         itemTransformHashMap.set(transformedItemHashId, batchItem);
         return acc;

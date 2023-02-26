@@ -27,7 +27,7 @@ const documentClientMock = {
   batchWrite: jest.fn(),
   batchGet: jest.fn(),
 };
-let originalPromiseAll: jasmine.Spy;
+let originalPromiseAll: jest.SpyInstance;
 
 beforeEach(() => {
   connection = createTestConnection({
@@ -41,7 +41,7 @@ beforeEach(() => {
 
   entityManager.findOne = jest.fn();
   transactionManager.writeRaw = jest.fn();
-  originalPromiseAll = spyOn(Promise, 'all').and.callThrough();
+  originalPromiseAll = jest.spyOn(Promise, 'all');
 });
 
 afterEach(() => {
@@ -57,7 +57,6 @@ test('processes empty batch write request', async () => {
   const result = await manager.write(writeBatch);
 
   expect(originalPromiseAll).toHaveBeenCalledTimes(1);
-  expect(originalPromiseAll.calls.mostRecent).toEqual(expect.any(Function));
   expect(result).toEqual({
     failedItems: [],
     unprocessedItems: [],
