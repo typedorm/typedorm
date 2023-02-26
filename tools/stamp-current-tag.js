@@ -8,9 +8,9 @@ process.on('uncaughtException', () => {
 // this defines what branches deploys to which channel
 const releaseConfig = {
   main: 'latest',
-  beta: 'beta',
-  next: 'next',
+  develop: 'beta',
   alpha: 'alpha',
+  next: 'rc',
 };
 
 const currentBranch = exec('git rev-parse --abbrev-ref HEAD');

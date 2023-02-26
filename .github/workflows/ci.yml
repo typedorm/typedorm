@@ -4,21 +4,25 @@ on:
     # run on all branches except release branches
     branches-ignore:
       - 'main'
+      - 'develop'
       - 'next'
-      - 'beta'
+      - 'alpha'
 env:
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
   dependencies:
     name: 'Install dependencies'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [14, 16, 18]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '16.x'
+          node-version: ${{ matrix.node }}
       - name: Cache NPM dependencies
         uses: actions/cache@v2
         with:
@@ -33,13 +37,16 @@ jobs:
     name: Lint
     needs: dependencies
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [14, 16, 18]    
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '16.x'
+          node-version: ${{ matrix.node }}
       - name: Load dependencies
         uses: actions/cache@v2
         with:
@@ -54,13 +61,16 @@ jobs:
     name: Build
     needs: dependencies
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [14, 16, 18]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '16.x'
+          node-version: ${{ matrix.node }}
       - name: Load dependencies
         uses: actions/cache@v2
         with:
@@ -74,13 +84,16 @@ jobs:
     name: Test
     needs: dependencies
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [14, 16, 18]    
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
-          node-version: '16.x'
+          node-version: ${{ matrix.node }}
       - name: Load dependencies
         uses: actions/cache@v2
         with:
