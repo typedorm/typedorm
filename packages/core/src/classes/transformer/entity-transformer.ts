@@ -55,7 +55,7 @@ export class EntityTransformer extends BaseTransformer {
       .flat()
       .filter(attr => !vanillaAttributesToInclude.includes(attr));
 
-    const plainEntityAttributes = Object.keys(dynamoEntity).reduce(
+    const plainEntityAttributes = Object.keys(dynamoEntity as object).reduce(
       (acc, key) => {
         // if any of the below conditions are true, skip adding given attribute from returning response
         if (

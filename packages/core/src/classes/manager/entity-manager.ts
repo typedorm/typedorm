@@ -338,7 +338,7 @@ export class EntityManager {
     );
 
     const {primaryKeyAttributes, uniqueAttributes} = Object.entries(
-      attributes
+      attributes as object
     ).reduce(
       (acc, [attrKey, value]) => {
         if (isUsedForPrimaryKey(metadata.schema.primaryKey, attrKey)) {

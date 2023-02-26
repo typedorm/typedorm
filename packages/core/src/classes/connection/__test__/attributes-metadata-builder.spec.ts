@@ -12,7 +12,7 @@ import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-genera
 import {User} from '../../../../__mocks__/user';
 import {AttributesMetadataBuilder} from '../attribute-metadata-builder';
 
-jest.useFakeTimers('modern').setSystemTime(new Date('2020-10-10'));
+jest.useFakeTimers().setSystemTime(new Date('2020-10-10'));
 
 let attributesMetadataBuilder: AttributesMetadataBuilder;
 beforeEach(() => {

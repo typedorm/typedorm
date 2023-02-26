@@ -4,7 +4,7 @@ import {User} from '../../../../__mocks__/user';
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import path from 'path';
 import {ConnectionManager} from '../connection-manager';
-jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
+jest.useFakeTimers().setSystemTime(new Date('2020-01-01'));
 
 beforeEach(() => {
   createTestConnection({

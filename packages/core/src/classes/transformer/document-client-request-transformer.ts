@@ -235,7 +235,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           );
         }
 
-        const uniqueItemPrimaryKey = this.getParsedPrimaryKey(
+        const uniqueItemPrimaryKey = this.getParsedPrimaryKey<Entity>(
           table,
           attr.unique,
           entity
@@ -286,7 +286,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     const tableName = this.getTableNameForEntity(entityClass);
 
-    const parsedPrimaryKey = this.getParsedPrimaryKey(
+    const parsedPrimaryKey = this.getParsedPrimaryKey<PrimaryKey>(
       metadata.table,
       metadata.schema.primaryKey,
       primaryKey
@@ -379,7 +379,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     //   primaryKeyAttributes
     // ) as PrimaryKey;
 
-    const parsedPrimaryKey = this.getParsedPrimaryKey(
+    const parsedPrimaryKey = this.getParsedPrimaryKey<PrimaryKey>(
       metadata.table,
       metadata.schema.primaryKey,
       primaryKeyAttributes
@@ -533,7 +533,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         nestedKeySeparator,
         additionalAttributesDict: {
           ...primaryKeyAttributes,
-        },
+        } as Record<string, any>,
       }
     );
 
@@ -700,7 +700,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     });
     const tableName = metadata.table.name;
 
-    const parsedPrimaryKey = this.getParsedPrimaryKey(
+    const parsedPrimaryKey = this.getParsedPrimaryKey<PrimaryKey>(
       metadata.table,
       metadata.schema.primaryKey,
       primaryKey
