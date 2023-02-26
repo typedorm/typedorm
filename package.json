@@ -3,6 +3,9 @@
   "version": "0.0.0-development",
   "description": "TypeDORM - Strongly typed ORM for DynamoDB",
   "private": true,
+  "engines": {
+    "node": ">=14"
+  },
   "scripts": {
     "tsc": "tsc",
     "test": "jest --runInBand",
