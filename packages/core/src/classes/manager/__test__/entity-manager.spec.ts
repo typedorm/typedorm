@@ -1,4 +1,4 @@
-jest.useFakeTimers('modern').setSystemTime(new Date(1606896235000));
+jest.useFakeTimers().setSystemTime(new Date(1606896235000));
 
 import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 import {EntityManager} from '../entity-manager';
@@ -581,7 +581,7 @@ test('fails to transform when trying to use dynamic update expression for attrib
 });
 
 test('updates item and attributes marked to be autoUpdated', async () => {
-  jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
+  jest.useFakeTimers().setSystemTime(new Date('2020-01-01'));
 
   dcMock.update.mockReturnValue({
     promise: () => ({

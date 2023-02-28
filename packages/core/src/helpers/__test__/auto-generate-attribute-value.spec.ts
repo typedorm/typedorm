@@ -21,14 +21,14 @@ test('returns generated attribute value using ksuid strategy', () => {
 });
 
 test('returns generated attribute value using epoch strategy', () => {
-  jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
+  jest.useFakeTimers().setSystemTime(new Date('2020-01-01'));
 
   const value = autoGenerateValue(AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_DATE);
   expect(value).toEqual(1577836800);
 });
 
 test('returns generated attribute value using iso date strategy', () => {
-  jest.useFakeTimers('modern').setSystemTime(new Date('2020-01-01'));
+  jest.useFakeTimers().setSystemTime(new Date('2020-01-01'));
 
   const value = autoGenerateValue(AUTO_GENERATE_ATTRIBUTE_STRATEGY.ISO_DATE);
   expect(value).toEqual('2020-01-01T00:00:00.000Z');

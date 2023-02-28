@@ -18,7 +18,7 @@ import {
 import {CATEGORY, Photo, PhotoPrimaryKey} from '@typedorm/core/__mocks__/photo';
 // eslint-disable-next-line node/no-extraneous-import
 import moment from 'moment';
-jest.useFakeTimers('modern').setSystemTime(1622530750000);
+jest.useFakeTimers().setSystemTime(1622530750000);
 
 let transformer: DocumentClientRequestTransformer;
 beforeEach(async () => {

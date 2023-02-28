@@ -1,6 +1,6 @@
 import {isObject} from './is-object';
 
-export function deepSortObject(item: Object) {
+export function deepSortObject(item: object) {
   if (!isObject(item)) {
     throw new Error('Only objects can be sorted with this method');
   }
