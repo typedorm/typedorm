@@ -87,9 +87,12 @@ export class EntityTransformer extends BaseTransformer {
       JSON.stringify(plainEntityAttributes)
     );
 
+    const schemaVersion = entityMetadata.schema.schemaVersionAttribute ?
+        deserializedEntityAttributes[entityMetadata.schema.schemaVersionAttribute] : undefined;
     const transformedEntity = plainToClassFromExist(
       reflectedConstructor,
-      deserializedEntityAttributes
+      deserializedEntityAttributes,
+      { version: schemaVersion }
     );
 
     this.connection.logger.logTransform({
