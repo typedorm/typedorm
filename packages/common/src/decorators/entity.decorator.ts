@@ -8,7 +8,7 @@ export function Entity<E>({
   primaryKey,
   indexes,
   name,
-  schemaVersionAttribute
+  schemaVersionAttribute,
 }: Pick<
   EntityRawMetadataOptions<E>,
   'name' | 'table' | 'indexes' | 'primaryKey' | 'schemaVersionAttribute'

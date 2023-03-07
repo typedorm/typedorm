@@ -24,6 +24,7 @@ export class EntityMetadataBuilder {
         name,
         primaryKey,
         indexes,
+        schemaVersionAttribute,
       } = MetadataManager.metadataStorage.getRawEntityByTarget(
         decoratedEntityClass
       );
@@ -79,6 +80,7 @@ export class EntityMetadataBuilder {
         name,
         primaryKey,
         indexes,
+        schemaVersionAttribute,
       });
     });
   }

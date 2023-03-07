@@ -36,7 +36,7 @@ export interface EntityRawMetadataOptions<Entity = any> {
    * If provided, the value of this attribute will  be passed to class-transformer to
    * be used as the version during serialization/deserialization
    */
-  schemaVersionAttribute?: string;
+  schemaVersionAttribute?: Extract<keyof Entity, string>;
 }
 
 interface BaseAttributeRawMetadataOptions {
