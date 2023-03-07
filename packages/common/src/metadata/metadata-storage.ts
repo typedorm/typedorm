@@ -31,6 +31,7 @@ export interface EntityRawMetadataOptions<Entity = any> {
   primaryKey: PrimaryKey<Entity>;
   indexes?: Indexes<Entity>;
   table?: Table;
+  versionAttribute?: string;
 }
 
 interface BaseAttributeRawMetadataOptions {
