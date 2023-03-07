@@ -40,9 +40,8 @@ export class EntityMetadataBuilder {
         throw new MissingRequiredTableConfig(decoratedEntityClass.name);
       }
 
-      const inheritedClasses = this.recursiveGetInheritanceTree(
-        decoratedEntityClass
-      );
+      const inheritedClasses =
+        this.recursiveGetInheritanceTree(decoratedEntityClass);
 
       // metadata are sorted by [very base class] -> [very derived class]
       const inheritedEntitiesAttributesMetadata = inheritedClasses

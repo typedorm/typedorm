@@ -8,11 +8,16 @@
       "name": "Current TS File",
       "type": "node",
       "request": "launch",
-      "args": ["${relativeFile}"],
-      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+      "args": [
+        "${relativeFile}"
+      ],
+      "runtimeArgs": [
+        "--nolazy",
+        "-r",
+        "ts-node/register"
+      ],
       "sourceMaps": true,
       "cwd": "${workspaceRoot}",
-      "protocol": "inspector"
     },
     {
       "type": "node",
@@ -20,31 +25,9 @@
       "request": "attach",
       "name": "Attach",
       "port": 9229,
-      "skipFiles": ["<node_internals>/**"]
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
     },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Jest Debug Current file",
-      "runtimeExecutable": "${env:HOME}/.nvm/versions/node/v12.14.1/bin/node",
-      "runtimeArgs": [
-        "--inspect-brk",
-        "--nolazy",
-        "node_modules/jest/bin/jest",
-        "${fileBasename}",
-        "--runInBand",
-        "--watch",
-        "--config=jest.config.js"
-      ],
-      "sourceMaps": true,
-      "disableOptimisticBPs": true,
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "port": 9229,
-      "env": {
-        "NODE_ENV": "test"
-      }
-    }
   ]
 }

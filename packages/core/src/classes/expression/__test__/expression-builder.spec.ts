@@ -195,9 +195,8 @@ test('builds projection expression', () => {
     'user.status',
   ]);
 
-  const projectionExpression = expressionBuilder.buildProjectionExpression(
-    projection
-  );
+  const projectionExpression =
+    expressionBuilder.buildProjectionExpression(projection);
 
   expect(projectionExpression).toEqual({
     ExpressionAttributeNames: {

@@ -11,11 +11,12 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 
 ## Packages
 
-| Package           | Latest Stable                                                                                                                         | Recent Beta                                                                                                                                | Recent Alpha                                                                                                                                |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| @typedorm/common  | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)   |
-| @typedorm/core    | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)       |
-| @typedorm/testing | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing) |
+| Package                   | Latest Stable                                                                                                                                                | Recent Beta                                                                                                                                                | Recent Alpha                                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| @typedorm/common          | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/latest?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)                   | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)                   | [![NPM Release](https://img.shields.io/npm/v/@typedorm/common/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/common)                   |
+| @typedorm/core            | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/latest?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)                       | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)                       | [![NPM Release](https://img.shields.io/npm/v/@typedorm/core/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/core)                       |
+| @typedorm/testing         | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/latest?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing)                 | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing)                 | [![NPM Release](https://img.shields.io/npm/v/@typedorm/testing/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/testing)                 |
+| @typedorm/document-client | [![NPM Release](https://img.shields.io/npm/v/@typedorm/document-client/latest?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/document-client) | [![NPM Release](https://img.shields.io/npm/v/@typedorm/document-client/beta?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/document-client) | [![NPM Release](https://img.shields.io/npm/v/@typedorm/document-client/alpha?style=for-the-badge)](https://www.npmjs.com/package/@typedorm/document-client) |
 
 ## Branches
 
@@ -27,6 +28,7 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 
 ## Features
 
+- AWS SDK V2 and V3 unified support
 - Single-Table design pattern first class support
 - DataMapper development pattern
 - Attribute level per entity transformation, enabled via [class-transformer](https://github.com/typestack/class-transformer)
@@ -48,6 +50,7 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 - Complex update, key condition and condition expression all made easy to work with
 - Powerful expression builder to auto generate expressions from input
 - Typescript and javascript support
+- Commonjs and ESM module support out of the box (see more [here](./docs/how-to-recipes.md#bundling-typedorm-using-webpack))
 
 And many more to come.
 
@@ -56,12 +59,14 @@ And many more to come.
 ### Installation
 
 1. Install core and common modules from npm.
-
    `npm install @typedorm/core @typedorm/common --save`
 
-2. Install aws-sdk for nodejs, TypeDORM uses documentClient to interact with dynamodb.
-
+2. Install AWS SDK for nodejs, TypeDORM uses documentClient to interact with dynamodb.
+   a. When using AWS SDK Version 2
    `npm install aws-sdk --save`
+
+   b. When using AWS SDK Version 3
+   `npm install @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb --save`
 
 3. Install `reflect-metadata` shim
 
@@ -144,12 +149,11 @@ import {AUTO_GENERATE_ATTRIBUTE_STRATEGY} from '@typedorm/common';
     // specify LSI1 key
     LSI1: {
       sortKey: 'TICKETS#UPDATED_AT#{{updatedAt}}',
-      type: INDEX_TYPE.LSI
-    }
+      type: INDEX_TYPE.LSI,
+    },
   },
 })
-export class Organisation{
-
+export class Organisation {
   @AutoGenerateAttribute({
     strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.UUID4,
   })
@@ -166,7 +170,7 @@ export class Organisation{
 
   @AutoGenerateAttribute({
     strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH,
-    autoUpdate: true // this will make this attribute and any indexes referencing it auto update for any write operation
+    autoUpdate: true, // this will make this attribute and any indexes referencing it auto update for any write operation
   })
   updatedAt: number;
 }
@@ -174,19 +178,53 @@ export class Organisation{
 
 #### Initialize default connection
 
+The connection initialization steps slightly defers when using AWS SDK V2 vs V3.
+
+##### When using AWS SDK V2
+
 ```typescript
 import {createConnection} from '@typedorm/core';
+import {DocumentClientV2} from '@typedorm/document-client';
+import AWS from 'aws-sdk';
+
+const documentClient = new DocumentClientV2(new AWS.DynamoDB.DocumentClient());
 
 // initialize with specifying list of entities
 createConnection({
   table: myGlobalTable,
   entities: [Organisation],
+  documentClient, // <-- When documentClient is not provided, TypeDORM defaults to use the DocumentClientV2
 });
 
 // or initialize with specifying path match for entities
 createConnection({
   table: myGlobalTable,
   entities: 'path-to-entities/*.entity.ts',
+  documentClient, // <-- When documentClient is not provided, TypeDORM defaults to use the DocumentClientV2
+});
+```
+
+##### When using AWS SDK V3
+
+```typescript
+import {createConnection} from '@typedorm/core';
+import {DocumentClientV3} from '@typedorm/document-client';
+import {DynamoDBClient} from '@aws-sdk/client-dynamodb';
+
+const documentClient = new DocumentClientV3(new DynamoDBClient({}));
+
+// initialize with specifying list of entities
+createConnection({
+  table: myGlobalTable,
+  entities: [Organisation],
+  documentClient, // <-- When documentClient is not provided, TypeDORM defaults to use the DocumentClientV2
+});
+
+// or initialize with specifying path match for entities
+createConnection({
+  table: myGlobalTable,
+  entities: 'path-to-entities/*.entity.ts',
+  documentClient, // <-- When documentClient is not provided, TypeDORM defaults to use the DocumentClientV2
 });
 ```
 
@@ -226,6 +264,7 @@ await entityManger.delete(Organisation, {
 - [Step by step guide](./docs/guide.md)
 - [Entity inheritance](./docs/entity-inheritance.md)
 - [Working with multiple connections](./docs/multiple-connection.md)
+- [Upgrading the TypeDORM to use the AWS SDK V3](./docs/upgrading-to-use-the-aws-sdk-v3)
 - [How to recipes](./docs/how-to-recipes.md)
 - [Debugging](./docs/debugging.md)
 - [API](./docs/api.md)

@@ -119,61 +119,52 @@ export class ExpressionInputParser {
     options: any,
     ExpClass: new () => T
   ) {
-    return Object.entries(options).map(
-      ([operatorOrAttr, value]): T => {
-        // if top level key is one of the logical operators, rerun parse with it's values
-        if (['AND', 'OR', 'NOT'].includes(operatorOrAttr)) {
-          const parsedExpList = this.recursiveParseToBaseExpression<T>(
-            value,
-            ExpClass
-          );
-          const base = parsedExpList.shift();
-          if (!base) {
-            throw new Error(
-              `Value for operator "${operatorOrAttr}" can not be empty`
-            );
+    return Object.entries(options).map(([operatorOrAttr, value]): T => {
+      // if top level key is one of the logical operators, rerun parse with it's values
+      if (['AND', 'OR', 'NOT'].includes(operatorOrAttr)) {
+        const parsedExpList = this.recursiveParseToBaseExpression<T>(
+          value,
+          ExpClass
+        );
+        const base = parsedExpList.shift();
+        if (!base) {
+          return new ExpClass();
+        }
+        switch (operatorOrAttr) {
+          case 'AND': {
+            if (!parsedExpList?.length) {
+              return base;
+            }
+            return base.mergeMany(parsedExpList as T[], MERGE_STRATEGY.AND);
           }
-          switch (operatorOrAttr) {
-            case 'AND': {
-              if (!parsedExpList?.length) {
-                throw new Error(
-                  `Value for operator "${operatorOrAttr}" must contain more that 1 attributes.`
-                );
-              }
-              return base.mergeMany(parsedExpList as T[], MERGE_STRATEGY.AND);
+          case 'OR': {
+            if (!parsedExpList?.length) {
+              return base;
             }
-            case 'OR': {
-              if (!parsedExpList?.length) {
-                throw new Error(
-                  `Value for operator "${operatorOrAttr}" must contain more that 1 attributes.`
-                );
-              }
-              return base.mergeMany(parsedExpList as T[], MERGE_STRATEGY.OR);
-            }
-            case 'NOT': {
-              if (parsedExpList?.length) {
-                throw new Error(
-                  `Value for operator "${operatorOrAttr}" can not contain more than 1 attributes.`
-                );
-              }
-              return base.not();
-            }
-            default: {
+            return base.mergeMany(parsedExpList as T[], MERGE_STRATEGY.OR);
+          }
+          case 'NOT': {
+            // not can not contain more than one items
+            if (parsedExpList?.length) {
               throw new Error(
-                `Unsupported logical operator "${operatorOrAttr}"`
+                `Value for operator "${operatorOrAttr}" can not contain more than 1 attributes.`
               );
             }
+            return base.not();
           }
-        } else {
-          // when top level attribute is something other than actual logical operators, try to parse it to expression
-          return this.operatorToBaseExpression(
-            operatorOrAttr,
-            value,
-            new ExpClass()
-          );
+          default: {
+            throw new Error(`Unsupported logical operator "${operatorOrAttr}"`);
+          }
         }
+      } else {
+        // when top level attribute is something other than actual logical operators, try to parse it to expression
+        return this.operatorToBaseExpression(
+          operatorOrAttr,
+          value,
+          new ExpClass()
+        );
       }
-    );
+    });
   }
 
   /**

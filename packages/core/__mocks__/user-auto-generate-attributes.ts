@@ -28,7 +28,8 @@ export interface UserAutoGenerateAttributesPrimaryKey {
   },
 })
 export class UserAutoGenerateAttributes
-  implements UserAutoGenerateAttributesPrimaryKey {
+  implements UserAutoGenerateAttributesPrimaryKey
+{
   @Attribute()
   id: string;
 

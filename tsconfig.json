@@ -8,7 +8,8 @@
       "ES2018.Regexp",
       "es2019",
       "ES2020.String",
-      "ES2020.Promise"
+      "ES2020.Promise",
+      "DOM"
     ],
     "target": "ES2015",
     "module": "commonjs",
@@ -32,8 +33,49 @@
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
-      "@typedorm/*": ["packages/*"]
-    }
+      "@typedorm/*": [
+        "packages/*",
+        "bazel-out/x64_windows-fastbuild/bin/packages/*",
+        "bazel-out/x64_windows-dbg/bin/packages/*",
+        "bazel-out/k8-fastbuild/bin/packages/*",
+        "bazel-out/k8-dbg/bin/packages/*",
+        "bazel-out/host/bin/packages/*",
+        "bazel-out/darwin-fastbuild/bin/packages/*",
+        "bazel-out/darwin_arm64-fastbuild/bin/packages/*",
+        "bazel-out/darwin-dbg/bin/packages/*",
+        "bazel-out/x64_windows-fastbuild/bin/packages/*/cjs",
+        "bazel-out/x64_windows-dbg/bin/packages/*/cjs",
+        "bazel-out/k8-fastbuild/bin/packages/*/cjs",
+        "bazel-out/k8-dbg/bin/packages/*/cjs",
+        "bazel-out/host/bin/packages/*/cjs",
+        "bazel-out/darwin-fastbuild/bin/packages/*/cjs",
+        "bazel-out/darwin_arm64-fastbuild/bin/packages/*/cjs",
+        "bazel-out/darwin-dbg/bin/packages/*/cjs",
+        "bazel-out/x64_windows-fastbuild/bin/packages/*/esm",
+        "bazel-out/x64_windows-dbg/bin/packages/*/esm",
+        "bazel-out/k8-fastbuild/bin/packages/*/esm",
+        "bazel-out/k8-dbg/bin/packages/*/esm",
+        "bazel-out/host/bin/packages/*/esm",
+        "bazel-out/darwin-fastbuild/bin/packages/*/esm",
+        "bazel-out/darwin_arm64-fastbuild/bin/packages/*/esm",
+        "bazel-out/darwin-dbg/bin/packages/*/esm"
+      ]
+    },
+    "rootDirs": [
+      ".",
+      "bazel-out/x64_windows-fastbuild/bin/*",
+      "bazel-out/x64_windows-dbg/bin/*",
+      "bazel-out/k8-fastbuild/bin/*",
+      "bazel-out/k8-dbg/bin/*",
+      "bazel-out/host/bin/*",
+      "bazel-out/darwin-fastbuild/bin/*",
+      "bazel-out/darwin_arm64-fastbuild/bin/*",
+      "bazel-out/darwin-dbg/bin/*"
+    ]
   },
-  "exclude": ["dist", "node_modules"]
+  "exclude": [
+    "dist",
+    "node_modules",
+    "tools"
+  ]
 }

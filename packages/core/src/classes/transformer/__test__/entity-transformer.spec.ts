@@ -23,7 +23,7 @@ import {UserCustomConstructor} from '@typedorm/core/__mocks__/user-custom-constr
 jest.mock('uuid', () => ({
   v4: () => 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
 }));
-jest.useFakeTimers('modern').setSystemTime(1622530750000);
+jest.useFakeTimers().setSystemTime(1622530750000);
 import {UserWithDefaultValues} from '@typedorm/core/__mocks__/user-default-value';
 
 let transformer: EntityTransformer;
@@ -323,7 +323,7 @@ test('transforms entity with sparse LSI index when variable referenced is missin
  * Issue #37
  */
 test('transforms simple model with auto generated values to dynamo entity', () => {
-  jest.useFakeTimers('modern').setSystemTime(new Date('2020-10-10'));
+  jest.useFakeTimers().setSystemTime(new Date('2020-10-10'));
 
   const user = new UserAutoGenerateAttributes();
   user.id = '111';

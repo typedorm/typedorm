@@ -1,10 +1,10 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {
   BATCH_READ_ITEMS_LIMIT,
   BATCH_WRITE_ITEMS_LIMIT,
   InvalidBatchWriteItemError,
   TRANSFORM_BATCH_TYPE,
 } from '@typedorm/common';
-import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {v4} from 'uuid';
 import {getHashedIdForInput} from '../../helpers/get-hashed-id-for-input';
 import {ReadBatch, ReadBatchItem} from '../batch/read-batch';
@@ -21,12 +21,12 @@ import {LowOrderTransformers} from './low-order-transformers';
 
 export type WriteRequestWithMeta = {
   tableName: string;
-  writeRequest: DocumentClient.WriteRequest;
+  writeRequest: DocumentClientTypes.WriteRequest;
 };
 
 export type ReadRequestWithMeta = {
   tableName: string;
-  readRequest: DocumentClient.Key;
+  readRequest: DocumentClientTypes.Key;
 };
 
 export type BatchWriteItemTransform<Transformed> = {
@@ -47,13 +47,9 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     writeBatch: WriteBatch,
     metadataOptions?: MetadataOptions
   ): {
-    batchWriteRequestMapItems: DocumentClient.BatchWriteItemRequestMap[];
-    transactionListItems: BatchWriteItemTransform<
-      DocumentClient.TransactWriteItemList
-    >[];
-    lazyTransactionWriteItemListLoaderItems: BatchWriteItemTransform<
-      LazyTransactionWriteItemListLoader
-    >[];
+    batchWriteRequestMapItems: DocumentClientTypes.BatchWriteItemRequestMapList;
+    transactionListItems: BatchWriteItemTransform<DocumentClientTypes.TransactWriteItemList>[];
+    lazyTransactionWriteItemListLoaderItems: BatchWriteItemTransform<LazyTransactionWriteItemListLoader>[];
     metadata: {
       namespaceId: string;
       itemTransformHashMap: Map<string, WriteBatchItem<any, any>>;
@@ -79,9 +75,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
 
     // divide sorted requests in multiple batch items requests, as there are max
     // 25 items are allowed in a single batch operation
-    const batchWriteRequestItems = this.mapTableWriteItemsToBatchWriteItems(
-      sorted
-    );
+    const batchWriteRequestItems =
+      this.mapTableWriteItemsToBatchWriteItems(sorted);
 
     const transformed = {
       batchWriteRequestMapItems: batchWriteRequestItems,
@@ -104,7 +99,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     readBatch: ReadBatch,
     metadataOptions?: MetadataOptions
   ): {
-    batchRequestItemsList: DocumentClient.BatchGetRequestMap[];
+    batchRequestItemsList: DocumentClientTypes.BatchGetRequestMapList;
     metadata: {
       namespaceId: string;
       itemTransformHashMap: Map<string, ReadBatchItem<any, any>>;
@@ -119,9 +114,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       body: items,
     });
 
-    const {metadata, batchReadRequestItems} = this.transformBatchReadItems(
-      items
-    );
+    const {metadata, batchReadRequestItems} =
+      this.transformBatchReadItems(items);
 
     // organize all requests in "tableName - requestItem" format
     const sortedByTableName = this.getReadRequestsSortedByTable(
@@ -130,9 +124,8 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
 
     // divide sorted requests in multiple batch items requests, as there are max
     // 100 items are allowed in a single batch read operation
-    const batchRequestItemsList = this.mapTableReadItemsToBatchReadItems(
-      sortedByTableName
-    );
+    const batchRequestItemsList =
+      this.mapTableReadItemsToBatchReadItems(sortedByTableName);
 
     const transformed = {
       batchRequestItemsList,
@@ -149,7 +142,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   }
 
   mapTableWriteItemsToBatchWriteItems(
-    requestsSortedByTable: DocumentClient.BatchWriteItemRequestMap
+    requestsSortedByTable: DocumentClientTypes.BatchWriteItemRequestMap
   ) {
     let currentFillingIndex = 0;
     let totalItemsAtCurrentFillingIndex = 0;
@@ -177,13 +170,13 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
         }
         return acc;
       },
-      [] as DocumentClient.BatchWriteItemRequestMap[]
+      [] as DocumentClientTypes.BatchWriteItemRequestMapList
     );
     return multiBatchItems;
   }
 
   mapTableReadItemsToBatchReadItems(
-    requestsSortedByTable: DocumentClient.BatchGetRequestMap
+    requestsSortedByTable: DocumentClientTypes.BatchGetRequestMap
   ) {
     let currentFillingIndex = 0;
     let totalItemsAtCurrentFillingIndex = 0;
@@ -201,7 +194,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
             };
           }
 
-          acc[currentFillingIndex][tableName].Keys.push(
+          acc[currentFillingIndex][tableName].Keys?.push(
             perTableItems.Keys.shift()!
           );
           ++totalItemsAtCurrentFillingIndex;
@@ -215,7 +208,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
         }
         return acc;
       },
-      [] as DocumentClient.BatchGetRequestMap[]
+      [] as DocumentClientTypes.BatchGetRequestMapList
     );
     return multiBatchItems;
   }
@@ -224,7 +217,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
    * Reverse transforms batch write item request to write batch item
    */
   toWriteBatchInputList(
-    requestMap: DocumentClient.BatchWriteItemRequestMap,
+    requestMap: DocumentClientTypes.BatchWriteItemRequestMap,
     {
       namespaceId,
       itemTransformHashMap,
@@ -235,7 +228,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   ) {
     return Object.entries(requestMap).flatMap(([, writeRequests]) => {
       return this.toRawBatchInputItem<
-        DocumentClient.WriteRequest,
+        DocumentClientTypes.WriteRequest,
         WriteBatchItem<any, any>
       >(writeRequests, {
         namespaceId,
@@ -248,7 +241,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
    * Reverse transforms batch read item request to read batch item
    */
   toReadBatchInputList(
-    requestMap: DocumentClient.BatchGetRequestMap,
+    requestMap: DocumentClientTypes.BatchGetRequestMap,
     {
       namespaceId,
       itemTransformHashMap,
@@ -259,7 +252,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   ) {
     return Object.entries(requestMap).flatMap(([, readRequests]) => {
       return this.toRawBatchInputItem<
-        DocumentClient.Key,
+        DocumentClientTypes.Key,
         ReadBatchItem<any, any>
       >(readRequests.Keys, {
         namespaceId,
@@ -282,7 +275,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
     }
   ): Output[] {
     return transformedItems.map(transformedItem => {
-      const hashId = getHashedIdForInput(namespaceId, transformedItem);
+      const hashId = getHashedIdForInput(
+        namespaceId,
+        transformedItem as object
+      );
       const originalItem = itemTransformHashMap.get(hashId);
       return originalItem!;
     });
@@ -319,7 +315,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
             };
             acc.simpleBatchRequestItems.push({
               writeRequest: transformedWriteRequest,
-              tableName: dynamoPutItem.TableName,
+              tableName: dynamoPutItem.TableName as string,
             });
             // store transformed and original items as hash key/value
 
@@ -354,7 +350,7 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
             };
             acc.simpleBatchRequestItems.push({
               writeRequest: transformedItemRequest,
-              tableName: itemToRemove.TableName,
+              tableName: itemToRemove.TableName as string,
             });
             // store transformed and original items as hash key/value
             const itemHashId = getHashedIdForInput(
@@ -375,12 +371,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
       },
       {
         simpleBatchRequestItems: [] as WriteRequestWithMeta[],
-        transactionListItems: [] as BatchWriteItemTransform<
-          DocumentClient.TransactWriteItemList
-        >[],
-        lazyTransactionWriteItemListLoaderItems: [] as BatchWriteItemTransform<
-          LazyTransactionWriteItemListLoader
-        >[],
+        transactionListItems:
+          [] as BatchWriteItemTransform<DocumentClientTypes.TransactWriteItemList>[],
+        lazyTransactionWriteItemListLoaderItems:
+          [] as BatchWriteItemTransform<LazyTransactionWriteItemListLoader>[],
         metadata: {
           namespaceId,
           itemTransformHashMap,
@@ -407,14 +401,14 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
           metadataOptions
         );
         acc.batchReadRequestItems.push({
-          readRequest: itemToGet.Key,
-          tableName: itemToGet.TableName,
+          readRequest: itemToGet.Key as DocumentClientTypes.Key,
+          tableName: itemToGet.TableName as string,
         });
 
         // store batch item input and it's transform in map, for reverse transform later
         const transformedItemHashId = getHashedIdForInput(
           namespaceId,
-          itemToGet.Key
+          itemToGet.Key as object
         );
         itemTransformHashMap.set(transformedItemHashId, batchItem);
         return acc;
@@ -432,14 +426,14 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
   private getWriteRequestsSortedByTable(
     allRequestItems: WriteRequestWithMeta[]
   ) {
-    return allRequestItems.reduce((acc, requestItemWithMeta) => {
+    return allRequestItems.reduce((acc: any, requestItemWithMeta) => {
       if (!acc[requestItemWithMeta.tableName]) {
         acc[requestItemWithMeta.tableName] = [];
       }
 
       acc[requestItemWithMeta.tableName].push(requestItemWithMeta.writeRequest);
       return acc;
-    }, {} as DocumentClient.BatchWriteItemRequestMap);
+    }, {});
   }
 
   private getReadRequestsSortedByTable(allRequestItems: ReadRequestWithMeta[]) {
@@ -450,10 +444,10 @@ export class DocumentClientBatchTransformer extends LowOrderTransformers {
         };
       }
 
-      acc[requestItemWithMeta.tableName].Keys.push(
+      acc[requestItemWithMeta.tableName].Keys?.push(
         requestItemWithMeta.readRequest
       );
       return acc;
-    }, {} as DocumentClient.BatchGetRequestMap);
+    }, {} as DocumentClientTypes.BatchGetRequestMap);
   }
 }

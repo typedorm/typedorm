@@ -1,5 +1,5 @@
-import {DynamoDB} from 'aws-sdk';
 import {
+  CONSUMED_CAPACITY_TYPE,
   EntityAttributes,
   EntityInstance,
   EntityTarget,
@@ -24,6 +24,7 @@ import {getUniqueRequestId} from '../../helpers/get-unique-request-id';
 import {ProjectionKeys} from '../expression/projection-keys-options-type';
 import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
+import {DocumentClientTypes} from '@typedorm/document-client';
 
 export interface EntityManagerCreateOptions<Entity> {
   /**
@@ -83,7 +84,7 @@ export interface EntityManagerFindOptions<Entity, PartitionKey> {
   /**
    * Cursor to traverse from
    */
-  cursor?: DynamoDB.DocumentClient.Key;
+  cursor?: DocumentClientTypes.Key;
 
   /**
    * Specify filter to apply
@@ -97,6 +98,16 @@ export interface EntityManagerFindOptions<Entity, PartitionKey> {
    * @default all attributes are fetched
    */
   select?: ProjectionKeys<Entity>;
+
+  /**
+   * Perform a consistent read on the table, consumes twice as much RCUs then normal
+   *
+   * @description Strongly consistent reads are not supported on global secondary indexes.
+   * If you query a global secondary index with ConsistentRead set to true,
+   * you will receive a ValidationException.
+   * @see https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-ConsistentRead
+   */
+  consistentRead?: boolean;
 }
 
 export interface EntityManagerCountOptions<Entity, PartitionKey> {
@@ -117,6 +128,16 @@ export interface EntityManagerCountOptions<Entity, PartitionKey> {
    * are read
    */
   where?: FilterOptions<Entity, PartitionKey>;
+
+  /**
+   * Perform a consistent read on the table, consumes twice as much RCUs then normal
+   *
+   * @description Strongly consistent reads are not supported on global secondary indexes.
+   * If you query a global secondary index with ConsistentRead set to true,
+   * you will receive a ValidationException.
+   * @see https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-ConsistentRead
+   */
+  consistentRead?: boolean;
 }
 
 export interface EntityManagerFindOneOptions<Entity> {
@@ -125,6 +146,35 @@ export interface EntityManagerFindOneOptions<Entity> {
    * @default all attributes are fetched
    */
   select?: ProjectionKeys<Entity>;
+
+  /**
+   * Perform a consistent read on the table, consumes twice as much RCUs then normal
+   */
+  consistentRead?: boolean;
+}
+
+export interface EntityManagerExistsOptions {
+  /**
+   * Perform a consistent read on the table, consumes twice as much RCUs then normal
+   *
+   * @description Strongly consistent reads are not supported on global secondary indexes.
+   * If you query a global secondary index with ConsistentRead set to true,
+   * you will receive a ValidationException.
+   * @see https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html#DDB-Query-request-ConsistentRead
+   */
+  consistentRead?: boolean;
+
+  /**
+   * @deprecated - Provide the "requestId" in the next parameter instead
+   * Only available here for backwards compatibility
+   */
+  requestId?: string;
+
+  /**
+   * @deprecated - Provide the "returnConsumedCapacity" in the next parameter instead
+   * Only available here for backwards compatibility
+   */
+  returnConsumedCapacity?: CONSUMED_CAPACITY_TYPE;
 }
 
 export class EntityManager {
@@ -162,12 +212,13 @@ export class EntityManager {
         returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
       }
     );
+
     const entityClass = getConstructorForInstance(entity);
 
     if (!isWriteTransactionItemList(dynamoPutItemInput)) {
-      const response = await this.connection.documentClient
-        .put(dynamoPutItemInput)
-        .promise();
+      const response = await this.connection.documentClient.put(
+        dynamoPutItemInput
+      );
 
       // log stats
       if (response?.ConsumedCapacity) {
@@ -182,7 +233,7 @@ export class EntityManager {
       // by default dynamodb does not return attributes on create operation, so return one
       const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
         entityClass,
-        dynamoPutItemInput.Item,
+        dynamoPutItemInput.Item as DocumentClientTypes.AttributeMap,
         {
           requestId,
         }
@@ -235,10 +286,7 @@ export class EntityManager {
       }
     );
 
-    const response = await this.connection.documentClient
-      .get(dynamoGetItem)
-      .promise();
-
+    const response = await this.connection.documentClient.get(dynamoGetItem);
     // stats
     if (response?.ConsumedCapacity) {
       this.connection.logger.logStats({
@@ -273,6 +321,7 @@ export class EntityManager {
   async exists<Entity, KeyAttributes = Partial<Entity>>(
     entityClass: EntityTarget<Entity>,
     attributes: KeyAttributes,
+    options?: EntityManagerExistsOptions,
     metadataOptions?: MetadataOptions
   ) {
     if (isEmptyObject(attributes)) {
@@ -281,16 +330,15 @@ export class EntityManager {
 
     const metadata = this.connection.getEntityByTarget(entityClass);
 
-    const uniqueAttributesMetadata = this.connection.getUniqueAttributesForEntity(
-      entityClass
-    );
+    const uniqueAttributesMetadata =
+      this.connection.getUniqueAttributesForEntity(entityClass);
 
     const uniqueAttributeNames = uniqueAttributesMetadata.map(
       attr => attr.name
     );
 
     const {primaryKeyAttributes, uniqueAttributes} = Object.entries(
-      attributes
+      attributes as object
     ).reduce(
       (acc, [attrKey, value]) => {
         if (isUsedForPrimaryKey(metadata.schema.primaryKey, attrKey)) {
@@ -325,14 +373,21 @@ export class EntityManager {
       return !!(await this.findOne(
         entityClass,
         attributes,
-        undefined,
-        metadataOptions
+        {consistentRead: options?.consistentRead},
+        {
+          requestId: options?.requestId ?? metadataOptions?.requestId,
+          returnConsumedCapacity:
+            options?.returnConsumedCapacity ??
+            metadataOptions?.returnConsumedCapacity,
+        }
       ));
     }
 
     // try finding entity by unique attribute
     if (!isEmptyObject(uniqueAttributes)) {
-      const requestId = getUniqueRequestId(metadataOptions?.requestId);
+      const requestId = getUniqueRequestId(
+        options?.requestId ?? metadataOptions?.requestId
+      );
       if (Object.keys(uniqueAttributes).length > 1) {
         throw new Error('Can only query one unique attribute at a time.');
       }
@@ -353,14 +408,13 @@ export class EntityManager {
         {[attrName]: attrValue}
       );
 
-      const response = await this.connection.documentClient
-        .get({
-          Key: {...parsedPrimaryKey},
-          TableName: metadata.table.name,
-          ReturnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
-        })
-        .promise();
-
+      const response = await this.connection.documentClient.get({
+        Key: {...parsedPrimaryKey},
+        TableName: metadata.table.name,
+        ConsistentRead: options?.consistentRead,
+        ReturnConsumedCapacity:
+          options?.requestId ?? metadataOptions?.returnConsumedCapacity,
+      });
       // stats
       if (response?.ConsumedCapacity) {
         this.connection.logger.logStats({
@@ -406,10 +460,9 @@ export class EntityManager {
     });
 
     if (!isLazyTransactionWriteItemListLoader(dynamoUpdateItem)) {
-      const response = await this.connection.documentClient
-        .update(dynamoUpdateItem)
-        .promise();
-
+      const response = await this.connection.documentClient.update(
+        dynamoUpdateItem
+      );
       // stats
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
@@ -438,9 +491,8 @@ export class EntityManager {
       metadataOptions
     );
 
-    const updateItemList = dynamoUpdateItem.lazyLoadTransactionWriteItems(
-      existingItem
-    );
+    const updateItemList =
+      dynamoUpdateItem.lazyLoadTransactionWriteItems(existingItem);
 
     await this.connection.transactionManger.writeRaw(updateItemList, {
       requestId,
@@ -476,10 +528,9 @@ export class EntityManager {
     });
 
     if (!isLazyTransactionWriteItemListLoader(dynamoDeleteItem)) {
-      const response = await this.connection.documentClient
-        .delete(dynamoDeleteItem)
-        .promise();
-
+      const response = await this.connection.documentClient.delete(
+        dynamoDeleteItem
+      );
       // stats
       if (response.ConsumedCapacity) {
         this.connection.logger.logStats({
@@ -503,9 +554,8 @@ export class EntityManager {
       metadataOptions
     );
 
-    const deleteItemList = dynamoDeleteItem.lazyLoadTransactionWriteItems(
-      existingItem
-    );
+    const deleteItemList =
+      dynamoDeleteItem.lazyLoadTransactionWriteItems(existingItem);
 
     // delete main item and all it's unique attributes as part of single transaction
     await this.connection.transactionManger.writeRaw(deleteItemList, {
@@ -531,7 +581,7 @@ export class EntityManager {
     metadataOptions?: MetadataOptions
   ): Promise<{
     items: Entity[];
-    cursor?: DynamoDB.DocumentClient.Key | undefined;
+    cursor?: DocumentClientTypes.Key | undefined;
   }> {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
@@ -617,23 +667,23 @@ export class EntityManager {
     itemsFetched = [],
     metadataOptions,
   }: {
-    queryInput: DynamoDB.DocumentClient.QueryInput;
+    queryInput: any;
     limit: number;
-    cursor?: DynamoDB.DocumentClient.Key;
-    itemsFetched?: DynamoDB.DocumentClient.ItemList;
+    cursor?: DocumentClientTypes.Key;
+    itemsFetched?: DocumentClientTypes.ItemList;
     metadataOptions?: MetadataOptions;
   }): Promise<{
-    items: DynamoDB.DocumentClient.ItemList;
-    cursor?: DynamoDB.DocumentClient.Key;
+    items: DocumentClientTypes.ItemList;
+    cursor?: DocumentClientTypes.Key;
   }> {
     const {
       LastEvaluatedKey,
       Items = [],
       ConsumedCapacity,
-    } = await this.connection.documentClient
-      .query({...queryInput, ExclusiveStartKey: cursor})
-      .promise();
-
+    } = await this.connection.documentClient.query({
+      ...queryInput,
+      ExclusiveStartKey: cursor,
+    });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({
@@ -668,19 +718,16 @@ export class EntityManager {
     currentCount = 0,
     metadataOptions,
   }: {
-    queryInput: DynamoDB.DocumentClient.QueryInput;
-    cursor?: DynamoDB.DocumentClient.Key;
+    queryInput: any;
+    cursor?: DocumentClientTypes.Key;
     currentCount?: number;
     metadataOptions?: MetadataOptions;
   }): Promise<number> {
-    const {
-      LastEvaluatedKey,
-      Count,
-      ConsumedCapacity,
-    } = await this.connection.documentClient
-      .query({...queryInput, ExclusiveStartKey: cursor})
-      .promise();
-
+    const {LastEvaluatedKey, Count, ConsumedCapacity} =
+      await this.connection.documentClient.query({
+        ...queryInput,
+        ExclusiveStartKey: cursor,
+      });
     // stats
     if (ConsumedCapacity) {
       this.connection.logger.logStats({

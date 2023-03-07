@@ -1,5 +1,5 @@
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {DynamoEntity, EntityTarget, TRANSFORM_TYPE} from '@typedorm/common';
-import {DocumentClient} from 'aws-sdk/clients/dynamodb';
 import {plainToClassFromExist} from 'class-transformer';
 import {unParseKey} from '../../helpers/unparse-key';
 import {Connection} from '../connection/connection';
@@ -55,7 +55,7 @@ export class EntityTransformer extends BaseTransformer {
       .flat()
       .filter(attr => !vanillaAttributesToInclude.includes(attr));
 
-    const plainEntityAttributes = Object.keys(dynamoEntity).reduce(
+    const plainEntityAttributes = Object.keys(dynamoEntity as object).reduce(
       (acc, key) => {
         // if any of the below conditions are true, skip adding given attribute from returning response
         if (
@@ -112,7 +112,7 @@ export class EntityTransformer extends BaseTransformer {
 
   fromDynamoKeyToAttributes<Entity>(
     entityClass: EntityTarget<Entity>,
-    dynamoKey: DocumentClient.Key
+    dynamoKey: DocumentClientTypes.Key
   ) {
     const entityMetadata = this.connection.getEntityByTarget(entityClass);
     const primaryKeyAttributes = entityMetadata.schema.primaryKey.attributes;

@@ -6,9 +6,9 @@ import {
   getScanManager,
   getTransactionManger,
   TransactionManager,
+  ScanManager,
 } from '@typedorm/core';
-import {ScanManager} from '@typedorm/core/src/classes/manager/scan-manager';
-import {createTestConnection, resetTestConnection} from '.';
+import {createTestConnection, resetTestConnection} from './index';
 
 beforeEach(() => {
   createTestConnection({

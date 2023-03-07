@@ -5,17 +5,18 @@ import {
   Container,
   ConnectionManager,
 } from '@typedorm/core';
+import {DocumentClient} from '@typedorm/document-client';
 
-import {DynamoDB} from 'aws-sdk';
-
-export function createTestConnection(
+export function createTestConnection<T = any>(
   connectionOptions: Replace<
     ConnectionOptions,
     'documentClient',
     {
-      documentClient?: {
-        [key in keyof DynamoDB.DocumentClient]?: jest.SpyInstance;
-      };
+      documentClient?:
+        | {
+            [key in keyof DocumentClient]?: jest.SpyInstance;
+          }
+        | T;
     }
   >
 ) {

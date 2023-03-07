@@ -5,7 +5,7 @@ const packages = () =>
     .filter(dir => dir.isDirectory())
     .map(dir => dir.name);
 
-const validScopes = ['examples', ...packages()];
+const validScopes = [...packages()];
 console.log('Valid Package scopes:', validScopes);
 
 module.exports = {

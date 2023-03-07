@@ -6,12 +6,13 @@ import {
   Attribute,
   AutoGenerateAttribute,
   AUTO_GENERATE_ATTRIBUTE_STRATEGY,
+  ConflictingAttributeNameError,
 } from '@typedorm/common';
 import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
 import {User} from '../../../../__mocks__/user';
 import {AttributesMetadataBuilder} from '../attribute-metadata-builder';
 
-jest.useFakeTimers('modern').setSystemTime(new Date('2020-10-10'));
+jest.useFakeTimers().setSystemTime(new Date('2020-10-10'));
 
 let attributesMetadataBuilder: AttributesMetadataBuilder;
 beforeEach(() => {
@@ -244,4 +245,30 @@ test('throws an error when attribute referenced in primary key is also marked as
   expect(metadata).toThrow(
     'Failed to build metadata for "adminId", attributes referenced in primary key cannot be auto updated.'
   );
+});
+
+test('throws an error when attribute name conflicts with a primary key or sort key name of the table ', () => {
+  const mockTable = new Table({
+    name: 'admin-table',
+    partitionKey: 'id',
+  });
+  @Entity({
+    name: 'admin-test',
+    table: mockTable,
+    primaryKey: {
+      partitionKey: 'ADMIN#{{id}}',
+    },
+  })
+  class AdminTest {
+    @AutoGenerateAttribute({
+      strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.KSUID,
+    })
+    id: string;
+  }
+
+  const metadata = () =>
+    attributesMetadataBuilder
+      .build(mockTable, AdminTest, AdminTest)
+      .map(obj => Object.assign({}, obj));
+  expect(metadata).toThrow(ConflictingAttributeNameError);
 });
