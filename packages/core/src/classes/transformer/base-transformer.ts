@@ -48,10 +48,17 @@ export abstract class BaseTransformer {
     return entityMetadata.table.name;
   }
 
-  applyClassTransformerFormations<Entity>(entity: Entity) {
+  applyClassTransformerFormations<Entity>(
+    entity: Entity,
+    schemaVersionAttribute?: string
+  ) {
+    const version = schemaVersionAttribute
+      ? (entity as any)[schemaVersionAttribute]
+      : undefined;
     const transformedPlainEntity = classToPlain<Entity>(entity, {
       enableImplicitConversion: true,
       excludePrefixes: ['__'], // exclude internal attributes
+      version,
     });
 
     return transformedPlainEntity as Entity;
@@ -93,7 +100,10 @@ export abstract class BaseTransformer {
     });
 
     // pass through entity to class transformer to have all the metadata applied
-    const parsedEntity = this.applyClassTransformerFormations(entity);
+    const parsedEntity = this.applyClassTransformerFormations(
+      entity,
+      entityMetadata.schema.schemaVersionAttribute
+    );
 
     const parsedPrimaryKey = this.recursiveParseEntity(
       entityMetadata.schema.primaryKey.attributes,

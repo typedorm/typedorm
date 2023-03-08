@@ -18,10 +18,16 @@ export class EntityMetadataBuilder {
   }
   build(entityClasses: Function[]): EntityMetadata[] {
     return entityClasses.map(decoratedEntityClass => {
-      const {target, table, name, primaryKey, indexes} =
-        MetadataManager.metadataStorage.getRawEntityByTarget(
-          decoratedEntityClass
-        );
+      const {
+        target,
+        table,
+        name,
+        primaryKey,
+        indexes,
+        schemaVersionAttribute,
+      } = MetadataManager.metadataStorage.getRawEntityByTarget(
+        decoratedEntityClass
+      );
 
       if (table) {
         // if no entity level table is defined fallback to global connection table
@@ -73,6 +79,7 @@ export class EntityMetadataBuilder {
         name,
         primaryKey,
         indexes,
+        schemaVersionAttribute,
       });
     });
   }

@@ -31,6 +31,12 @@ export interface EntityRawMetadataOptions<Entity = any> {
   primaryKey: PrimaryKey<Entity>;
   indexes?: Indexes<Entity>;
   table?: Table;
+  /**
+   * Optional name of attribute on the entity that is used to denote schema version.
+   * If provided, the value of this attribute will  be passed to class-transformer to
+   * be used as the version during serialization/deserialization
+   */
+  schemaVersionAttribute?: Extract<keyof Entity, string>;
 }
 
 interface BaseAttributeRawMetadataOptions {
