@@ -1,3 +1,10 @@
+# [1.16.0-beta.1](https://github.com/typedorm/typedorm/compare/v1.15.4-beta.1...v1.16.0-beta.1) (2023-03-08)
+
+
+### Features
+
+* add schemaVersionAttribute option to enable schema versioning ([7856e29](https://github.com/typedorm/typedorm/commit/7856e2937f5d8fcb826173379c2dad2d1d553f88))
+
 ## [1.15.4-beta.1](https://github.com/typedorm/typedorm/compare/v1.15.3...v1.15.4-beta.1) (2023-02-26)
 
 ### Bug Fixes
