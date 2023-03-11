@@ -214,7 +214,7 @@ createConnection({
 
 ```
 
-## Get mangers for connection
+## Get managers for connection
 
 Every connection has it's unique instance of all managers, and they have the ability to call respective transformers to normalize/de-normalize item based on it's schema.
 Therefore, when working with multiple connections simultaneously (i.e. two tables configured in diff accounts using diff creds), it is important to be able get current manager by name, there for TypeDORM provides two ways to call this manager instances.
