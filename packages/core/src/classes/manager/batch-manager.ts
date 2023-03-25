@@ -10,8 +10,8 @@ import {
   INTERNAL_ENTITY_ATTRIBUTE,
   MANAGER_NAME,
   STATS_TYPE,
+  isEmptyObject,
 } from '@typedorm/common';
-import {isEmptyObject} from '../../helpers/is-empty-object';
 import {ReadBatch} from '../batch/read-batch';
 import {MetadataOptions} from '../transformer/base-transformer';
 import {getUniqueRequestId} from '../../helpers/get-unique-request-id';

@@ -4,8 +4,9 @@ import {
   ScalarType,
   SimpleOperator,
   UpdateType,
+  isEmptyObject,
+  isObject,
 } from '@typedorm/common';
-import {isEmptyObject} from '../../helpers/is-empty-object';
 import {KeyCondition} from './key-condition';
 import {Filter} from './filter';
 import {BaseExpressionInput, MERGE_STRATEGY} from './base-expression-input';
@@ -23,7 +24,6 @@ import {Update} from './update/update';
 
 import {DeleteUpdate} from './update/delete-update';
 import {RemoveUpdate} from './update/remove-update';
-import {isObject} from '../../helpers/is-object';
 import {nestedKeyAccessRegex} from '../../helpers/constants';
 
 /**

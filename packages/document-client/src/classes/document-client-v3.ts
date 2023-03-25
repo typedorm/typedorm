@@ -36,7 +36,7 @@ import {
   TranslateConfig,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
-import {isEmptyObject} from '@typedorm/core/src/helpers/is-empty-object';
+import {isEmptyObject} from '@typedorm/common';
 import {DEFAULT_TRANSLATE_CONFIG_V3} from '../constants/translate-config';
 import {TransactionCancelledException} from '../exceptions';
 import {DocumentClient} from './base-document-client';

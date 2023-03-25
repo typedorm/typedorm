@@ -1,4 +1,4 @@
-import {isEmptyObject} from '../../helpers/is-empty-object';
+import {isEmptyObject} from '@typedorm/common';
 import {WriteBatchCreate, WriteBatchDelete} from './write-batch';
 
 export function isBatchAddCreateItem<Entity>(

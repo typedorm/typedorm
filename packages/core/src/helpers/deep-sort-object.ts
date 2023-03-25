@@ -1,4 +1,4 @@
-import {isObject} from './is-object';
+import {isObject} from '@typedorm/common';
 
 export function deepSortObject(item: object) {
   if (!isObject(item)) {
