@@ -9,9 +9,9 @@ import {
   SparseIndexParseError,
   CONSUMED_CAPACITY_TYPE,
   InvalidDynamicUpdateAttributeValueError,
+  isEmptyObject,
 } from '@typedorm/common';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
-import {isEmptyObject} from '../../helpers/is-empty-object';
 import {isScalarType} from '../../helpers/is-scalar-type';
 import {parseKey} from '../../helpers/parse-key';
 import {Connection} from '../connection/connection';

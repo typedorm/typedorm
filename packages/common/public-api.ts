@@ -10,10 +10,12 @@ export * from './src/helpers/common-types';
 export * from './src/constants';
 export * from './src/helpers/dynamo-entity-type';
 export * from './src/enums';
+export * from './src/operator-types';
+
+// Helpers
 export * from './src/helpers/non-key-attributes-type';
 export * from './src/helpers/non-key-attribute-with-return-type';
 export * from './src/helpers/object-type';
-export * from './src/operator-types';
 export * from './src/helpers/require-at-least-one-type';
 export * from './src/helpers/require-at-least-two-type';
 export * from './src/helpers/require-only-one-type';

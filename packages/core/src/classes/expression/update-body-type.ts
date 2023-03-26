@@ -1,5 +1,5 @@
 import {UpdateType, RequireOnlyOne, InvalidType} from '@typedorm/common';
-import {isEmptyObject} from '../../helpers/is-empty-object';
+import {isEmptyObject} from '@typedorm/common';
 
 /**
  * Type Guards

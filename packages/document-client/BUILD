@@ -9,6 +9,7 @@ setup_ts_build(
     tsconfig_cjs = "//:tsconfig_cjs",
     tsconfig_esm = "//:tsconfig_esm",    
     deps = [
+        "//packages/common:library",
         "@npm//@aws-sdk/client-dynamodb",
         "@npm//@aws-sdk/lib-dynamodb",
         "@npm//@types/jest",

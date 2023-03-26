@@ -1,5 +1,4 @@
-import {Table} from '@typedorm/common';
-import {isEmptyObject} from '../../helpers/is-empty-object';
+import {Table, isEmptyObject} from '@typedorm/common';
 import {MERGE_STRATEGY} from './base-expression-input';
 import {Condition} from './condition';
 import {Filter} from './filter';
