@@ -1,3 +1,10 @@
+# [1.16.0-beta.2](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.1...v1.16.0-beta.2) (2023-03-26)
+
+
+### Features
+
+* **document-client:** expose translateConfig options to DocumentClientV3 ([03f4343](https://github.com/typedorm/typedorm/commit/03f4343cf53abdee2d32b60563d13411f2b296ea))
+
 # [1.16.0-beta.1](https://github.com/typedorm/typedorm/compare/v1.15.4-beta.1...v1.16.0-beta.1) (2023-03-08)
 
 
