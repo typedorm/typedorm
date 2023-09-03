@@ -9,7 +9,7 @@ Working with relational data in dynamoDB can be painful, but it doesn't have to 
   - [Adding attributes to an entity](#adding-attributes-to-an-entity)
   - [Adding auto generated attributes](#adding-auto-generated-attributes)
   - [Creating a Connection](#creating-a-connection)
-  - [Get mangers for connection](#get-mangers-for-connection)
+  - [Get managers for connection](#get-managers-for-connection)
     - [Get manager instance from current connection](#get-manager-instance-from-current-connection)
     - [Get manager instance from current TypeDORM context](#get-manager-instance-from-current-typedorm-context)
   - [Manager Operations](#manager-operations)
@@ -237,12 +237,12 @@ const anotherConnection = createConnection({
 ### Get manager instance from current connection
 
 ```Typescript
-const defaultEntityManger = defaultConnection.entityManager
-const defaultTransactionManger = defaultConnection.transactionManger
+const defaultEntityManager = defaultConnection.entityManager
+const defaultTransactionManager = defaultConnection.transactionManager
 // ...
 
-const anotherEntityManger = anotherConnection.entityManager
-const anotherTransactionManger = anotherConnection.transactionManger
+const anotherEntityManager = anotherConnection.entityManager
+const anotherTransactionManager = anotherConnection.transactionManager
 // ...
 
 ```
@@ -250,12 +250,12 @@ const anotherTransactionManger = anotherConnection.transactionManger
 ### Get manager instance from current TypeDORM context
 
 ```Typescript
-const defaultEntityManger = getEntityManager()
-const defaultTransactionManger = getTransactionManger()
+const defaultEntityManager = getEntityManager()
+const defaultTransactionManager = getTransactionManager()
 // ...
 
-const anotherEntityManger = getEntityManager('other-connection')
-const anotherTransactionManger = getTransactionManger('other-connection')
+const anotherEntityManager = getEntityManager('other-connection')
+const anotherTransactionManager = getTransactionManager('other-connection')
 // ...
 ```
 
