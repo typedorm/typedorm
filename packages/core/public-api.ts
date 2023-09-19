@@ -28,7 +28,7 @@ export {AutoGenerateAttributeValue} from './src/helpers/auto-generate-attribute-
 // public method exports
 
 export function createConnection(options: ConnectionOptions) {
-  const connection = connectionManger().create(options);
+  const connection = connectionManager().create(options);
 
   const connected = connection.connect();
 
@@ -45,28 +45,28 @@ export function createConnections(optionsList: ConnectionOptions[]) {
   return optionsList.map(options => createConnection(options));
 }
 
-export function getConnection() {
-  return Container.get(ConnectionManager).get();
+export function getConnection(connectionName?: string) {
+  return connectionManager().get(connectionName);
 }
 
 export function getEntityManager(connectionName?: string) {
-  return connectionManger().get(connectionName).entityManager;
+  return connectionManager().get(connectionName).entityManager;
 }
 
 export function getTransactionManger(connectionName?: string) {
-  return connectionManger().get(connectionName).transactionManger;
+  return connectionManager().get(connectionName).transactionManger;
 }
 
 export function getBatchManager(connectionName?: string) {
-  return connectionManger().get(connectionName).batchManager;
+  return connectionManager().get(connectionName).batchManager;
 }
 
 export function getScanManager(connectionName?: string) {
-  return connectionManger().get(connectionName).scanManager;
+  return connectionManager().get(connectionName).scanManager;
 }
 
 // private methods
 
-function connectionManger() {
+function connectionManager() {
   return Container.get(ConnectionManager);
 }
