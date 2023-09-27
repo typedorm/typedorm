@@ -1,5 +1,5 @@
-import {UpdateType, RequireOnlyOne, InvalidType} from '@typedorm/common';
-import {isEmptyObject} from '@typedorm/common';
+import { UpdateType, RequireOnlyOne, InvalidType, ScalarType } from '@typedorm/common';
+import { isEmptyObject } from '@typedorm/common';
 
 /**
  * Type Guards
@@ -19,29 +19,29 @@ type AbstractSetValueType<
   enKey extends keyof Entity
 > = (Entity[enKey] extends number
   ? {
-      [key in UpdateType.ArithmeticOperator]?: number;
-    }
+    [key in UpdateType.ArithmeticOperator]?: number;
+  }
   : Entity[enKey] extends any[]
   ? {
       LIST_APPEND?: Entity[enKey] | {$VALUE: Entity[enKey]; $PATH: string};
-    }
+  }
   : {}) & {
   IF_NOT_EXISTS?: Entity[enKey] | {$VALUE: Entity[enKey]; $PATH: string};
-};
+  };
 
 type SetImplicitValueType<Entity, enKey extends keyof Entity> =
   | RequireOnlyOne<
-      // set value type
-      AbstractSetValueType<Entity, enKey>
-    >
+    // set value type
+    AbstractSetValueType<Entity, enKey>
+  >
   // simple attribute type value
   | Entity[enKey];
 
 type SetExplicitValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
   SET?:
-    | AbstractSetValueType<Entity, enKey>
-    // simple attribute type value
-    | Entity[enKey];
+  | AbstractSetValueType<Entity, enKey>
+  // simple attribute type value
+  | Entity[enKey];
 }>;
 
 type SetValueType<Entity, enKey extends keyof Entity> =
@@ -56,15 +56,15 @@ type SetValueType<Entity, enKey extends keyof Entity> =
  * ADD Action
  */
 type AddValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
-  ADD?: Entity[enKey] extends number | any[]
-    ? Entity[enKey]
-    : InvalidType<
-        [
-          'number | any[]',
-          "Update action 'ADD' can not be used for attribute",
-          enKey
-        ]
-      >;
+  ADD?: Entity[enKey] extends number | any[] | Set<ScalarType>
+  ? Entity[enKey]
+  : InvalidType<
+    [
+      'number | any[] | Set<ScalarType>',
+      "Update action 'ADD' can not be used for attribute",
+      enKey
+    ]
+  >;
 }>;
 // **************************************
 
@@ -75,7 +75,7 @@ type AddValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
 type RemoveValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
   REMOVE?: Entity[enKey] extends any[]
     ? {$AT_INDEX: number[]} | boolean
-    : boolean;
+  : boolean;
 }>;
 // **************************************
 
@@ -84,11 +84,11 @@ type RemoveValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
  * DELETE Action
  */
 type DeleteValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
-  DELETE?: Entity[enKey] extends any[]
-    ? Entity[enKey]
-    : InvalidType<
-        [any[], "Update action 'DELETE' can not be used for attribute", enKey]
-      >;
+  DELETE?: Entity[enKey] extends any[] | Set<ScalarType>
+  ? Entity[enKey]
+  : InvalidType<
+    [any[] | Set<ScalarType>, "Update action 'DELETE' can not be used for attribute", enKey]
+  >;
 }>;
 // **************************************
 
@@ -98,15 +98,15 @@ type DeleteValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
 export type UpdateBody<Entity, AdditionalProperties> = {
   // implicit set  type
   [enKey in keyof Entity]?:
-    | SetValueType<Entity, enKey>
-    | AddValueType<Entity, enKey>
-    | RemoveValueType<Entity, enKey>
-    | DeleteValueType<Entity, enKey>;
+  | SetValueType<Entity, enKey>
+  | AddValueType<Entity, enKey>
+  | RemoveValueType<Entity, enKey>
+  | DeleteValueType<Entity, enKey>;
 } & {
-  // implicit set  type
-  [additionalKey in keyof AdditionalProperties]?:
+    // implicit set  type
+    [additionalKey in keyof AdditionalProperties]?:
     | SetValueType<AdditionalProperties, additionalKey>
     | AddValueType<AdditionalProperties, additionalKey>
     | RemoveValueType<AdditionalProperties, additionalKey>
     | DeleteValueType<AdditionalProperties, additionalKey>;
-};
+  };

@@ -182,13 +182,13 @@ export class ExpressionInputParser {
             const [operator, operatorValue] = Object.entries(
               value as any
             )[0] as [
-              (
-                | UpdateType.ArithmeticOperator
-                | UpdateType.SetUpdateOperator
-                | UpdateType.Action
-              ),
-              any
-            ];
+                (
+                  | UpdateType.ArithmeticOperator
+                  | UpdateType.SetUpdateOperator
+                  | UpdateType.Action
+                ),
+                any
+              ];
 
             return this.parseValueToUpdateExp(
               attr,
@@ -281,9 +281,9 @@ export class ExpressionInputParser {
           const [nestedOperator, nestedOperatorValue] = Object.entries(
             operatorValue
           )[0] as [
-            UpdateType.ArithmeticOperator | UpdateType.SetUpdateOperator,
-            any
-          ];
+              UpdateType.ArithmeticOperator | UpdateType.SetUpdateOperator,
+              any
+            ];
 
           return this.parseValueToUpdateExp(
             attribute,
@@ -301,9 +301,9 @@ export class ExpressionInputParser {
         }
       }
       case 'ADD': {
-        if (isEmptyObject(operatorValue)) {
+        if (!(operatorValue instanceof Set) && isEmptyObject(operatorValue)) {
           throw new Error(
-            `Invalid value ${operatorValue} received for action "ADD", Only numbers and lists are supported.`
+            `Invalid value ${operatorValue} received for action "ADD", Only numbers, sets and lists are supported.`
           );
         }
         return new AddUpdate().addTo(attribute, operatorValue);

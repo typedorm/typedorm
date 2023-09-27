@@ -1,5 +1,5 @@
-import {ATTRIBUTE_TYPE, ScalarType, SimpleOperator} from '@typedorm/common';
-import {nestedKeyAccessRegex} from '../../helpers/constants';
+import { ATTRIBUTE_TYPE, ScalarType, SimpleOperator } from '@typedorm/common';
+import { nestedKeyAccessRegex } from '../../helpers/constants';
 
 const lastCharSpaceMatcher = /\s$/;
 export enum MERGE_STRATEGY {
@@ -160,13 +160,21 @@ export abstract class BaseExpressionInput {
       this.and().appendToExpression(`(${expression})`);
     }
 
-    Object.keys(names).forEach(nameKey => {
-      if (this.names[nameKey]) {
-        throw new Error(
-          `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
-        );
-      }
-    });
+    // THIS CHECK IS NOT NEEDED
+    // it prevents us from doing cool things as:
+    // where: {
+    //   OR: {
+    //     NOT: { roles: 'ATTRIBUTE_EXISTS' },
+    //     roles: { SIZE: { EQ: 0 } },
+    //   },
+    // },
+    // Object.keys(names).forEach(nameKey => {
+    //   if (this.names[nameKey]) {
+    //     throw new Error(
+    //       `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
+    //     );
+    //   }
+    // }); 
     Object.keys(values).forEach(valueKey => {
       if (this.names[valueKey]) {
         throw new Error(
@@ -197,13 +205,21 @@ export abstract class BaseExpressionInput {
         this.appendToExpression(strategy);
       }
 
-      Object.keys(input.names).forEach(nameKey => {
-        if (this.names[nameKey]) {
-          throw new Error(
-            `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
-          );
-        }
-      });
+      // THIS CHECK IS NOT NEEDED
+      // it prevents us from doing cool things as:
+      // where: {
+      //   OR: {
+      //     NOT: { roles: 'ATTRIBUTE_EXISTS' },
+      //     roles: { SIZE: { EQ: 0 } },
+      //   },
+      // },
+      // Object.keys(input.names).forEach(nameKey => {
+      //   if (this.names[nameKey]) {
+      //     throw new Error(
+      //       `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
+      //     );
+      //   }
+      // });
       Object.keys(input.values).forEach(valueKey => {
         if (this.names[valueKey]) {
           throw new Error(
