@@ -14,7 +14,6 @@ import {
 import {Connection} from '../../connection/connection';
 import {
   CONSUMED_CAPACITY_TYPE,
-  EntityInstance,
   InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
 import {
