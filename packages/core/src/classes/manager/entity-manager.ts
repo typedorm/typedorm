@@ -190,11 +190,11 @@ export class EntityManager {
    * Creates new record in table with given entity
    * @param entity Entity to add to table as a new record
    */
-  async create<Entity>(
-    entity: EntityInstance,
-    options?: EntityManagerCreateOptions<Entity>,
+  async create<TEntity extends EntityInstance>(
+    entity: TEntity,
+    options?: EntityManagerCreateOptions<TEntity>,
     metadataOptions?: MetadataOptions
-  ): Promise<Entity> {
+  ): Promise<TEntity> {
     if (!IsEntityInstance(entity)) {
       throw new Error(
         `Provided entity ${JSON.stringify(
@@ -231,7 +231,7 @@ export class EntityManager {
       }
 
       // by default dynamodb does not return attributes on create operation, so return one
-      const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
+      const itemToReturn = this._entityTransformer.fromDynamoEntity<TEntity>(
         entityClass,
         dynamoPutItemInput.Item as DocumentClientTypes.AttributeMap,
         {
@@ -250,7 +250,7 @@ export class EntityManager {
       returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
     });
 
-    const itemToReturn = this._entityTransformer.fromDynamoEntity<Entity>(
+    const itemToReturn = this._entityTransformer.fromDynamoEntity<TEntity>(
       entityClass,
       // if create operation contains multiple items, first one will the original item
       dynamoPutItemInput[0]?.Put?.Item ?? {},
