@@ -1,5 +1,5 @@
-import { ATTRIBUTE_TYPE, ScalarType, SimpleOperator } from '@typedorm/common';
-import { nestedKeyAccessRegex } from '../../helpers/constants';
+import {ATTRIBUTE_TYPE, ScalarType, SimpleOperator} from '@typedorm/common';
+import {nestedKeyAccessRegex} from '../../helpers/constants';
 
 const lastCharSpaceMatcher = /\s$/;
 export enum MERGE_STRATEGY {
@@ -174,7 +174,7 @@ export abstract class BaseExpressionInput {
     //       `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
     //     );
     //   }
-    // }); 
+    // });
     Object.keys(values).forEach(valueKey => {
       if (this.names[valueKey]) {
         throw new Error(
