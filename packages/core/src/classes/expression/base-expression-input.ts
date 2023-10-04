@@ -100,7 +100,10 @@ export abstract class BaseExpressionInput {
     nameValue = nameValue?.replace(match, '');
 
     const expressionPrefixedName = this.getExpNameKey(nameKey);
-    if (this.names[expressionPrefixedName]) {
+    if (
+      this.names[expressionPrefixedName] &&
+      this.names[expressionPrefixedName] !== (nameValue ?? nameKey)
+    ) {
       throw new Error(
         `There is already an expression name with key ${expressionPrefixedName}.`
       );
@@ -123,7 +126,10 @@ export abstract class BaseExpressionInput {
     name = name.replace(nestedKeyAccessRegex, '');
 
     const expressionPrefixedValue = this.getExpValueKey(name);
-    if (this.values[expressionPrefixedValue]) {
+    if (
+      this.values[expressionPrefixedValue] &&
+      this.values[expressionPrefixedValue] !== value
+    ) {
       throw new Error(
         `There is already an expression value with key ${expressionPrefixedValue}.`
       );
