@@ -301,9 +301,9 @@ export class ExpressionInputParser {
         }
       }
       case 'ADD': {
-        if (isEmptyObject(operatorValue)) {
+        if (!(operatorValue instanceof Set) && isEmptyObject(operatorValue)) {
           throw new Error(
-            `Invalid value ${operatorValue} received for action "ADD", Only numbers and lists are supported.`
+            `Invalid value ${operatorValue} received for action "ADD", Only numbers, sets and lists are supported.`
           );
         }
         return new AddUpdate().addTo(attribute, operatorValue);
