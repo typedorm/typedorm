@@ -18,7 +18,8 @@
     "orm"
   ],
   "peerDependencies": {
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "class-transformer": "*"
   },
   "dependencies": {
     "debug": "^4.3.1",
