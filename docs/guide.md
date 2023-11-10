@@ -101,7 +101,7 @@ Now, TypeDORM knows about all indexes, keys and how it needs to be structured, b
 To add attributes to entity, use `@Attribute` or other higher level annotations like `@AutoGenerateAttribute`.
 
 ```Typescript
-import {Table} from '@typedorm/common';
+import {Entity, INDEX_TYPE, Attribute} from '@typedorm/common';
 
 @Entity({
   name: 'user', // name of the entity that will be added to each item as an attribute
@@ -131,9 +131,9 @@ export class User {
   email: string;
 
   @Attribute()
-  status: string
+  status: string;
 
-  updatedAt: string
+  updatedAt: string;
 }
 ```
 
@@ -342,7 +342,7 @@ To get more insight on how how update works with TypeDORM, have a look at [this]
 Going ahead with earlier example of `User` entity, let's each of our user can have many orders, and our order entity looks like this
 
 ```Typescript
-import {Attribute, Entity, AutoGenerateAttribute} from '@typedorm/common';
+import {Attribute, Entity, AutoGenerateAttribute, INDEX_TYPE} from '@typedorm/common';
 import {AUTO_GENERATE_ATTRIBUTE_STRATEGY} from '@typedorm/common';
 
 @Entity({
