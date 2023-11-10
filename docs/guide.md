@@ -181,7 +181,7 @@ export class User {
   status: string
 
   @AutoGenerateAttribute({
-    strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH,
+    strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_DATE,
     autoUpdate: true
   })
   updatedAt: string
@@ -376,7 +376,7 @@ export class Order {
   status: string
 
   @AutoGenerateAttribute({
-    strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH,
+    strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_DATE,
   })
   createdAt: string
 }
