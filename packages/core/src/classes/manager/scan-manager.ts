@@ -343,7 +343,7 @@ export class ScanManager {
 
     const allPromisesResponse = await Promise.all(
       parallelScanOptions.map(options =>
-        this.toLimited(this.scan<Entity>(options, metadataOptions))
+        this.toLimited(this._scan<Entity>(options, metadataOptions))
       )
     );
 
@@ -410,7 +410,26 @@ export class ScanManager {
   }> {
     // start with 0
     this.itemsFetchedSoFarTotalParallelCount = 0;
+    return this._scan(scanOptions, metadataOptions);
+  }
 
+  /**
+   * Internal implementation of scan.
+   * In all external use-cases scan should be used
+   * This implementation does not reset `itemsFetchedSoFarTotalParallelCount` as it is called from parallelScan
+   * @param {ScanManagerScanOptions} scanOptions
+   * @param {MetadataOptions} metadataOptions
+   * @returns {Promise<{items: Entity[] | undefined, unknownItems: DocumentClientTypes.AttributeMap[] | undefined, cursor: DocumentClientTypes.Key | undefined}>}
+   * @internal
+   */
+  protected async _scan<Entity>(
+    scanOptions?: ScanManagerScanOptions,
+    metadataOptions?: MetadataOptions
+  ): Promise<{
+    items: Entity[] | undefined;
+    unknownItems: DocumentClientTypes.AttributeMap[] | undefined;
+    cursor: DocumentClientTypes.Key | undefined;
+  }> {
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
     const dynamoScanInput = this._dcScanTransformer.toDynamoScanItem(
