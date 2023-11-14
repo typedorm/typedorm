@@ -408,6 +408,9 @@ export class ScanManager {
     unknownItems: DocumentClientTypes.AttributeMap[] | undefined;
     cursor: DocumentClientTypes.Key | undefined;
   }> {
+    // start with 0
+    this.itemsFetchedSoFarTotalParallelCount = 0;
+
     const requestId = getUniqueRequestId(metadataOptions?.requestId);
 
     const dynamoScanInput = this._dcScanTransformer.toDynamoScanItem(
