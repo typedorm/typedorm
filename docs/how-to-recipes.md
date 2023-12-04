@@ -527,7 +527,7 @@ const batchToWrite = new WriteBatch()
   ....other items
 
 const batchResponse = await getBatchManager().write(batchToWrite, {
-  concurrency: 10, // max 10 requests are run in parallel
+  requestsConcurrencyLimit: 10, // max 10 requests are run in parallel
   ...other optional options
 })
 
