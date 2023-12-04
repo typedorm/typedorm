@@ -567,22 +567,18 @@ import {ReadBatch, BatchManager} from '@typedorm/core'
 
 // first we create a read batch instance with all the keys that we would like to get items for
 const batchItemsToRead = new ReadBatch()
-  .addGetItem<User, UserPrimaryKey>({
-    item: User,
-    primaryKey: {
-      id: '1'
-    }
+  .addGet<User, UserPrimaryKey>({
+    User,
+    { id: '1' }
   })
   .addGetItem<Org, OrgPrimaryKey>({
-    item: Org,
-    primaryKey: {
-      id: 'org-1'
-    }
+    Org,
+    { id: 'org-1' }
   })
   ....other items
 
 const batchResponse = await getBatchManager().read(batchItemsToRead, {
-  concurrency: 3, // max 3 requests are run in parallel
+  requestsConcurrencyLimit: 3, // max 3 requests are run in parallel
   ...other optional options
 })
 
@@ -603,7 +599,7 @@ import {ReadBatch, BatchManager} from '@typedorm/core'
 // i.e suppose there were x items returned as unprocessed items from earlier batch read attempt
 
 // first create a new batch from earlier unprocessed items,
-const newBatchFromUnprocessedItems = new Read().add(batchResponse.unprocessedItems)
+const newBatchFromUnprocessedItems = new ReadBatch().add(batchResponse.unprocessedItems)
 
 const retryBatchWriteResponse = await getBatchManager().read(newBatchFromUnprocessedItems)
 
