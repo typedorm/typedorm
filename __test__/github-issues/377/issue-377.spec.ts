@@ -96,6 +96,7 @@ test('correctly uses ConsumedCapacity limit - stops querying after reaching capa
     {metaLimit: 100, metaLimitType: 'capacityConsumed'}
   );
 
+  // without capacityConsumed limit, query 3 times
   expect(dcMock.query).toHaveBeenCalledTimes(1);
 
   expect(response.items).toHaveLength(1);
@@ -138,6 +139,7 @@ test('correctly uses ConsumedCapacity limit - stops querying after reaching capa
     {metaLimit: 200, metaLimitType: 'capacityConsumed'}
   );
 
+  // without capacityConsumed limit, query 4 times
   expect(dcMock.query).toHaveBeenCalledTimes(2);
 
   expect(response.items).toHaveLength(2);
@@ -177,6 +179,7 @@ test('correctly uses ScannedCount limit - stops querying after reaching scannedC
     {metaLimit: 20, metaLimitType: 'scannedCount'}
   );
 
+  // without scannedCount limit, query 4 times
   expect(dcMock.query).toHaveBeenCalledTimes(2);
 
   expect(response.items).toHaveLength(2);
