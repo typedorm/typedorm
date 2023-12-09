@@ -17,6 +17,7 @@ beforeEach(() => {
     documentClient: dcMock,
   });
   entityManager = new EntityManager(connection);
+  dcMock.query.mockReset();
 });
 
 afterEach(() => {
@@ -58,6 +59,125 @@ test('correctly uses default limit', async () => {
     items: [Object.assign(new TestEntity(), {pk: 'a_pk', sk: 1})],
   });
   expect(response.items[0]).toBeInstanceOf(TestEntity);
+});
+
+test('Example case where limit performs a full partition scan - finds desired count - does not exhaust partition', async () => {
+  const mockUndesiredValue = {
+    promise: () => ({
+      Items: [],
+      LastEvaluatedKey: {
+        partitionKey: 'a_pk',
+        sk: 1,
+      },
+    }),
+  };
+
+  const mockDesiredvalue = {
+    promise: () => ({
+      Items: [
+        {
+          pk: 'a_pk',
+          sk: 1,
+          __en: 'TestEntity',
+        },
+      ],
+      LastEvaluatedKey: {
+        partitionKey: 'a_pk',
+        sk: 1,
+      },
+    }),
+  };
+
+  const lastItem = {
+    promise: () => ({
+      Items: [
+        {
+          pk: 'another_pk',
+          sk: 1,
+          __en: 'TestEntity',
+        },
+      ],
+    }),
+  };
+
+  dcMock.query.mockReturnValueOnce(mockDesiredvalue);
+  for (let i = 0; i < 100; i++) {
+    dcMock.query.mockReturnValueOnce(mockUndesiredValue);
+  }
+  dcMock.query.mockReturnValueOnce(mockDesiredvalue);
+
+  const response = await entityManager.find(
+    TestEntity,
+    {
+      pk: 'a_pk',
+    },
+    {
+      limit: 2,
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(102);
+
+  expect(response.items).toHaveLength(2);
+});
+
+test('Example case where limit performs a full partition scan - exhausts partition without reaching limit', async () => {
+  const mockUndesiredValue = {
+    promise: () => ({
+      Items: [],
+      LastEvaluatedKey: {
+        partitionKey: 'a_pk',
+        sk: 1,
+      },
+    }),
+  };
+
+  const mockDesiredvalue = {
+    promise: () => ({
+      Items: [
+        {
+          pk: 'a_pk',
+          sk: 1,
+          __en: 'TestEntity',
+        },
+      ],
+      LastEvaluatedKey: {
+        partitionKey: 'a_pk',
+        sk: 1,
+      },
+    }),
+  };
+
+  const lastItem = {
+    promise: () => ({
+      Items: [],
+    }),
+  };
+
+  dcMock.query.mockReturnValueOnce(mockDesiredvalue);
+  for (let i = 0; i < 100; i++) {
+    dcMock.query.mockReturnValueOnce(mockUndesiredValue);
+  }
+  dcMock.query.mockReturnValueOnce(mockDesiredvalue);
+
+  for (let i = 0; i < 500; i++) {
+    dcMock.query.mockReturnValueOnce(mockUndesiredValue);
+  }
+
+  dcMock.query.mockReturnValueOnce(lastItem);
+
+  const response = await entityManager.find(
+    TestEntity,
+    {
+      pk: 'a_pk',
+    },
+    {
+      limit: 3,
+    }
+  );
+
+  expect(dcMock.query).toHaveBeenCalledTimes(603);
+  expect(response.items).toHaveLength(2);
 });
 
 test('correctly uses ConsumedCapacity limit - stops querying after reaching capacityConsumed metaLimit', async () => {
