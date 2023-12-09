@@ -27,11 +27,6 @@ export interface MetadataOptions {
   returnConsumedCapacity?: CONSUMED_CAPACITY_TYPE;
 }
 
-export interface MetadataOptions {
-  requestId?: string;
-  returnConsumedCapacity?: CONSUMED_CAPACITY_TYPE;
-}
-
 export abstract class BaseTransformer {
   protected _expressionInputParser: ExpressionInputParser;
 

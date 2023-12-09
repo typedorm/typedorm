@@ -460,6 +460,19 @@ find(
     // Sets ReturnConsumedCapacity param to given value when making a request via document client
     returnConsumedCapacity
   }
+
+  // @optional
+  // Additional limits for query to prevent full partition scanning
+  // By default, `limit` refers to the desired number of items to return NOT number of items to search.
+  // This can lead to full partition scan if limit is set to higher number than number of items matching
+  // the search criteria or if the query is not selective enough and desired items are deep into the partition.
+  metaLimitOptions:  {
+    // Supports: 'capacityConsumed' or 'scannedCount'
+    metaLimitType
+
+    // The threshold to apply on meta limit type
+    metaLimit
+  }
 )
 ```
 
