@@ -88,18 +88,6 @@ test('Example case where limit performs a full partition scan - finds desired co
     }),
   };
 
-  const lastItem = {
-    promise: () => ({
-      Items: [
-        {
-          pk: 'another_pk',
-          sk: 1,
-          __en: 'TestEntity',
-        },
-      ],
-    }),
-  };
-
   dcMock.query.mockReturnValueOnce(mockDesiredvalue);
   for (let i = 0; i < 100; i++) {
     dcMock.query.mockReturnValueOnce(mockUndesiredValue);
