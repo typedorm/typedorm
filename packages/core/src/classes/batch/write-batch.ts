@@ -7,6 +7,12 @@ export interface WriteBatchCreate<Entity> {
   };
 }
 
+export interface WriteBatchPut<Entity> {
+  put: {
+    item: Entity;
+  };
+}
+
 export interface WriteBatchDelete<Entity, PrimaryKey> {
   delete: {
     item: EntityTarget<Entity>;
@@ -16,6 +22,7 @@ export interface WriteBatchDelete<Entity, PrimaryKey> {
 
 export type WriteBatchItem<Entity, PrimaryKey> =
   | WriteBatchCreate<Entity>
+  | WriteBatchPut<Entity>
   | WriteBatchDelete<Entity, PrimaryKey>;
 
 export class WriteBatch extends Batch<WriteBatchItem<any, any>> {
@@ -27,6 +34,15 @@ export class WriteBatch extends Batch<WriteBatchItem<any, any>> {
   addCreateItem<Entity>(item: Entity): this {
     this.items.push({
       create: {
+        item,
+      },
+    });
+    return this;
+  }
+
+  addPutItem<Entity>(item: Entity): this {
+    this.items.push({
+      put: {
         item,
       },
     });
