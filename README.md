@@ -23,7 +23,7 @@ TypeDORM borrows decorator based syntax from TypeORM and provides fully type saf
 | Branches | Stability                                                                                 |
 | -------- | ----------------------------------------------------------------------------------------- |
 | main     | ![Stability](https://img.shields.io/badge/Stability-stable-blue?style=for-the-badge)      |
-| beta     | ![Stability](https://img.shields.io/badge/Stability-preview-orange?style=for-the-badge)   |
+| develop  | ![Stability](https://img.shields.io/badge/Stability-preview-orange?style=for-the-badge)   |
 | alpha    | ![Stability](https://img.shields.io/badge/Stability-experimental-red?style=for-the-badge) |
 
 ## Features
@@ -282,6 +282,10 @@ To find out more about how the data looks like when it is stored in dynamo have 
 - TypeDORM, at the moment WILL NOT create/update table configuration and must be done separately by the developer.
 
 ## Sponsors
+
+[![Edge Tech Studio](./docs/assets/edge-tech-logo.png)](https://www.edgetech.studio/)
+
+### Previous Sponsors
 
 [![Nextfaze](./docs/assets/nextfaze-logo.jpg)](https://www.nextfaze.com/)
 

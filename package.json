@@ -22,9 +22,9 @@
     "posttest": "npm run lint"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.279.0",
+    "@aws-sdk/client-dynamodb": "^3.351.0",
     "@aws-sdk/lib-dynamodb": "^3.279.0",
-    "aws-sdk": "^2.1323.0",
+    "aws-sdk": "^2.1356.0",
     "chalk": "^5.2.0",
     "class-transformer": "0.5.1",
     "debug": "^4.3.4",
