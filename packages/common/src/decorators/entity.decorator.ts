@@ -8,9 +8,10 @@ export function Entity<E>({
   primaryKey,
   indexes,
   name,
+  schemaVersionAttribute,
 }: Pick<
   EntityRawMetadataOptions<E>,
-  'name' | 'table' | 'indexes' | 'primaryKey'
+  'name' | 'table' | 'indexes' | 'primaryKey' | 'schemaVersionAttribute'
 >) {
   return function <E extends Constructor>(target: E) {
     const originalTarget = target;
@@ -21,6 +22,7 @@ export function Entity<E>({
       target,
       primaryKey,
       indexes,
+      schemaVersionAttribute,
     });
 
     return originalTarget;

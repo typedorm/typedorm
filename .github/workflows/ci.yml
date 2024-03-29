@@ -1,5 +1,11 @@
 name: Continuous Integration
 on:
+  pull_request:
+    branches:
+      - 'main'
+      - 'develop'
+      - 'next'
+      - 'alpha'
   push:
     # run on all branches except release branches
     branches-ignore:

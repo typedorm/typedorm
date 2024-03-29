@@ -18,7 +18,7 @@ export class EntityMetadataBuilder {
   }
   build(entityClasses: Function[]): EntityMetadata[] {
     return entityClasses.map(decoratedEntityClass => {
-      const {target, table, name, primaryKey, indexes} =
+      const {target, table, name, primaryKey, indexes, schemaVersionAttribute} =
         MetadataManager.metadataStorage.getRawEntityByTarget(
           decoratedEntityClass
         );
@@ -73,6 +73,7 @@ export class EntityMetadataBuilder {
         name,
         primaryKey,
         indexes,
+        schemaVersionAttribute,
       });
     });
   }

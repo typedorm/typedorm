@@ -40,6 +40,7 @@ export type DynamoEntityIndexSchema = {
 export interface DynamoEntitySchema {
   primaryKey: DynamoEntitySchemaPrimaryKey;
   indexes?: DynamoEntityIndexesSchema;
+  schemaVersionAttribute?: string;
 }
 
 export type AttributeMetadataType =
@@ -67,6 +68,7 @@ export class EntityMetadata extends BaseMetadata {
     primaryKey,
     indexes,
     attributes,
+    schemaVersionAttribute,
   }: EntityMetadataOptions) {
     super(connection);
     this.name = name;
@@ -101,6 +103,7 @@ export class EntityMetadata extends BaseMetadata {
         indexes: {...indexes},
         attributes: attributesKeyTypePair,
       }),
+      schemaVersionAttribute,
     };
   }
 

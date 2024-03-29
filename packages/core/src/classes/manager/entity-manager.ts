@@ -7,9 +7,9 @@ import {
   MANAGER_NAME,
   QUERY_ORDER,
   STATS_TYPE,
+  isEmptyObject,
 } from '@typedorm/common';
 import {getDynamoQueryItemsLimit} from '../../helpers/get-dynamo-query-items-limit';
-import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
 import {DocumentClientRequestTransformer} from '../transformer/document-client-request-transformer';
 import {EntityTransformer} from '../transformer/entity-transformer';

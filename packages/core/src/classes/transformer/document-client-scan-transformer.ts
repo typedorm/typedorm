@@ -8,8 +8,8 @@ import {
   NoSuchIndexFoundError,
   QUERY_SELECT_TYPE,
   TRANSFORM_SCAN_TYPE,
+  isEmptyObject,
 } from '@typedorm/common';
-import {isEmptyObject} from '../../helpers/is-empty-object';
 import {Connection} from '../connection/connection';
 import {MERGE_STRATEGY} from '../expression/base-expression-input';
 import {Filter} from '../expression/filter';

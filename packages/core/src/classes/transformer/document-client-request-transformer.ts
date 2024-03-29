@@ -13,10 +13,11 @@ import {
   InvalidSelectInputError,
   InvalidUniqueAttributeUpdateError,
   InvalidDynamicUpdateAttributeValueError,
+  isEmptyObject,
+  isObject,
 } from '@typedorm/common';
 import {dropProp} from '../../helpers/drop-prop';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
-import {isEmptyObject} from '../../helpers/is-empty-object';
 import {parseKey} from '../../helpers/parse-key';
 import {KeyCondition} from '../expression/key-condition';
 import {Connection} from '../connection/connection';
@@ -27,7 +28,6 @@ import {BaseTransformer, MetadataOptions} from './base-transformer';
 import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
 import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
-import {isObject} from '../../helpers/is-object';
 import {DocumentClientTypes} from '@typedorm/document-client';
 import {autoGenerateValue} from '../../helpers/auto-generate-attribute-value';
 

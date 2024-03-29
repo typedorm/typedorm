@@ -33,8 +33,11 @@ import {
   ScanCommand,
   TransactGetCommand,
   TransactWriteCommand,
+  TranslateConfig,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
+import {isEmptyObject} from '@typedorm/common';
+import {DEFAULT_TRANSLATE_CONFIG_V3} from '../constants/translate-config';
 import {TransactionCancelledException} from '../exceptions';
 import {DocumentClient} from './base-document-client';
 
@@ -44,23 +47,29 @@ export class DocumentClientV3<
   readonly documentClient: DynamoDBDocumentClientType;
   readonly version = 3;
 
-  constructor(dynamoDBClient: DynamoDBClient) {
+  constructor(
+    dynamoDBClient: DynamoDBClient,
+    customTranslateConfig?: TranslateConfig
+  ) {
     super();
-    const marshallOptions = {
-      // Whether to automatically convert empty strings, blobs, and sets to `null`.
-      convertEmptyValues: false, // false, by default.
-      // Whether to remove undefined values while marshalling.
-      removeUndefinedValues: false, // false, by default.
-      // Whether to convert typeof object to map attribute.
-      convertClassInstanceToMap: false, // false, by default.
+
+    const translateConfig = {
+      marshallOptions:
+        (customTranslateConfig &&
+          !isEmptyObject(customTranslateConfig.marshallOptions) && {
+            ...DEFAULT_TRANSLATE_CONFIG_V3.marshallOptions,
+            ...customTranslateConfig.marshallOptions,
+          }) ||
+        DEFAULT_TRANSLATE_CONFIG_V3.marshallOptions,
+      unmarshallOptions:
+        (customTranslateConfig &&
+          !isEmptyObject(customTranslateConfig.marshallOptions) && {
+            ...DEFAULT_TRANSLATE_CONFIG_V3.unmarshallOptions,
+            ...customTranslateConfig.unmarshallOptions,
+          }) ||
+        DEFAULT_TRANSLATE_CONFIG_V3.unmarshallOptions,
     };
 
-    const unmarshallOptions = {
-      // Whether to return numbers as a string instead of converting them to native JavaScript numbers.
-      wrapNumbers: false, // false, by default.
-    };
-
-    const translateConfig = {marshallOptions, unmarshallOptions};
     this.documentClient = DynamoDBDocumentClient.from(
       dynamoDBClient,
       translateConfig
