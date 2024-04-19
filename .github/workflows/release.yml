@@ -1,12 +1,12 @@
 # TODO: refactor this workflow to trigger after ci job has finished
 name: Build and Semantic Release
-# on:
-#   push:
-#     branches:
-#       - 'main'
-#       - 'develop'
-#       - 'next'
-#       - 'alpha'
+on:
+  push:
+    branches:
+      - 'main'
+      - 'develop'
+      - 'next'
+      - 'alpha'
 
 on: workflow_dispatch
 
