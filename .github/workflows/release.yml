@@ -7,9 +7,6 @@ on:
       - 'develop'
       - 'next'
       - 'alpha'
-
-on: workflow_dispatch
-
 env:
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 jobs:
