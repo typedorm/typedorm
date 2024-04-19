@@ -729,24 +729,26 @@ export class EntityManager {
           : ConsumedCapacity?.CapacityUnits || 0;
     }
 
-    let hasNotReachedLimitYet = itemsFetched.length < limit;
-
-    if (
-      metaLimitOptions &&
-      metaLimitOptions?.metaLimitType === 'capacityConsumed'
-    ) {
-      hasNotReachedLimitYet =
-        (metaLimitOptions.totalCapacityConsumed || 0) <
-        metaLimitOptions?.metaLimit;
-    } else if (
-      metaLimitOptions &&
-      metaLimitOptions?.metaLimitType === 'scannedCount'
-    ) {
-      hasNotReachedLimitYet =
-        (metaLimitOptions.totalScannedCount || 0) < metaLimitOptions?.metaLimit;
+    let shouldKeepQuerying = itemsFetched.length < limit;
+    if (shouldKeepQuerying) {
+      if (
+        metaLimitOptions &&
+        metaLimitOptions?.metaLimitType === 'capacityConsumed'
+      ) {
+        shouldKeepQuerying =
+          (metaLimitOptions.totalCapacityConsumed || 0) <
+          metaLimitOptions?.metaLimit;
+      } else if (
+        metaLimitOptions &&
+        metaLimitOptions?.metaLimitType === 'scannedCount'
+      ) {
+        shouldKeepQuerying =
+          (metaLimitOptions.totalScannedCount || 0) <
+          metaLimitOptions?.metaLimit;
+      }
     }
 
-    if (hasNotReachedLimitYet && LastEvaluatedKey) {
+    if (shouldKeepQuerying && LastEvaluatedKey) {
       return this._internalRecursiveQuery({
         queryInput,
         limit,
