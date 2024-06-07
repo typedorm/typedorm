@@ -1,16 +1,10 @@
-import {INDEX_TYPE} from './enums';
-import {Replace} from './helpers/replace-type';
+import { INDEX_TYPE } from './enums';
+import { Replace } from './helpers/replace-type';
 
 export interface GSIIndexOptions {
   type: INDEX_TYPE.GSI;
   partitionKey: string;
-  sortKey: string;
-  /**
-   * DynamoDB only adds item to index if both Partition Key and Sort Key defined
-   * for any given GSI contains value
-   *
-   * Indexes missing sort key value will not be added to index.
-   */
+  sortKey?: string;
   isSparse?: boolean;
 }
 
@@ -28,17 +22,17 @@ export type EntityAliasOrString<Entity> = string | KeyAliasSchema<Entity>;
 
 export type IndexOptionsWithAlias<Entity> =
   | Replace<
-      GSIIndexOptions,
-      'partitionKey' | 'sortKey',
-      {
-        partitionKey: EntityAliasOrString<Entity>;
-        sortKey: EntityAliasOrString<Entity>;
-      }
-    >
+    GSIIndexOptions,
+    'partitionKey' | 'sortKey',
+    {
+      partitionKey: EntityAliasOrString<Entity>;
+      sortKey: EntityAliasOrString<Entity>;
+    }
+  >
   | Replace<
-      LSIIndexOptions,
-      'sortKey',
-      {
-        sortKey: EntityAliasOrString<Entity>;
-      }
-    >;
+    LSIIndexOptions,
+    'sortKey',
+    {
+      sortKey: EntityAliasOrString<Entity>;
+    }
+  >;
