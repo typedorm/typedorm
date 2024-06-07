@@ -194,9 +194,9 @@ export class EntityMetadata extends BaseMetadata {
           },
         };
 
-        if (tableIndexSignature.sortKey) {
+        if (typeof tableIndexSignature.sortKey !== "undefined") {
           acc[key].attributes[tableIndexSignature.sortKey] = currentIndex.sortKey
-          acc[key].attributes[tableIndexSignature.sortKey] = sortKeyInterpolations
+          acc[key].metadata._interpolations![tableIndexSignature.sortKey] = sortKeyInterpolations
         }
 
         return acc;
