@@ -16,20 +16,20 @@ import {
   isEmptyObject,
   isObject,
 } from '@typedorm/common';
-import {dropProp} from '../../helpers/drop-prop';
-import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
-import {parseKey} from '../../helpers/parse-key';
-import {KeyCondition} from '../expression/key-condition';
-import {Connection} from '../connection/connection';
-import {ExpressionBuilder} from '../expression/expression-builder';
-import {AttributeMetadata} from '../metadata/attribute-metadata';
-import {DynamoEntitySchemaPrimaryKey} from '../metadata/entity-metadata';
-import {BaseTransformer, MetadataOptions} from './base-transformer';
-import {LazyTransactionWriteItemListLoader} from './is-lazy-transaction-write-item-list-loader';
-import {KeyConditionOptions} from '../expression/key-condition-options-type';
-import {UpdateBody} from '../expression/update-body-type';
-import {DocumentClientTypes} from '@typedorm/document-client';
-import {autoGenerateValue} from '../../helpers/auto-generate-attribute-value';
+import { dropProp } from '../../helpers/drop-prop';
+import { getConstructorForInstance } from '../../helpers/get-constructor-for-instance';
+import { parseKey } from '../../helpers/parse-key';
+import { KeyCondition } from '../expression/key-condition';
+import { Connection } from '../connection/connection';
+import { ExpressionBuilder } from '../expression/expression-builder';
+import { AttributeMetadata } from '../metadata/attribute-metadata';
+import { DynamoEntitySchemaPrimaryKey } from '../metadata/entity-metadata';
+import { BaseTransformer, MetadataOptions } from './base-transformer';
+import { LazyTransactionWriteItemListLoader } from './is-lazy-transaction-write-item-list-loader';
+import { KeyConditionOptions } from '../expression/key-condition-options-type';
+import { UpdateBody } from '../expression/update-body-type';
+import { DocumentClientTypes } from '@typedorm/document-client';
+import { autoGenerateValue } from '../../helpers/auto-generate-attribute-value';
 
 export interface ManagerToDynamoPutItemOptions {
   /**
@@ -115,7 +115,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     | DocumentClientTypes.PutItemInput
     | DocumentClientTypes.TransactWriteItemList {
     const entityClass = getConstructorForInstance(entity);
-    const {table, internalAttributes, name} =
+    const { table, internalAttributes, name } =
       this.connection.getEntityByTarget(entityClass);
 
     this.connection.logger.logTransform({
@@ -252,7 +252,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     }
 
     const uniqueAttributesPutItems = [
-      {Put: dynamoPutItem},
+      { Put: dynamoPutItem },
       ...uniqueAttributePutItems,
     ];
 
@@ -319,7 +319,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         );
       }
 
-      const {ProjectionExpression, ExpressionAttributeNames} =
+      const { ProjectionExpression, ExpressionAttributeNames } =
         this.expressionBuilder.buildProjectionExpression(projection);
 
       transformBody = {
@@ -355,7 +355,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     metadataOptions?: MetadataOptions
   ): DocumentClientTypes.UpdateItemInput | LazyTransactionWriteItemListLoader {
     // default values
-    const {nestedKeySeparator = '.'} = options;
+    const { nestedKeySeparator = '.' } = options;
 
     if (!this.connection.hasMetadata(entityClass)) {
       throw new Error(`No metadata found for class "${entityClass.name}".`);
@@ -399,7 +399,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         acc[attr.name] = autoGenerateValue(attr.strategy);
         return acc;
       },
-      {} as {[key: string]: any}
+      {} as { [key: string]: any }
     );
 
     const rawAttributesToUpdate = {
@@ -424,13 +424,13 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           this.expressionInputParser.parseAttributeToUpdateValue(
             attrName,
             attrValue
-          ) as {value: any; type: 'static' | 'dynamic'};
+          ) as { value: any; type: 'static' | 'dynamic' };
 
         acc.transformed[attrName] = valueWithType.value;
         acc.typeMetadata[attrName] = valueWithType.type;
         return acc;
       },
-      {transformed: {}, typeMetadata: {}} as {
+      { transformed: {}, typeMetadata: {} } as {
         transformed: Record<string, any>;
         typeMetadata: Record<string, 'dynamic' | 'static'>;
       }
@@ -474,7 +474,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         // we can't allow updating unique attributes when they contain dynamic update value
         if (
           staticOrDynamicUpdateAttributesWithMetadata.typeMetadata[
-            attr.name
+          attr.name
           ] === 'dynamic'
         ) {
           throw new InvalidDynamicUpdateAttributeValueError(
@@ -786,7 +786,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     queryOptions?: ManagerToDynamoQueryItemsOptions,
     metadataOptions?: MetadataOptions
   ): DocumentClientTypes.QueryInput {
-    const {table, schema, name} =
+    const { table, schema, name } =
       this.connection.getEntityByTarget(entityClass);
     this.connection.logger.logTransform({
       requestId: metadataOptions?.requestId,
@@ -817,7 +817,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
     // query will be executed against main table or
     // if querying local  index, then partition key will be same as main table
-    const parsedPartitionKey = {} as {name: string; value: any};
+    const parsedPartitionKey = {} as { name: string; value: any };
     if (
       !queryIndexName ||
       !indexToQuery ||
@@ -828,9 +828,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         typeof partitionKeyAttributes === 'string'
           ? partitionKeyAttributes
           : parseKey(
-              schema.primaryKey.attributes[table.partitionKey],
-              partitionKeyAttributes
-            );
+            schema.primaryKey.attributes[table.partitionKey],
+            partitionKeyAttributes
+          );
     } else {
       // query is to be executed against global secondary index
       parsedPartitionKey.name = indexToQuery.partitionKey;
@@ -840,9 +840,9 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         typeof partitionKeyAttributes === 'string'
           ? partitionKeyAttributes
           : parseKey(
-              schemaForIndexToQuery.attributes[indexToQuery.partitionKey],
-              partitionKeyAttributes
-            );
+            schemaForIndexToQuery.attributes[indexToQuery.partitionKey],
+            partitionKeyAttributes
+          );
     }
 
     const partitionKeyCondition = new KeyCondition().equals(
@@ -853,7 +853,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const partitionKeyConditionExpression =
       this.expressionBuilder.buildKeyConditionExpression(partitionKeyCondition);
 
-    const parsedSortKey = {} as {name: string};
+    const parsedSortKey = {} as { name: string | undefined };
     // if no we are not querying against index, validate if table is using composite key
     if (!indexToQuery) {
       if (!table.usesCompositeKey()) {
@@ -896,8 +896,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         queryInputParams.ScanIndexForward = order === QUERY_ORDER.ASC;
       }
 
-      // if key condition was provided
-      if (keyCondition && !isEmptyObject(keyCondition)) {
+      // if key condition was provided and there's a present sort key as we now support indexes without sort keys
+      if (keyCondition && !isEmptyObject(keyCondition) && parsedSortKey.name) {
         // build sort key condition
         const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
           parsedSortKey.name,
@@ -974,7 +974,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
           throw new InvalidSelectInputError(select);
         }
 
-        const {ProjectionExpression, ExpressionAttributeNames} =
+        const { ProjectionExpression, ExpressionAttributeNames } =
           this.expressionBuilder.buildProjectionExpression(projection);
 
         queryInputParams = {
@@ -1014,7 +1014,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
             Put: {
               ...newItemBody,
               // import existing current item
-              Item: {...previousItemBody, ...newItemBody.Item},
+              Item: { ...previousItemBody, ...newItemBody.Item },
             },
           },
         ] as DocumentClientTypes.TransactWriteItemList;
@@ -1115,7 +1115,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
 
       // in order for update express to succeed, all listed must succeed in a transaction
       const updateTransactionItems = [
-        {Update: mainItem},
+        { Update: mainItem },
         ...uniqueAttributeInputs,
       ] as DocumentClientTypes.TransactWriteItemList;
       this.connection.logger.logTransform({
