@@ -1,30 +1,30 @@
-import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
 import {
   Attribute,
-  AutoGenerateAttribute,
   AUTO_GENERATE_ATTRIBUTE_STRATEGY,
+  AutoGenerateAttribute,
   Entity,
   INDEX_TYPE,
-  Table,
+  Table
 } from '@typedorm/common';
-import {Organisation} from '../../../../__mocks__/organisation';
-import {User} from '../../../../__mocks__/user';
-import {createTestConnection, resetTestConnection} from '@typedorm/testing';
-import {EntityTransformer} from '../entity-transformer';
-import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
-import {table} from '@typedorm/core/__mocks__/table';
-import {UserAttrAlias} from '@typedorm/core/__mocks__/user-with-attribute-alias';
-import {CATEGORY, Photo} from '@typedorm/core/__mocks__/photo';
+import { CATEGORY, Photo } from '@typedorm/core/__mocks__/photo';
+import { table } from '@typedorm/core/__mocks__/table';
+import { UserCustomConstructor } from '@typedorm/core/__mocks__/user-custom-constructor';
+import { UserWithDefaultValues } from '@typedorm/core/__mocks__/user-default-value';
+import { UserAttrAlias } from '@typedorm/core/__mocks__/user-with-attribute-alias';
+import { createTestConnection, resetTestConnection } from '@typedorm/testing';
 // Moment is only being used here to display the usage of @transform utility
 // eslint-disable-next-line node/no-extraneous-import
 import moment from 'moment';
-import {UserCustomConstructor} from '@typedorm/core/__mocks__/user-custom-constructor';
+import { Organisation } from '../../../../__mocks__/organisation';
+import { Car, User } from '../../../../__mocks__/user';
+import { UserAutoGenerateAttributes } from '../../../../__mocks__/user-auto-generate-attributes';
+import { UserSparseIndexes } from '../../../../__mocks__/user-sparse-indexes';
+import { EntityTransformer } from '../entity-transformer';
 
 jest.mock('uuid', () => ({
   v4: () => 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
 }));
 jest.useFakeTimers().setSystemTime(1622530750000);
-import {UserWithDefaultValues} from '@typedorm/core/__mocks__/user-default-value';
 
 let transformer: EntityTransformer;
 beforeEach(() => {
@@ -86,6 +86,35 @@ test('transforms dynamo entity to entity model with custom constructor', () => {
     id: '1',
     name: 'Me',
   });
+});
+
+test('transforms dynamo entity to entity model with set property', () => {
+  const dynamoEntity = {
+    PK: 'USER#1',
+    SK: 'USER#1',
+    id: '1',
+    name: 'Me',
+    roles: new Set(['admin', 'user']),
+    car: {
+      maker: 'Toyota',
+      model: 'Corolla',
+    }
+  };
+  const transformed = transformer.fromDynamoEntity(
+    User,
+    dynamoEntity
+  );
+  expect(transformed).toEqual({
+    id: '1',
+    name: 'Me',
+    roles: new Set(['admin', 'user']),
+    car: expect.objectContaining({
+      maker: 'Toyota',
+      model: 'Corolla',
+    })
+  });
+  expect(transformed.roles).toBeInstanceOf(Set);
+  expect(transformed.car).toBeInstanceOf(Car);
 });
 
 test('transforms dynamo entity with aliased attributes to entity model', () => {

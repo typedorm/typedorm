@@ -7,6 +7,7 @@ import {
   isEmptyObject,
   isObject,
 } from '@typedorm/common';
+import { isSet } from '@typedorm/common/src/helpers/is-set';
 import {KeyCondition} from './key-condition';
 import {Filter} from './filter';
 import {BaseExpressionInput, MERGE_STRATEGY} from './base-expression-input';
@@ -301,9 +302,9 @@ export class ExpressionInputParser {
         }
       }
       case 'ADD': {
-        if (isEmptyObject(operatorValue)) {
+        if (isEmptyObject(operatorValue) && !isSet(operatorValue)) {
           throw new Error(
-            `Invalid value ${operatorValue} received for action "ADD", Only numbers and lists are supported.`
+            `Invalid value ${operatorValue} received for action "ADD", Only numbers, lists ans sets are supported.`
           );
         }
         return new AddUpdate().addTo(attribute, operatorValue);

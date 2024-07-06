@@ -55,6 +55,18 @@ test('builds simple attribute metadata', () => {
       name: 'addresses',
       table,
     },
+    {
+      entityClass: User,
+      type: 'Set',
+      name: 'roles',
+      table
+    },
+    {
+      entityClass: User,
+      type: 'Car',
+      name: 'car',
+      table
+    }
   ]);
 });
 
@@ -103,6 +115,18 @@ test('builds attribute metadata for inherited entity', () => {
       name: 'addresses',
       table,
     },
+    {
+      entityClass: Admin,
+      type: 'Set',
+      name: 'roles',
+      table
+    },
+    {
+      entityClass: Admin,
+      type: 'Car',
+      name: 'car',
+      table
+    }
   ]);
 });
 

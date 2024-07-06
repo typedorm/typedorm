@@ -60,3 +60,28 @@ test('adds raw metadata for enum property', () => {
     },
   ]);
 });
+
+
+/**
+ * Issue #29
+ */
+test('adds raw metadata for enum property', () => {
+  @Entity({
+    name: 'user',
+    primaryKey: {
+      partitionKey: 'USER#{{role}}',
+    },
+  })
+  class User {
+    @Attribute()
+    roles: Set<string>;
+  }
+  expect(
+    MetadataManager.metadataStorage.getRawAttributesForEntity(User)
+  ).toEqual([
+    {
+      name: 'roles',
+      type: 'Set',
+    },
+  ]);
+});
