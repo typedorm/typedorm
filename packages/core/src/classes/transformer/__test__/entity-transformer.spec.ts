@@ -4,22 +4,22 @@ import {
   AutoGenerateAttribute,
   Entity,
   INDEX_TYPE,
-  Table
+  Table,
 } from '@typedorm/common';
-import { CATEGORY, Photo } from '@typedorm/core/__mocks__/photo';
-import { table } from '@typedorm/core/__mocks__/table';
-import { UserCustomConstructor } from '@typedorm/core/__mocks__/user-custom-constructor';
-import { UserWithDefaultValues } from '@typedorm/core/__mocks__/user-default-value';
-import { UserAttrAlias } from '@typedorm/core/__mocks__/user-with-attribute-alias';
-import { createTestConnection, resetTestConnection } from '@typedorm/testing';
+import {CATEGORY, Photo} from '@typedorm/core/__mocks__/photo';
+import {table} from '@typedorm/core/__mocks__/table';
+import {UserCustomConstructor} from '@typedorm/core/__mocks__/user-custom-constructor';
+import {UserWithDefaultValues} from '@typedorm/core/__mocks__/user-default-value';
+import {UserAttrAlias} from '@typedorm/core/__mocks__/user-with-attribute-alias';
+import {createTestConnection, resetTestConnection} from '@typedorm/testing';
 // Moment is only being used here to display the usage of @transform utility
 // eslint-disable-next-line node/no-extraneous-import
 import moment from 'moment';
-import { Organisation } from '../../../../__mocks__/organisation';
-import { Car, User } from '../../../../__mocks__/user';
-import { UserAutoGenerateAttributes } from '../../../../__mocks__/user-auto-generate-attributes';
-import { UserSparseIndexes } from '../../../../__mocks__/user-sparse-indexes';
-import { EntityTransformer } from '../entity-transformer';
+import {Organisation} from '../../../../__mocks__/organisation';
+import {Car, User} from '../../../../__mocks__/user';
+import {UserAutoGenerateAttributes} from '../../../../__mocks__/user-auto-generate-attributes';
+import {UserSparseIndexes} from '../../../../__mocks__/user-sparse-indexes';
+import {EntityTransformer} from '../entity-transformer';
 
 jest.mock('uuid', () => ({
   v4: () => 'c0ac5395-ba7c-41bf-bbc3-09a6087bcca2',
@@ -98,12 +98,9 @@ test('transforms dynamo entity to entity model with set property', () => {
     car: {
       maker: 'Toyota',
       model: 'Corolla',
-    }
+    },
   };
-  const transformed = transformer.fromDynamoEntity(
-    User,
-    dynamoEntity
-  );
+  const transformed = transformer.fromDynamoEntity(User, dynamoEntity);
   expect(transformed).toEqual({
     id: '1',
     name: 'Me',
@@ -111,7 +108,7 @@ test('transforms dynamo entity to entity model with set property', () => {
     car: expect.objectContaining({
       maker: 'Toyota',
       model: 'Corolla',
-    })
+    }),
   });
   expect(transformed.roles).toBeInstanceOf(Set);
   expect(transformed.car).toBeInstanceOf(Car);

@@ -61,7 +61,6 @@ test('adds raw metadata for enum property', () => {
   ]);
 });
 
-
 /**
  * Issue #29
  */

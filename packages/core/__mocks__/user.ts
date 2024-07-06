@@ -1,6 +1,6 @@
-import { Attribute, Entity, INDEX_TYPE } from '@typedorm/common';
-import { Type } from 'class-transformer';
-import { table } from './table';
+import {Attribute, Entity, INDEX_TYPE} from '@typedorm/common';
+import {Type} from 'class-transformer';
+import {table} from './table';
 
 export interface UserPrimaryKey {
   id: string;

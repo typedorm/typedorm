@@ -7,7 +7,7 @@ import {
   isEmptyObject,
   isObject,
 } from '@typedorm/common';
-import { isSet } from '@typedorm/common/src/helpers/is-set';
+import {isSet} from '@typedorm/common/src/helpers/is-set';
 import {KeyCondition} from './key-condition';
 import {Filter} from './filter';
 import {BaseExpressionInput, MERGE_STRATEGY} from './base-expression-input';

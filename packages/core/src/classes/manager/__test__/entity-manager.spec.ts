@@ -1,16 +1,26 @@
 jest.useFakeTimers().setSystemTime(new Date(1606896235000));
 
-import { CONSUMED_CAPACITY_TYPE, EntityInstance, InvalidDynamicUpdateAttributeValueError } from '@typedorm/common';
-import { UserAttrAlias, UserAttrAliasPrimaryKey } from '@typedorm/core/__mocks__/user-with-attribute-alias';
-import { createTestConnection, resetTestConnection } from '@typedorm/testing';
-import { Car, User, UserPrimaryKey } from '../../../../__mocks__/user';
+import {
+  CONSUMED_CAPACITY_TYPE,
+  EntityInstance,
+  InvalidDynamicUpdateAttributeValueError,
+} from '@typedorm/common';
+import {
+  UserAttrAlias,
+  UserAttrAliasPrimaryKey,
+} from '@typedorm/core/__mocks__/user-with-attribute-alias';
+import {createTestConnection, resetTestConnection} from '@typedorm/testing';
+import {Car, User, UserPrimaryKey} from '../../../../__mocks__/user';
 import {
   UserAutoGenerateAttributes,
-  UserAutoGenerateAttributesPrimaryKey
+  UserAutoGenerateAttributesPrimaryKey,
 } from '../../../../__mocks__/user-auto-generate-attributes';
-import { UserUniqueEmail, UserUniqueEmailPrimaryKey } from '../../../../__mocks__/user-unique-email';
-import { Connection } from '../../connection/connection';
-import { EntityManager } from '../entity-manager';
+import {
+  UserUniqueEmail,
+  UserUniqueEmailPrimaryKey,
+} from '../../../../__mocks__/user-unique-email';
+import {Connection} from '../../connection/connection';
+import {EntityManager} from '../entity-manager';
 
 let manager: EntityManager;
 let connection: Connection;
@@ -86,7 +96,7 @@ test('creates entity', async () => {
 
 test('creates entity with Set and Nested', async () => {
   dcMock.put.mockReturnValue({
-    promise: () => ({})
+    promise: () => ({}),
   });
 
   const user = new User();
@@ -112,17 +122,17 @@ test('creates entity with Set and Nested', async () => {
       status: 'active',
       car: {
         maker: 'Toyota',
-        model: 'Corolla'
+        model: 'Corolla',
       },
-      roles: new Set(['admin', 'user'])
+      roles: new Set(['admin', 'user']),
     },
     TableName: 'test-table',
     ConditionExpression:
       '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
     ExpressionAttributeNames: {
       '#CE_PK': 'PK',
-      '#CE_SK': 'SK'
-    }
+      '#CE_SK': 'SK',
+    },
   });
   expect(userEntity).toEqual({
     id: '1',
@@ -131,8 +141,8 @@ test('creates entity with Set and Nested', async () => {
     roles: new Set(['admin', 'user']),
     car: expect.objectContaining({
       maker: 'Toyota',
-      model: 'Corolla'
-    })
+      model: 'Corolla',
+    }),
   });
 });
 
@@ -297,7 +307,7 @@ test('finds one entity by given primary key', async () => {
         id: '1',
         name: 'Me',
         status: 'active',
-        roles: new Set(['admin', 'user'])
+        roles: new Set(['admin', 'user']),
       },
     }),
   });
@@ -324,7 +334,7 @@ test('finds one entity by given primary key', async () => {
     id: '1',
     name: 'Me',
     status: 'active',
-    roles: new Set(['admin', 'user'])
+    roles: new Set(['admin', 'user']),
   });
   expect(userEntity).toBeInstanceOf(User);
 });
@@ -484,7 +494,7 @@ test('updates item and return all new attributes', async () => {
         id: '1',
         name: 'user',
         status: 'active',
-        roles: new Set(['regular'])
+        roles: new Set(['regular']),
       },
     }),
   });
@@ -494,7 +504,7 @@ test('updates item and return all new attributes', async () => {
     {
       name: 'user',
       status: 'active',
-      roles: new Set(['regular'])
+      roles: new Set(['regular']),
     }
   );
 
@@ -511,7 +521,7 @@ test('updates item and return all new attributes', async () => {
       ':UE_GSI1SK': 'USER#user',
       ':UE_name': 'user',
       ':UE_status': 'active',
-      ':UE_roles': new Set(['regular'])
+      ':UE_roles': new Set(['regular']),
     },
     Key: {
       PK: 'USER#1',
@@ -522,7 +532,12 @@ test('updates item and return all new attributes', async () => {
     UpdateExpression:
       'SET #UE_name = :UE_name, #UE_status = :UE_status, #UE_roles = :UE_roles, #UE_GSI1SK = :UE_GSI1SK, #UE_GSI1PK = :UE_GSI1PK',
   });
-  expect(updatedItem).toEqual({id: '1', name: 'user', status: 'active', roles: new Set(['regular'])});
+  expect(updatedItem).toEqual({
+    id: '1',
+    name: 'user',
+    status: 'active',
+    roles: new Set(['regular']),
+  });
 });
 
 test('updates item with multiple body actions', async () => {
@@ -612,33 +627,33 @@ test('updates item when trying to update attribute with dynamic value that is no
 });
 test('updates item when trying add to set', async () => {
   dcMock.update.mockReturnValue({
-    promise: () => ({})
+    promise: () => ({}),
   });
 
   await manager.update<User, UserPrimaryKey>(
     User,
-    { id: '1' },
+    {id: '1'},
     {
       roles: {
-        ADD: new Set(['manager'])
-      }
+        ADD: new Set(['manager']),
+      },
     }
   );
 
   expect(dcMock.update).toHaveBeenCalledWith({
     ExpressionAttributeNames: {
-      '#UE_roles': 'roles'
+      '#UE_roles': 'roles',
     },
     ExpressionAttributeValues: {
-      ':UE_roles': new Set(['manager'])
+      ':UE_roles': new Set(['manager']),
     },
     Key: {
       PK: 'USER#1',
-      SK: 'USER#1'
+      SK: 'USER#1',
     },
     ReturnValues: 'ALL_NEW',
     TableName: 'test-table',
-    UpdateExpression: 'ADD #UE_roles :UE_roles'
+    UpdateExpression: 'ADD #UE_roles :UE_roles',
   });
 });
 test('fails to transform when trying to use dynamic update expression for attribute that is also referenced in a index', async () => {

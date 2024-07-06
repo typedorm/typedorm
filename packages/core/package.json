@@ -29,6 +29,7 @@
     "fast-glob": "^3.2.4",
     "p-limit": "^3.1.0",
     "class-transformer": "0.4.0",
+    "superjson": "^2.2.1",
     "@typedorm/document-client": "0.0.0-PLACEHOLDER"
   },
   "publishConfig": {
