@@ -8,3 +8,4 @@ export * from './src/index-options';
 export * from './src/helpers/load-package';
 export * from './src/helpers/is-empty-object';
 export * from './src/helpers/is-object';
+export * from './src/helpers/is-set';

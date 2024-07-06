@@ -1,31 +1,31 @@
 import {
   ATTRIBUTE_TYPE,
+  isEmptyObject,
+  isObject,
+  isSet,
   RangeOperator,
   ScalarType,
   SimpleOperator,
   UpdateType,
-  isEmptyObject,
-  isObject,
 } from '@typedorm/common';
-import {isSet} from '@typedorm/common/src/helpers/is-set';
-import {KeyCondition} from './key-condition';
-import {Filter} from './filter';
-import {BaseExpressionInput, MERGE_STRATEGY} from './base-expression-input';
+import {nestedKeyAccessRegex} from '../../helpers/constants';
 import {isScalarType} from '../../helpers/is-scalar-type';
-import {FilterOptions} from './filter-options-type';
-import {ConditionOptions} from './condition-options-type';
+import {BaseExpressionInput, MERGE_STRATEGY} from './base-expression-input';
 import {Condition} from './condition';
-import {Projection} from './projection';
+import {ConditionOptions} from './condition-options-type';
+import {Filter} from './filter';
+import {FilterOptions} from './filter-options-type';
+import {KeyCondition} from './key-condition';
 import {KeyConditionOptions} from './key-condition-options-type';
+import {Projection} from './projection';
 import {ProjectionKeys} from './projection-keys-options-type';
 import {isSetOperatorComplexValueType, UpdateBody} from './update-body-type';
-import {SetUpdate} from './update/set-update';
 import {AddUpdate} from './update/add-update';
-import {Update} from './update/update';
 
 import {DeleteUpdate} from './update/delete-update';
 import {RemoveUpdate} from './update/remove-update';
-import {nestedKeyAccessRegex} from '../../helpers/constants';
+import {SetUpdate} from './update/set-update';
+import {Update} from './update/update';
 
 /**
  * Parses expression input to expression instances

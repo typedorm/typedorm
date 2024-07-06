@@ -3,10 +3,10 @@ import {
   EntityTarget,
   InvalidDynamicUpdateAttributeValueError,
   isEmptyObject,
+  isSet,
   SparseIndexParseError,
   Table,
 } from '@typedorm/common';
-import {isSet} from '@typedorm/common/src/helpers/is-set';
 import {instanceToPlain} from 'class-transformer';
 import {getConstructorForInstance} from '../../helpers/get-constructor-for-instance';
 import {isDynamoEntityKeySchema} from '../../helpers/is-dynamo-entity-key-schema';
