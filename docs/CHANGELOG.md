@@ -1,3 +1,10 @@
+# [1.16.0-beta.5](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.4...v1.16.0-beta.5) (2024-09-11)
+
+
+### Bug Fixes
+
+* **core:** scan manager scan limit should reset each invocation ([#374](https://github.com/typedorm/typedorm/issues/374)) ([fa904a6](https://github.com/typedorm/typedorm/commit/fa904a65342f3cb373d9118748c76df4644ebf8b))
+
 # [1.16.0-beta.4](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.3...v1.16.0-beta.4) (2024-09-11)
 
 
