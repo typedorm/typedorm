@@ -1,3 +1,10 @@
+# [1.16.0-beta.4](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.3...v1.16.0-beta.4) (2024-09-11)
+
+
+### Bug Fixes
+
+* class transformer as peer dependency ([#371](https://github.com/typedorm/typedorm/issues/371)) ([98ff026](https://github.com/typedorm/typedorm/commit/98ff026dbacabdc569c78f98ab54e849c1d2a9d8))
+
 # [1.16.0-beta.3](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.2...v1.16.0-beta.3) (2023-09-19)
 
 
