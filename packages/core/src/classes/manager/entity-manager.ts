@@ -26,6 +26,23 @@ import {KeyConditionOptions} from '../expression/key-condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
 import {DocumentClientTypes} from '@typedorm/document-client';
 
+export interface MetaLimitOptions {
+  /**
+   * Additional limits for query to prevent full partition scanning
+   */
+  metaLimitType: 'capacityConsumed' | 'scannedCount';
+
+  /**
+   * The threshold to apply on metaLimitType
+   */
+  metaLimit: number;
+}
+
+export interface MetaLimitInternalOptions extends MetaLimitOptions {
+  totalCapacityConsumed?: number;
+  totalScannedCount?: number;
+}
+
 export interface EntityManagerCreateOptions<Entity> {
   /**
    * @default false
@@ -578,7 +595,8 @@ export class EntityManager {
     entityClass: EntityTarget<Entity>,
     partitionKey: PartitionKey,
     queryOptions?: EntityManagerFindOptions<Entity, PartitionKey>,
-    metadataOptions?: MetadataOptions
+    metadataOptions?: MetadataOptions,
+    metaLimitOptions?: MetaLimitOptions
   ): Promise<{
     items: Entity[];
     cursor?: DocumentClientTypes.Key | undefined;
@@ -602,6 +620,7 @@ export class EntityManager {
         requestId,
         returnConsumedCapacity: metadataOptions?.returnConsumedCapacity,
       },
+      metaLimitOptions,
     });
 
     return {
@@ -666,12 +685,14 @@ export class EntityManager {
     cursor,
     itemsFetched = [],
     metadataOptions,
+    metaLimitOptions,
   }: {
     queryInput: any;
     limit: number;
     cursor?: DocumentClientTypes.Key;
     itemsFetched?: DocumentClientTypes.ItemList;
     metadataOptions?: MetadataOptions;
+    metaLimitOptions?: MetaLimitInternalOptions;
   }): Promise<{
     items: DocumentClientTypes.ItemList;
     cursor?: DocumentClientTypes.Key;
@@ -680,6 +701,7 @@ export class EntityManager {
       LastEvaluatedKey,
       Items = [],
       ConsumedCapacity,
+      ScannedCount,
     } = await this.connection.documentClient.query({
       ...queryInput,
       ExclusiveStartKey: cursor,
@@ -696,13 +718,44 @@ export class EntityManager {
 
     itemsFetched = [...itemsFetched, ...Items];
 
-    if (itemsFetched.length < limit && LastEvaluatedKey) {
+    if (metaLimitOptions) {
+      metaLimitOptions.totalScannedCount = metaLimitOptions.totalScannedCount
+        ? metaLimitOptions.totalScannedCount + (ScannedCount || 0)
+        : ScannedCount || 0;
+      metaLimitOptions.totalCapacityConsumed =
+        metaLimitOptions.totalCapacityConsumed
+          ? metaLimitOptions.totalCapacityConsumed +
+            (ConsumedCapacity?.CapacityUnits || 0)
+          : ConsumedCapacity?.CapacityUnits || 0;
+    }
+
+    let shouldKeepQuerying = itemsFetched.length < limit;
+    if (shouldKeepQuerying) {
+      if (
+        metaLimitOptions &&
+        metaLimitOptions?.metaLimitType === 'capacityConsumed'
+      ) {
+        shouldKeepQuerying =
+          (metaLimitOptions.totalCapacityConsumed || 0) <
+          metaLimitOptions?.metaLimit;
+      } else if (
+        metaLimitOptions &&
+        metaLimitOptions?.metaLimitType === 'scannedCount'
+      ) {
+        shouldKeepQuerying =
+          (metaLimitOptions.totalScannedCount || 0) <
+          metaLimitOptions?.metaLimit;
+      }
+    }
+
+    if (shouldKeepQuerying && LastEvaluatedKey) {
       return this._internalRecursiveQuery({
         queryInput,
         limit,
         cursor: LastEvaluatedKey,
         itemsFetched,
         metadataOptions,
+        metaLimitOptions,
       });
     }
     return {items: itemsFetched, cursor: LastEvaluatedKey};
