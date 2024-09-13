@@ -100,7 +100,10 @@ export abstract class BaseExpressionInput {
     nameValue = nameValue?.replace(match, '');
 
     const expressionPrefixedName = this.getExpNameKey(nameKey);
-    if (this.names[expressionPrefixedName]) {
+    if (
+      this.names[expressionPrefixedName] &&
+      this.names[expressionPrefixedName] !== (nameValue ?? nameKey)
+    ) {
       throw new Error(
         `There is already an expression name with key ${expressionPrefixedName}.`
       );
@@ -123,7 +126,10 @@ export abstract class BaseExpressionInput {
     name = name.replace(nestedKeyAccessRegex, '');
 
     const expressionPrefixedValue = this.getExpValueKey(name);
-    if (this.values[expressionPrefixedValue]) {
+    if (
+      this.values[expressionPrefixedValue] &&
+      this.values[expressionPrefixedValue] !== value
+    ) {
       throw new Error(
         `There is already an expression value with key ${expressionPrefixedValue}.`
       );
@@ -160,13 +166,21 @@ export abstract class BaseExpressionInput {
       this.and().appendToExpression(`(${expression})`);
     }
 
-    Object.keys(names).forEach(nameKey => {
-      if (this.names[nameKey]) {
-        throw new Error(
-          `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
-        );
-      }
-    });
+    // THIS CHECK IS NOT NEEDED
+    // it prevents us from doing cool things as:
+    // where: {
+    //   OR: {
+    //     NOT: { roles: 'ATTRIBUTE_EXISTS' },
+    //     roles: { SIZE: { EQ: 0 } },
+    //   },
+    // },
+    // Object.keys(names).forEach(nameKey => {
+    //   if (this.names[nameKey]) {
+    //     throw new Error(
+    //       `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
+    //     );
+    //   }
+    // });
     Object.keys(values).forEach(valueKey => {
       if (this.names[valueKey]) {
         throw new Error(
@@ -197,13 +211,21 @@ export abstract class BaseExpressionInput {
         this.appendToExpression(strategy);
       }
 
-      Object.keys(input.names).forEach(nameKey => {
-        if (this.names[nameKey]) {
-          throw new Error(
-            `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
-          );
-        }
-      });
+      // THIS CHECK IS NOT NEEDED
+      // it prevents us from doing cool things as:
+      // where: {
+      //   OR: {
+      //     NOT: { roles: 'ATTRIBUTE_EXISTS' },
+      //     roles: { SIZE: { EQ: 0 } },
+      //   },
+      // },
+      // Object.keys(input.names).forEach(nameKey => {
+      //   if (this.names[nameKey]) {
+      //     throw new Error(
+      //       `Failed to merge expression attribute names, there are multiple attributes names with key "${nameKey}"`
+      //     );
+      //   }
+      // });
       Object.keys(input.values).forEach(valueKey => {
         if (this.names[valueKey]) {
           throw new Error(

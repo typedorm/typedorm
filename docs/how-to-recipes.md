@@ -284,7 +284,7 @@ const updatedResponse = await entityManager.update(
 
 ### Using ADD Action
 
-`ADD` action is only supported for number and list types. For more up-to-date information always look at the
+`ADD` action is only supported for number, sets and list types. For more up-to-date information always look at the
 [official aws-sdk guide](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html).
 
 ```Typescript
@@ -299,6 +299,9 @@ const updatedResponse = await entityManager.update(
     },
     addresses: {
       ADD: ["new address"]
+    },
+    roles: {
+      ADD: new SET(["admin"])
     }
   }
 )
@@ -348,6 +351,9 @@ const updatedResponse = await entityManager.update(
   {
     color: {
       DELETE: ["red", "blue"]
+    },
+    roles: {
+      DELETE: new SET(["admin"])
     }
   }
 )
