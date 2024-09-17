@@ -121,15 +121,6 @@ export abstract class BaseTransformer {
         const {metadata, attributes} = indexesToParse[currIndexKey];
         const currentParsedIndex = rawParsedIndexes[currIndexKey];
 
-        // validate if there are any duplicated attribute names
-        Object.keys(currentParsedIndex).forEach(attr => {
-          if (acc[attr]) {
-            throw new Error(
-              `Failed to parse entity "${entityMetadata.name}", duplicate attribute "${attr}".`
-            );
-          }
-        });
-
         // if current index marked as sparse and one or more attribute is missing value, do not add it to schema
         if (metadata.isSparse) {
           const doesAllAttributesHaveValue = Object.keys(attributes).every(

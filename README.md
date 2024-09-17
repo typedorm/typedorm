@@ -169,7 +169,7 @@ export class Organisation {
   active: boolean;
 
   @AutoGenerateAttribute({
-    strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH,
+    strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_DATE,
     autoUpdate: true, // this will make this attribute and any indexes referencing it auto update for any write operation
   })
   updatedAt: number;
