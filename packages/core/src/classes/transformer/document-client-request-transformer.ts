@@ -853,7 +853,7 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
     const partitionKeyConditionExpression =
       this.expressionBuilder.buildKeyConditionExpression(partitionKeyCondition);
 
-    const parsedSortKey = {} as {name: string};
+    const parsedSortKey = {} as {name?: string};
     // if no we are not querying against index, validate if table is using composite key
     if (!indexToQuery) {
       if (!table.usesCompositeKey()) {
@@ -896,8 +896,8 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
         queryInputParams.ScanIndexForward = order === QUERY_ORDER.ASC;
       }
 
-      // if key condition was provided
-      if (keyCondition && !isEmptyObject(keyCondition)) {
+      // if key condition was provided and there's a present sort key as GSI's now may be initialized without one
+      if (keyCondition && !isEmptyObject(keyCondition) && parsedSortKey.name) {
         // build sort key condition
         const sortKeyCondition = this.expressionInputParser.parseToKeyCondition(
           parsedSortKey.name,
