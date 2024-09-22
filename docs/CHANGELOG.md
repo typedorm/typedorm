@@ -1,3 +1,10 @@
+# [1.16.0-beta.6](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.5...v1.16.0-beta.6) (2024-09-22)
+
+
+### Features
+
+* Add support for specifying GSI without a sort key ([#386](https://github.com/typedorm/typedorm/issues/386)) ([438c4af](https://github.com/typedorm/typedorm/commit/438c4af932a1366d006007d2e167cca40d66c068))
+
 # [1.16.0-beta.5](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.4...v1.16.0-beta.5) (2024-09-11)
 
 
