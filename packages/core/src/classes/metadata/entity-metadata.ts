@@ -178,7 +178,6 @@ export class EntityMetadata extends BaseMetadata {
         acc[key] = {
           attributes: {
             [tableIndexSignature.partitionKey]: currentIndex.partitionKey,
-            [tableIndexSignature.sortKey]: currentIndex.sortKey,
           },
           metadata: {
             isSparse:
@@ -191,10 +190,17 @@ export class EntityMetadata extends BaseMetadata {
             // remove any duplicates from partition or sort keys
             _interpolations: {
               [tableIndexSignature.partitionKey]: partitionKeyInterpolations,
-              [tableIndexSignature.sortKey]: sortKeyInterpolations,
             },
           },
         };
+
+        if (tableIndexSignature.sortKey) {
+          acc[key].attributes[tableIndexSignature.sortKey] =
+            currentIndex.sortKey;
+          acc[key].metadata._interpolations![tableIndexSignature.sortKey] =
+            sortKeyInterpolations;
+        }
+
         return acc;
       }
     }, {} as DynamoEntityIndexesSchema);

@@ -340,7 +340,7 @@ export class ExpressionInputParser {
 
   /**
    * When this is run, it is assumed that attribute/value are validated to not have any nested objects,
-   * therefor this function will not running in any recursion itself
+   * therefore this function will not be running in any recursion itself
    * @param attribute Attribute or path on entity to build comparison condition for
    * @param value value to expect
    * @param exp expression to append operators to
