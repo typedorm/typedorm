@@ -34,6 +34,15 @@ test('returns generated attribute value using iso date strategy', () => {
   expect(value).toEqual('2020-01-01T00:00:00.000Z');
 });
 
+test('returns generated attribute value using epoch strategy', () => {
+  jest.useFakeTimers().setSystemTime(new Date('2020-01-01'));
+
+  const value = autoGenerateValue(
+    AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_MILLIS
+  );
+  expect(value).toEqual(1577836800000);
+});
+
 test('throws for unknown strategy', () => {
   const valueCreator = () => autoGenerateValue('INVALID' as any);
 
