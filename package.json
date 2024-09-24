@@ -32,6 +32,7 @@
     "ksuid": "^3.0.0",
     "p-limit": "^4.0.0",
     "reflect-metadata": "^0.1.13",
+    "superjson": "^2.2.1",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

@@ -56,7 +56,7 @@ type SetValueType<Entity, enKey extends keyof Entity> =
  * ADD Action
  */
 type AddValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
-  ADD?: Entity[enKey] extends number | any[]
+  ADD?: Entity[enKey] extends number | any[] | Set<any>
     ? Entity[enKey]
     : InvalidType<
         [

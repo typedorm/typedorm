@@ -1,6 +1,7 @@
-import {DocumentClientTypes} from '@typedorm/document-client';
 import {DynamoEntity, EntityTarget, TRANSFORM_TYPE} from '@typedorm/common';
+import {DocumentClientTypes} from '@typedorm/document-client';
 import {plainToClassFromExist} from 'class-transformer';
+import superjson from 'superjson';
 import {unParseKey} from '../../helpers/unparse-key';
 import {Connection} from '../connection/connection';
 import {BaseTransformer, MetadataOptions} from './base-transformer';
@@ -83,8 +84,8 @@ export class EntityTransformer extends BaseTransformer {
     // Therefore, DocumentClient wraps it as a custom `Set` type which must be turned into its JSON form before it can
     // be correctly deserialized by `class-transformer`.
 
-    const deserializedEntityAttributes = JSON.parse(
-      JSON.stringify(plainEntityAttributes)
+    const deserializedEntityAttributes: any = superjson.parse(
+      superjson.stringify(plainEntityAttributes)
     );
 
     const schemaVersion = entityMetadata.schema.schemaVersionAttribute
@@ -92,9 +93,9 @@ export class EntityTransformer extends BaseTransformer {
           entityMetadata.schema.schemaVersionAttribute
         ]
       : undefined;
-    const transformedEntity: any = plainToClassFromExist(
+    const transformedEntity: Entity = plainToClassFromExist(
       reflectedConstructor,
-      deserializedEntityAttributes,
+      deserializedEntityAttributes as Object,
       {version: schemaVersion}
     );
 

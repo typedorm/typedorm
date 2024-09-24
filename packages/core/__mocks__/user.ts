@@ -1,4 +1,5 @@
 import {Attribute, Entity, INDEX_TYPE} from '@typedorm/common';
+import {Type} from 'class-transformer';
 import {table} from './table';
 
 export interface UserPrimaryKey {
@@ -8,6 +9,11 @@ export interface UserPrimaryKey {
 export interface UserGSI1 {
   status: string;
   name?: string;
+}
+
+export class Car {
+  maker: string;
+  model: string;
 }
 
 @Entity({
@@ -41,4 +47,12 @@ export class User implements UserPrimaryKey, UserGSI1 {
 
   @Attribute()
   addresses: string[];
+
+  @Attribute()
+  @Type(() => Set<string>)
+  roles: Set<string>;
+
+  @Attribute()
+  @Type(() => Car)
+  car: Car;
 }
