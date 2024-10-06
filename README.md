@@ -178,7 +178,7 @@ export class Organisation {
 
 #### Initialize default connection
 
-The connection initialization steps slightly defers when using AWS SDK V2 vs V3.
+The connection initialization steps slightly differs when using AWS SDK V2 vs V3.
 
 ##### When using AWS SDK V2
 
