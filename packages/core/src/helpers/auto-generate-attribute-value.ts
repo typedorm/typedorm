@@ -41,6 +41,9 @@ export function autoGenerateValue(strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY) {
     case AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_DATE: {
       return Math.ceil(new Date().valueOf() / 1000);
     }
+    case AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_MILLIS: {
+      return Date.now();
+    }
     default: {
       throw new UnknownAttributeValueGenerationStrategyError(strategy);
     }
