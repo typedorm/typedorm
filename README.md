@@ -5,9 +5,9 @@
 
 Object Relational mapper for DynamoDB, inspired by typeorm.
 
-TypeDORM is an ORM built from ground up using typescript and latest javascript features to provide an easy gateway when doing complex highly relational data modeling in dynamoDB. TypeDORM is built with [single-table-design](https://www.youtube.com/watch?v=HaEPXoXVf2k) first in mind, but should work as smoothly with regular entity table <-> design pattern. TypeDORM would have not existed without [TypeORM](https://github.com/typeorm/typeorm) and [dynamodb-toolbox](https://github.com/jeremydaly/dynamodb-toolbox), big shout-out to these projects and their awesome contributors.
+TypeDORM is an ORM built from the ground up using typescript and latest javascript features to provide an easy gateway when doing complex highly relational data modeling in DynamoDB. TypeDORM is built with [single-table-design](https://www.youtube.com/watch?v=HaEPXoXVf2k) first in mind, but should work as smoothly with regular entity table <-> design pattern. TypeDORM would not have existed without [TypeORM](https://github.com/typeorm/typeorm) and [dynamodb-toolbox](https://github.com/jeremydaly/dynamodb-toolbox), big shout-out to these projects and their awesome contributors.
 
-TypeDORM borrows decorator based syntax from TypeORM and provides fully type safe ORM to with dynamodb. TypeDORM currently only support [Data Mapper](https://en.wikipedia.org/wiki/Data_mapper_pattern).
+TypeDORM borrows decorator based syntax from TypeORM and provides fully type safe ORM to work with dynamodb. TypeDORM currently only support [Data Mapper](https://en.wikipedia.org/wiki/Data_mapper_pattern).
 
 ## Packages
 
@@ -89,7 +89,7 @@ If you are using TypeDORM with typescript, make sure you also have below options
 
 #### Creating Table
 
-First thing to do when working with TypeDORM is to setup dynamodb table config. Currently this needs to be manually setup and have also have it configured in deployed table instance(s).
+First thing to do when working with TypeDORM is to setup dynamodb table config. Currently this needs to be manually setup and have it configured in deployed table instance(s).
 
 This guide shows how to setup single-table-design
 
@@ -271,7 +271,7 @@ await entityManger.delete(Organisation, {
 
 ## More
 
-DynamoDB is different, different than most other no-sql databases, and therefore data in dynamodb should be stored the way dynamodb expects to get the most benefits out of it. While doing this development experience suffers and all data can become a huge mess very quickly, this is specially true with single-table-design patten. To resolve this, TypeDORM let's declaratively define schema and later takes control from there to provide best development experience possible.
+DynamoDB is different, different than most other no-sql databases, and therefore data in dynamodb should be stored the way dynamodb expects to get the most benefits out of it. While doing this development experience suffers and all data can become a huge mess very quickly, this is specially true with single-table-design pattern. To resolve this, TypeDORM lets declaratively define schema and later takes control from there to provide best development experience possible.
 
 To find out more about how the data looks like when it is stored in dynamo have a look at this detailed guide.
 
