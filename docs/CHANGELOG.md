@@ -1,3 +1,10 @@
+# [1.16.0-beta.8](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.7...v1.16.0-beta.8) (2025-10-03)
+
+
+### Bug Fixes
+
+* typos and grammatical improvements in README.md ([#398](https://github.com/typedorm/typedorm/issues/398)) ([845b83a](https://github.com/typedorm/typedorm/commit/845b83ac9c21b3d53c52e7b334875d88a1e051bb))
+
 # [1.16.0-beta.7](https://github.com/typedorm/typedorm/compare/v1.16.0-beta.6...v1.16.0-beta.7) (2024-10-15)
 
 
