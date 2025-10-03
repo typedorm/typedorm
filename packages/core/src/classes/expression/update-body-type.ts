@@ -1,4 +1,9 @@
-import {UpdateType, RequireOnlyOne, InvalidType} from '@typedorm/common';
+import {
+  UpdateType,
+  RequireOnlyOne,
+  InvalidType,
+  ScalarType,
+} from '@typedorm/common';
 import {isEmptyObject} from '@typedorm/common';
 
 /**
@@ -56,11 +61,11 @@ type SetValueType<Entity, enKey extends keyof Entity> =
  * ADD Action
  */
 type AddValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
-  ADD?: Entity[enKey] extends number | any[]
+  ADD?: Entity[enKey] extends number | any[] | Set<ScalarType>
     ? Entity[enKey]
     : InvalidType<
         [
-          'number | any[]',
+          'number | any[] | Set<ScalarType>',
           "Update action 'ADD' can not be used for attribute",
           enKey
         ]
@@ -84,10 +89,14 @@ type RemoveValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
  * DELETE Action
  */
 type DeleteValueType<Entity, enKey extends keyof Entity> = RequireOnlyOne<{
-  DELETE?: Entity[enKey] extends any[]
+  DELETE?: Entity[enKey] extends any[] | Set<ScalarType>
     ? Entity[enKey]
     : InvalidType<
-        [any[], "Update action 'DELETE' can not be used for attribute", enKey]
+        [
+          any[] | Set<ScalarType>,
+          "Update action 'DELETE' can not be used for attribute",
+          enKey
+        ]
       >;
 }>;
 // **************************************

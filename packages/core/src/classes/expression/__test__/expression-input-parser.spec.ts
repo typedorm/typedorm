@@ -508,7 +508,7 @@ test('parses explicit set update body', () => {
 test('parses explicit "ADD" update body', () => {
   const update = expInputParser.parseToUpdate<
     User,
-    {newAddresses: Array<number>}
+    {newAddresses: number[]; mySet: Set<number>}
   >({
     age: {
       ADD: 1,
@@ -519,6 +519,9 @@ test('parses explicit "ADD" update body', () => {
     newAddresses: {
       ADD: [1234],
     },
+    mySet: {
+      ADD: new Set([1234]),
+    },
   });
   expect(update).toBeInstanceOf(Update);
   expect(update).toEqual({
@@ -526,14 +529,16 @@ test('parses explicit "ADD" update body', () => {
       '#UE_addresses': 'addresses',
       '#UE_age': 'age',
       '#UE_newAddresses': 'newAddresses',
+      '#UE_mySet': 'mySet',
     },
     _values: {
       ':UE_addresses': ['123'],
       ':UE_age': 1,
       ':UE_newAddresses': [1234],
+      ':UE_mySet': new Set([1234]),
     },
     expression:
-      'ADD #UE_age :UE_age, #UE_addresses :UE_addresses, #UE_newAddresses :UE_newAddresses',
+      'ADD #UE_age :UE_age, #UE_addresses :UE_addresses, #UE_newAddresses :UE_newAddresses, #UE_mySet :UE_mySet',
     prefix: '',
   });
 });
@@ -569,13 +574,16 @@ test('parses explicit "REMOVE" update body', () => {
 test('parses explicit "DELETE" update body', () => {
   const update = expInputParser.parseToUpdate<
     User,
-    {newAddresses: Array<Buffer>}
+    {newAddresses: Array<Buffer>; mySet: Set<number>}
   >({
     addresses: {
       DELETE: ['123'],
     },
     newAddresses: {
       DELETE: [Buffer.from('12')],
+    },
+    mySet: {
+      DELETE: new Set([1234]),
     },
   });
 
@@ -584,13 +592,15 @@ test('parses explicit "DELETE" update body', () => {
     _names: {
       '#UE_addresses': 'addresses',
       '#UE_newAddresses': 'newAddresses',
+      '#UE_mySet': 'mySet',
     },
     _values: {
       ':UE_addresses': ['123'],
       ':UE_newAddresses': [Buffer.from('12')],
+      ':UE_mySet': new Set([1234]),
     },
     expression:
-      'DELETE #UE_addresses :UE_addresses, #UE_newAddresses :UE_newAddresses',
+      'DELETE #UE_addresses :UE_addresses, #UE_newAddresses :UE_newAddresses, #UE_mySet :UE_mySet',
     prefix: '',
   });
 });

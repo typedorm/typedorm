@@ -78,6 +78,24 @@ describe('BaseExpressionInput', () => {
         },
       });
     });
+
+    it('should correctly merge multiple expressions with repeated names', () => {
+      const firstCondition = new TestCondition().attributeNotExists('a');
+      const secondCondition = new TestCondition().equals('a', 3).size('a');
+      const newCondition = firstCondition.merge(
+        secondCondition,
+        MERGE_STRATEGY.OR
+      );
+      expect(newCondition).toEqual({
+        expression: '(attribute_not_exists(#TC_a)) OR (size(#TC_a) = :TC_a)',
+        _names: {
+          '#TC_a': 'a',
+        },
+        _values: {
+          ':TC_a': 3,
+        },
+      });
+    });
   });
 
   describe('between()', () => {
