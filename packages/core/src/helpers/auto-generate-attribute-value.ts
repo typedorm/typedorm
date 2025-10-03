@@ -25,6 +25,12 @@ export class AutoGenerateAttributeValue {
       AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_DATE
     ) as number;
   }
+
+  static get EPOCH_MILLIS() {
+    return autoGenerateValue(
+      AUTO_GENERATE_ATTRIBUTE_STRATEGY.EPOCH_MILLIS
+    ) as number;
+  }
 }
 
 export function autoGenerateValue(strategy: AUTO_GENERATE_ATTRIBUTE_STRATEGY) {
