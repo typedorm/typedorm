@@ -14,7 +14,6 @@ import {
 import {Connection} from '../../connection/connection';
 import {
   CONSUMED_CAPACITY_TYPE,
-  EntityInstance,
   InvalidDynamicUpdateAttributeValueError,
 } from '@typedorm/common';
 import {
@@ -213,6 +212,30 @@ test('creates entity and returns all attributes, including auto generated ones',
   });
 });
 
+test('will infer the proper return type when creating an entity', async () => {
+  dcMock.put.mockReturnValue({
+    promise: () => ({}),
+  });
+
+  const user = new User();
+  user.id = '1';
+  user.name = 'Test User';
+  user.status = 'active';
+
+  const ret = await manager.create(user);
+
+  type Expect<T extends true> = T;
+  type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
+    ? 1
+    : 2
+    ? true
+    : false;
+
+  // would fail to compile if the types did not match
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  type Assert = Expect<Equal<typeof ret, User>>;
+});
+
 /**
  * Issue: #203
  */
@@ -236,9 +259,9 @@ test('will throw when called with a POJO rather than an instance of a entity cla
     addresses: ['address a'],
   };
 
-  await expect(
-    manager.create<User>(userProperties as EntityInstance)
-  ).rejects.toBeInstanceOf(Error);
+  await expect(manager.create<User>(userProperties)).rejects.toBeInstanceOf(
+    Error
+  );
 });
 
 /**
