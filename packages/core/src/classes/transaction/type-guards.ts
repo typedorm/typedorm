@@ -1,5 +1,6 @@
 import {DocumentClientTypes} from '@typedorm/document-client';
 import {
+  WriteTransactionConditionCheck,
   WriteTransactionCreate,
   WriteTransactionDelete,
   WriteTransactionUpdate,
@@ -32,6 +33,15 @@ export function isTransactionAddDeleteItem<Entity, PrimaryKey>(
 ): item is WriteTransactionDelete<Entity, PrimaryKey> {
   return (
     (item as WriteTransactionDelete<Entity, PrimaryKey>).delete !== undefined
+  );
+}
+
+export function isTransactionConditionCheckItem<Entity, PrimaryKey>(
+  item: unknown
+): item is WriteTransactionConditionCheck<Entity, PrimaryKey> {
+  return (
+    (item as WriteTransactionConditionCheck<Entity, PrimaryKey>).check !==
+    undefined
   );
 }
 

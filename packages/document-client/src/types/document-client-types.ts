@@ -85,6 +85,13 @@ export namespace DocumentClientTypes {
     | DynamoDBClientV3.QueryOutput;
 
   /**
+   * ConditionCheck
+   */
+  export type ConditionCheck =
+    | DynamoDB.DocumentClient.ConditionCheck
+    | DynamoDBClientV3.ConditionCheck;
+
+  /**
    * BatchWrite
    */
   export type BatchWriteItemRequestMap =

@@ -6,6 +6,7 @@ import {
   isTransactionAddDeleteItem,
   isTransactionAddGetItem,
   isTransactionAddUpdateItem,
+  isTransactionConditionCheckItem,
   isWriteTransactionItemList,
 } from './../transaction/type-guards';
 import {
@@ -187,6 +188,19 @@ export class DocumentClientTransactionTransformer extends LowOrderTransformers {
           } else {
             acc.lazyTransactionWriteItemListLoader.push(dynamoDeleteItemInput);
           }
+        } else if (isTransactionConditionCheckItem(transactionItem)) {
+          const {
+            check: {item, primaryKey, options},
+          } = transactionItem;
+
+          const dynamoConditionCheckItemInput = this.toDynamoConditionCheckItem(
+            item,
+            primaryKey,
+            options
+          );
+          acc.transactionItemList.push({
+            ConditionCheck: dynamoConditionCheckItemInput,
+          });
         } else {
           throw new InvalidTransactionWriteItemError(transactionItem);
         }

@@ -4,6 +4,23 @@ import {ConditionOptions} from '../expression/condition-options-type';
 import {UpdateBody} from '../expression/update-body-type';
 import {Transaction} from './transaction';
 
+interface WriteTransactionConditionCheckOptions<Entity> {
+  /**
+   * Specify condition to apply
+   */
+  where: ConditionOptions<Entity>;
+}
+export interface WriteTransactionConditionCheck<
+  Entity,
+  PrimaryKey = Partial<Entity>
+> {
+  check: {
+    item: EntityTarget<Entity>;
+    primaryKey: PrimaryKey;
+    options: WriteTransactionConditionCheckOptions<Entity>;
+  };
+}
+
 interface WriteTransactionCreateOptions<Entity> {
   /**
    * @default false
@@ -57,6 +74,7 @@ export interface WriteTransactionDelete<Entity, PrimaryKey> {
   };
 }
 export type WriteTransactionItem<Entity, PrimaryKey, AdditionalProperties> =
+  | WriteTransactionConditionCheck<Entity, PrimaryKey>
   | WriteTransactionCreate<Entity>
   | WriteTransactionUpdate<Entity, PrimaryKey, AdditionalProperties>
   | WriteTransactionDelete<Entity, PrimaryKey>;
@@ -98,6 +116,22 @@ export class WriteTransaction extends Transaction<
 
   add(transactionItems: WriteTransactionItem<any, any, any>[]): this {
     this.items.push(...transactionItems);
+    return this;
+  }
+
+  addConditionCheck<Entity, PrimaryKey = Partial<Entity>>(
+    item: EntityTarget<Entity>,
+    primaryKey: PrimaryKey,
+    options: WriteTransactionConditionCheckOptions<Entity>
+  ) {
+    this.items.push({
+      check: {
+        item,
+        primaryKey,
+        options: options as WriteTransactionConditionCheckOptions<any>,
+      },
+    });
+
     return this;
   }
 
