@@ -7,6 +7,15 @@ test('create a write transaction', () => {
 
   const writeTransaction = new WriteTransaction()
     .addCreateItem(user)
+    .addConditionCheck(
+      User,
+      {id: 1},
+      {
+        where: {
+          id: 'ATTRIBUTE_EXISTS',
+        },
+      }
+    )
     .addUpdateItem(
       User,
       {
@@ -20,6 +29,13 @@ test('create a write transaction', () => {
 
   expect(writeTransaction.items).toEqual([
     {create: {item: user}},
+    {
+      check: {
+        item: User,
+        primaryKey: {id: 1},
+        options: {where: {id: 'ATTRIBUTE_EXISTS'}},
+      },
+    },
     {
       update: {
         body: {name: 'updated name'},
@@ -51,6 +67,19 @@ test('create a write transaction form bulk input', () => {
       },
     },
     {
+      check: {
+        item: User,
+        primaryKey: {
+          id: '1',
+        },
+        options: {
+          where: {
+            'user.id': 'ATTRIBUTE_EXISTS',
+          },
+        },
+      },
+    },
+    {
       update: {
         item: User,
         primaryKey: {
@@ -74,6 +103,19 @@ test('create a write transaction form bulk input', () => {
         item: User,
         primaryKey: {
           id: '1',
+        },
+      },
+    },
+    {
+      check: {
+        item: User,
+        primaryKey: {
+          id: '1',
+        },
+        options: {
+          where: {
+            'user.id': 'ATTRIBUTE_EXISTS',
+          },
         },
       },
     },

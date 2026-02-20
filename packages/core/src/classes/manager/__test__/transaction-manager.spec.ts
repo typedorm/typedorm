@@ -374,6 +374,85 @@ test('performs write transactions when removing entities with unique attributes 
   });
 });
 
+test('performs write transactions with condition check', async () => {
+  dcMock.transactWrite.mockReturnValue({
+    on: jest.fn(),
+    send: jest.fn().mockImplementation(cb => {
+      cb(null, {
+        ConsumedCapacity: [{}],
+        ItemCollectionMetrics: [{}],
+      });
+    }),
+  });
+
+  const user = new User();
+  user.id = '1';
+  user.name = 'user name';
+  user.status = 'inactive';
+
+  const transaction = new WriteTransaction(connection)
+    .addConditionCheck<User, UserPrimaryKey>(
+      User,
+      {id: '1'},
+      {where: {OR: {id: 'ATTRIBUTE_NOT_EXISTS', status: {NE: 'active'}}}}
+    )
+    .addCreateItem(user);
+
+  const response = await manager.write(transaction, {
+    returnConsumedCapacity: CONSUMED_CAPACITY_TYPE.TOTAL,
+  });
+
+  expect(dcMock.transactWrite).toHaveBeenCalledTimes(1);
+  expect(dcMock.transactWrite).toHaveBeenCalledWith({
+    ReturnConsumedCapacity: 'TOTAL',
+    TransactItems: [
+      {
+        ConditionCheck: {
+          ConditionExpression:
+            '(attribute_not_exists(#CE_id)) OR (#CE_status <> :CE_status)',
+          ExpressionAttributeNames: {
+            '#CE_id': 'id',
+            '#CE_status': 'status',
+          },
+          ExpressionAttributeValues: {
+            ':CE_status': 'active',
+          },
+          Key: {
+            PK: 'USER#1',
+            SK: 'USER#1',
+          },
+          TableName: 'test-table',
+        },
+      },
+      {
+        Put: {
+          Item: {
+            GSI1PK: 'USER#STATUS#inactive',
+            GSI1SK: 'USER#user name',
+            PK: 'USER#1',
+            SK: 'USER#1',
+            id: '1',
+            __en: 'user',
+            name: 'user name',
+            status: 'inactive',
+          },
+          TableName: 'test-table',
+          ConditionExpression:
+            '(attribute_not_exists(#CE_PK)) AND (attribute_not_exists(#CE_SK))',
+          ExpressionAttributeNames: {
+            '#CE_PK': 'PK',
+            '#CE_SK': 'SK',
+          },
+        },
+      },
+    ],
+  });
+
+  expect(response).toEqual({
+    success: true,
+  });
+});
+
 test('performs write transactions when with mixed update actions ', async () => {
   dcMock.transactWrite.mockReturnValue({
     on: jest.fn(),

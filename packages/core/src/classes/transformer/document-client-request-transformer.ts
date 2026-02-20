@@ -54,6 +54,10 @@ export interface ManagerToDynamoDeleteItemsOptions {
   where?: any;
 }
 
+export interface ManagerToDynamoConditionCheckItemsOptions {
+  where: any;
+}
+
 export interface ManagerToDynamoQueryItemsOptions {
   /**
    * Index to query, when omitted, query will be run against main table
@@ -778,6 +782,79 @@ export class DocumentClientRequestTransformer extends BaseTransformer {
       entityClass,
       lazyLoadTransactionWriteItems,
     };
+  }
+
+  toDynamoConditionCheckItem<Entity, PrimaryKey>(
+    entityClass: EntityTarget<Entity>,
+    primaryKey: PrimaryKey,
+    options: ManagerToDynamoConditionCheckItemsOptions,
+    metadataOptions?: MetadataOptions
+  ): DocumentClientTypes.ConditionCheck {
+    const metadata = this.connection.getEntityByTarget(entityClass);
+    this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_TYPE.CONDITION_CHECK,
+      prefix: 'Before',
+      entityName: metadata.name,
+      primaryKey,
+    });
+    const tableName = metadata.table.name;
+
+    const parsedPrimaryKey = this.getParsedPrimaryKey<PrimaryKey>(
+      metadata.table,
+      metadata.schema.primaryKey,
+      primaryKey
+    );
+
+    if (isEmptyObject(parsedPrimaryKey)) {
+      throw new Error('Primary could not be resolved');
+    }
+
+    if (isEmptyObject(options.where)) {
+      throw new Error('Condition is required');
+    }
+
+    const condition = this.expressionInputParser.parseToCondition(
+      options?.where
+    );
+
+    if (!condition) {
+      throw new Error(
+        `Failed to build condition expression for input: ${JSON.stringify(
+          options?.where
+        )}`
+      );
+    }
+
+    const {
+      ConditionExpression,
+      ExpressionAttributeNames,
+      ExpressionAttributeValues,
+    } = this.expressionBuilder.buildConditionExpression(condition);
+
+    const dynamoConditionCheckItem = {
+      TableName: tableName,
+      Key: {
+        ...parsedPrimaryKey,
+      },
+      ConditionExpression,
+      ExpressionAttributeNames,
+    } as DocumentClientTypes.ConditionCheck;
+    if (ExpressionAttributeValues) {
+      dynamoConditionCheckItem.ExpressionAttributeValues =
+        ExpressionAttributeValues;
+    }
+
+    this.connection.logger.logTransform({
+      requestId: metadataOptions?.requestId,
+      operation: TRANSFORM_TYPE.CONDITION_CHECK,
+      prefix: 'After',
+      entityName: metadata.name,
+      primaryKey,
+      body: dynamoConditionCheckItem,
+    });
+
+    return dynamoConditionCheckItem;
   }
 
   toDynamoQueryItem<Entity, PartitionKeyAttributes>(
